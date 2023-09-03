@@ -24,6 +24,8 @@ type Request interface {
 	Context() context.Context
 	Header() http.Header
 	Method() string
+	Params() map[string][]string
+	Param(p string) (string, bool)
 }
 
 type Route interface {

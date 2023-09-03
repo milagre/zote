@@ -23,3 +23,11 @@ func (r *request) Header() http.Header {
 func (r *request) Method() string {
 	return strings.ToUpper(r.request.Method)
 }
+
+func (r *request) Params() map[string][]string {
+	return map[string][]string{}
+}
+
+func (r *request) Param(p string) (string, bool) {
+	return "", true
+}

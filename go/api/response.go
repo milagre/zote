@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 )
@@ -26,6 +27,18 @@ func (r simpleResponse) Body() io.Reader {
 	return r.body
 }
 
+func BasicResponse(
+	status int,
+	headers http.Header,
+	content []byte,
+) ResponseBuilder {
+	return simpleResponse{
+		status:  status,
+		headers: headers,
+		body:    bytes.NewBuffer(content),
+	}
+}
+
 func Response200OK() ResponseBuilder {
 	return simpleResponse{
 		status: http.StatusOK,
@@ -35,6 +48,12 @@ func Response200OK() ResponseBuilder {
 func Response401Unauthorized() ResponseBuilder {
 	return simpleResponse{
 		status: http.StatusUnauthorized,
+	}
+}
+
+func Response403Forbidden() ResponseBuilder {
+	return simpleResponse{
+		status: http.StatusForbidden,
 	}
 }
 
