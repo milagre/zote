@@ -22,9 +22,15 @@ func (r *health) Path() string {
 
 func (r *health) Methods() zoteapi.Methods {
 	return zoteapi.Methods{
-		http.MethodGet:     r.health,
-		http.MethodHead:    r.health,
-		http.MethodOptions: r.health,
+		http.MethodGet: {
+			Handler: r.health,
+		},
+		http.MethodHead: {
+			Handler: r.health,
+		},
+		http.MethodOptions: {
+			Handler: r.health,
+		},
 	}
 }
 

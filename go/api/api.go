@@ -6,8 +6,13 @@ import (
 	"net/http"
 )
 
-type MethodFunc func(Request) ResponseBuilder
-type Methods map[string]MethodFunc
+type HandleFunc func(Request) ResponseBuilder
+
+type Method struct {
+	Handler HandleFunc
+}
+
+type Methods map[string]Method
 
 type ResponseBuilder interface {
 	Status() int

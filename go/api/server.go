@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -181,13 +182,13 @@ func handle(server *Server, route Route) func(rw http.ResponseWriter, r *http.Re
 			}
 		}
 
-		f, ok := methods[r.Method]
+		method, ok := methods[r.Method]
 		if !ok {
 			resp = server.defaults.methodNotAllowed()
 		} else if r.URL.Path != route.Path() {
 			resp = server.defaults.notFound()
 		} else {
-			resp = f(req)
+			resp = method.Handler(req)
 		}
 	}
 }
@@ -198,7 +199,7 @@ func write(server *Server, logger zotelog.Logger, rw http.ResponseWriter, resp R
 	var body []byte
 	if raw != nil {
 		var err error
-		body, err = ioutil.ReadAll(raw)
+		body, err = io.ReadAll(raw)
 		if err != nil {
 			if !truncateOnFail {
 				logger.Warnf("Overriding response with Internal Server Error due to error reading response body: %v", err)
