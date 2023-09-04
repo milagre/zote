@@ -10,6 +10,8 @@ var _ Request = &request{}
 
 type request struct {
 	request *http.Request
+	route   Route
+	params  map[string][]string
 }
 
 func (r *request) Context() context.Context {
@@ -24,10 +26,15 @@ func (r *request) Method() string {
 	return strings.ToUpper(r.request.Method)
 }
 
-func (r *request) Params() map[string][]string {
-	return map[string][]string{}
-}
+func (r *request) Param(p string) string {
+	vals, ok := r.params[p]
+	if !ok {
+		return ""
+	}
 
-func (r *request) Param(p string) (string, bool) {
-	return "", true
+	if len(vals) == 1 {
+		return vals[0]
+	}
+
+	return ""
 }

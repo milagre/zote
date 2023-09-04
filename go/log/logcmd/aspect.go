@@ -21,7 +21,7 @@ func NewLog(defaultLevel log.Level) Aspect {
 }
 
 func (a Aspect) Apply(c cmd.Configurable) {
-	c.AddString("log-level")
+	c.AddString("log-level").Default("info")
 }
 
 func (a Aspect) LogLevel(e cmd.Env) (log.Level, error) {

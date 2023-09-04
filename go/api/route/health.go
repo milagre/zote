@@ -3,25 +3,29 @@ package route
 import (
 	"net/http"
 
-	zoteapi "github.com/milagre/zote/go/api"
+	"github.com/milagre/zote/go/api"
 )
 
 type health struct {
 	path string
 }
 
-func NewHealth(path string) zoteapi.Route {
+func NewHealth(path string) api.Route {
 	return &health{
 		path: path,
 	}
+}
+
+func (r *health) Name() string {
+	return "_health"
 }
 
 func (r *health) Path() string {
 	return r.path
 }
 
-func (r *health) Methods() zoteapi.Methods {
-	return zoteapi.Methods{
+func (r *health) Methods() api.Methods {
+	return api.Methods{
 		http.MethodGet: {
 			Handler: r.health,
 		},
@@ -34,6 +38,6 @@ func (r *health) Methods() zoteapi.Methods {
 	}
 }
 
-func (r *health) health(req zoteapi.Request) zoteapi.ResponseBuilder {
-	return zoteapi.Response200OK()
+func (r *health) health(req api.Request) api.ResponseBuilder {
+	return api.Response200OK()
 }

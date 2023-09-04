@@ -4,19 +4,24 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"runtime/debug"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
-	zotelog "github.com/milagre/zote/go/log"
+	"github.com/milagre/zote/go/log"
 )
 
-type Server struct {
-	mux      *http.ServeMux
-	logger   zotelog.Logger
+type Server interface {
+	ListenAndServe(addr string) error
+	Shutdown(ctx context.Context) error
+}
+
+type server struct {
+	handler  *handlerTree
+	logger   log.Logger
 	defaults struct {
 		methodNotAllowed    func() ResponseBuilder
 		notFound            func() ResponseBuilder
@@ -32,14 +37,15 @@ type Server struct {
 	shutdown chan struct{}
 }
 
-func NewServer(logger zotelog.Logger, routes []Route) (*Server, error) {
-	server := &Server{
+func NewServer(logger log.Logger, routes []Route) (*server, error) {
+	server := &server{
 		logger:   logger,
-		mux:      http.NewServeMux(),
+		handler:  &handlerTree{},
 		shutdown: make(chan struct{}),
 		routes:   map[string]Route{},
 		parents:  map[string]Route{},
 	}
+	server.handler.server = server
 
 	for _, route := range routes {
 		err := server.mount(route)
@@ -69,8 +75,205 @@ func NewServer(logger zotelog.Logger, routes []Route) (*Server, error) {
 	return server, nil
 }
 
-func (s *Server) ListenAndServe(addr string) error {
-	s.server = &http.Server{Addr: addr, Handler: s.mux}
+type handlerTree struct {
+	// routes[path]handler
+	server *server
+	root   *handler
+}
+
+type handler struct {
+	part     string
+	param    *string
+	route    Route
+	children map[string]*handler
+}
+
+func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	defer func() {
+		_, _ = io.ReadAll(r.Body)
+		_ = r.Body.Close()
+	}()
+
+	start := time.Now()
+	requestID := uuid.New().String()
+	logger := h.server.logger.WithField("request", requestID)
+	r = r.WithContext(log.Context(r.Context(), logger))
+
+	access := logger.WithFields(log.Fields{
+		"component": "access",
+		"url":       r.URL.String(),
+		"method":    r.Method,
+	})
+
+	// Return when done, this will wrote the assigned response (or default) to caller
+	var resp ResponseBuilder
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Warnf("Panic: %+v; %s", r, debug.Stack())
+		}
+
+		if resp == nil {
+			resp = h.server.defaults.internalServerError()
+		}
+
+		len := write(h.server, logger, rw, resp, false)
+
+		access.WithFields(log.Fields{
+			"status":   resp.Status(),
+			"duration": time.Since(start),
+			"length":   len,
+		}).Info("Complete")
+	}()
+
+	// If a route is found, this will call it
+	execute := func(parents []Route, route Route, params map[string][]string) {
+		access = access.WithFields(log.Fields{
+			"route": route.Name(),
+		})
+		access.Info("Starting")
+
+		req := &request{
+			request: r,
+			route:   route,
+			params:  params,
+		}
+
+		for _, parent := range parents {
+			if auth, ok := parent.(AuthorizingRoute); ok {
+				resp = auth.Authorize(req)
+				if resp != nil {
+					return
+				}
+			}
+		}
+
+		method, ok := route.Methods()[r.Method]
+		if !ok {
+			resp = h.server.defaults.methodNotAllowed()
+		} else {
+			resp = method.Handler(req)
+		}
+	}
+
+	path := r.URL.Path
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	params := map[string][]string{}
+
+	// Root resource requested, short circuit
+	if len(parts) == 1 && parts[0] == "" {
+		execute([]Route{}, h.root.route, params)
+		return
+	}
+
+	parents := []Route{h.root.route}
+	current := h.root
+	for _, part := range parts {
+		child, ok := current.children[part]
+		if !ok {
+			// Dynamic URL part
+			child, ok = current.children[""]
+			if !ok {
+				access.Info("Starting")
+				resp = h.server.defaults.notFound()
+				return
+			}
+		}
+
+		// Dynamic URL part
+		if child.param != nil {
+			param := *child.param
+			params[param] = append(params[param], part)
+		}
+
+		parents = append(parents, child.route)
+		current = child
+	}
+
+	execute(parents, current.route, params)
+}
+
+func isParam(p string) (string, bool) {
+	length := len(p)
+	if length < 3 {
+		return "", false
+	}
+
+	if p[0] != '{' || p[length-1] != '}' {
+		return "", false
+	}
+
+	name := p[1 : length-1]
+
+	for _, c := range name {
+		if c == '{' || c == '}' {
+			return "", false
+		}
+	}
+
+	return name, true
+}
+
+func (h *handlerTree) add(route Route) error {
+	path := route.Path()
+	path = strings.Trim(path, "/")
+
+	if path == "" {
+		h.root = &handler{
+			part:     "",
+			route:    route,
+			children: map[string]*handler{},
+		}
+	} else if h.root != nil {
+		parts := strings.Split(path, "/")
+		last := len(parts) - 1
+
+		current := h.root
+
+		for _, part := range parts[0:last] {
+			if _, ok := isParam(part); ok {
+				part = ""
+			}
+
+			child, ok := current.children[part]
+			if !ok {
+				return fmt.Errorf("parent route for '%s' not found; mount parents before children", route.Path())
+			}
+
+			current = child
+		}
+
+		lastPart := parts[last]
+		pname, param := isParam(lastPart)
+		if param {
+			lastPart = ""
+		}
+
+		if _, ok := current.children[lastPart]; ok {
+			return fmt.Errorf("dynamic child already set on parent, route '%s' cannot be added", route.Path())
+		}
+
+		routeHandler := &handler{
+			part:     lastPart,
+			route:    route,
+			children: map[string]*handler{},
+		}
+
+		if param {
+			routeHandler.param = &pname
+		}
+
+		current.children[lastPart] = routeHandler
+
+	} else {
+		return fmt.Errorf("root route not yet mounted, mount the root route first, then children after")
+	}
+
+	h.server.logger.Infof("Mounted %s", path)
+	return nil
+}
+
+func (s *server) ListenAndServe(addr string) error {
+	s.server = &http.Server{Addr: addr, Handler: s.handler}
 	err := s.server.ListenAndServe()
 	if err != http.ErrServerClosed {
 		return err
@@ -79,121 +282,21 @@ func (s *Server) ListenAndServe(addr string) error {
 	return nil
 }
 
-func (s *Server) Shutdown(ctx context.Context) error {
+func (s *server) Shutdown(ctx context.Context) error {
 	defer close(s.shutdown)
 	return s.server.Shutdown(ctx)
 }
 
-func (s *Server) mount(route Route) error {
-	path := route.Path()
-	path = strings.TrimRight(path, "/")
-	if path == "" || path[0] != '/' {
-		path = "/" + path
+func (s *server) mount(route Route) error {
+	err := s.handler.add(route)
+	if err != nil {
+		return fmt.Errorf("mounting route: %w", err)
 	}
 
-	parent := "/"
-
-	last := strings.LastIndex(path, "/")
-	if last != 0 {
-		/*
-			if path != "/" {
-				return fmt.Errorf("root route path must be '' or '/', following is invalid: %s", route.Path())
-			}
-		} else {*/
-		parent = path[0:last]
-	}
-
-	s.routes[path] = route
-
-	if path != "/" {
-		parentRoute, ok := s.routes[parent]
-		if !ok {
-			return fmt.Errorf("parent route for '%s' not found (expecting '%s'); mount parents first", route.Path(), parent)
-		}
-
-		s.parents[path] = parentRoute
-	}
-
-	s.logger.Infof("Mounting %s (parent %s)", path, parent)
-	s.mux.HandleFunc(path, handle(s, route))
 	return nil
 }
 
-func handle(server *Server, route Route) func(rw http.ResponseWriter, r *http.Request) {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		defer func() {
-			_, _ = ioutil.ReadAll(r.Body)
-			_ = r.Body.Close()
-		}()
-
-		start := time.Now()
-		methods := route.Methods()
-		requestID := uuid.New().String()
-		logger := server.logger.WithField("request", requestID)
-		r = r.WithContext(zotelog.Context(r.Context(), logger))
-
-		access := logger.WithFields(zotelog.Fields{
-			"component": "access",
-			"method":    r.Method,
-			"url":       r.URL.String(),
-		})
-		access.Info("Starting")
-
-		req := &request{
-			request: r,
-		}
-		var resp ResponseBuilder
-
-		defer func() {
-			if r := recover(); r != nil {
-				logger.Warnf("Panic: %v", r)
-			}
-
-			if resp == nil {
-				resp = server.defaults.internalServerError()
-			}
-
-			len := write(server, logger, rw, resp, false)
-
-			access.WithFields(zotelog.Fields{
-				"status":   resp.Status(),
-				"duration": time.Since(start),
-				"length":   len,
-			}).Info("Complete")
-		}()
-
-		parents := []Route{route}
-		parent := route
-		ok := true
-		fmt.Println(parent.Path())
-		for ok {
-			parent, ok = server.parents[parent.Path()]
-			if ok {
-				parents = append(parents, parent)
-				fmt.Println(parent.Path())
-			}
-		}
-
-		for i := len(parents) - 1; i >= 0; i-- {
-			parent := parents[i]
-			if auth, ok := parent.(AuthorizingRoute); ok {
-				fmt.Println("test")
-				resp = auth.Authorize(req)
-			}
-		}
-
-		method, ok := methods[r.Method]
-		if !ok {
-			resp = server.defaults.methodNotAllowed()
-		} else if r.URL.Path != route.Path() {
-			resp = server.defaults.notFound()
-		} else {
-			resp = method.Handler(req)
-		}
-	}
-}
-
-func write(server *Server, logger zotelog.Logger, rw http.ResponseWriter, resp ResponseBuilder, truncateOnFail bool) int {
+func write(s *server, logger log.Logger, rw http.ResponseWriter, resp ResponseBuilder, truncateOnFail bool) int {
 	raw := resp.Body()
 
 	var body []byte
@@ -203,8 +306,8 @@ func write(server *Server, logger zotelog.Logger, rw http.ResponseWriter, resp R
 		if err != nil {
 			if !truncateOnFail {
 				logger.Warnf("Overriding response with Internal Server Error due to error reading response body: %v", err)
-				resp = server.defaults.internalServerError()
-				return write(server, logger, rw, resp, true)
+				resp = s.defaults.internalServerError()
+				return write(s, logger, rw, resp, true)
 			}
 
 			logger.Warnf("Truncating response due to error while reading response body: %v", err)

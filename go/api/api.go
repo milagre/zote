@@ -24,11 +24,12 @@ type Request interface {
 	Context() context.Context
 	Header() http.Header
 	Method() string
-	Params() map[string][]string
-	Param(p string) (string, bool)
+	Param(p string) string
+	//Params() map[string][]string
 }
 
 type Route interface {
+	Name() string
 	Path() string
 	Methods() Methods
 }
