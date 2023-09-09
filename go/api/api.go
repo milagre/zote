@@ -21,7 +21,11 @@ type ResponseBuilder interface {
 }
 
 type Request interface {
+	HTTPRequest() *http.Request
+
 	Context() context.Context
+	AddContextValue(key any, val any)
+
 	Header() http.Header
 	Method() string
 	Param(p string) string

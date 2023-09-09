@@ -14,8 +14,18 @@ type request struct {
 	params  map[string][]string
 }
 
+func (r *request) HTTPRequest() *http.Request {
+	return r.request
+}
+
 func (r *request) Context() context.Context {
 	return r.request.Context()
+}
+
+func (r *request) AddContextValue(key any, val any) {
+	ctx := r.request.Context()
+	ctx = context.WithValue(ctx, key, val)
+	r.request = r.request.WithContext(ctx)
 }
 
 func (r *request) Header() http.Header {

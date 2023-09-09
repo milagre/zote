@@ -8,7 +8,7 @@ type Object struct {
 type LinkMap map[string]Link
 
 type Link struct {
-	HREF      string
+	Href      string
 	Name      *string
 	Type      *string
 	Templated bool

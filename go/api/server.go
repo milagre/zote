@@ -138,7 +138,7 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			params:  params,
 		}
 
-		for _, parent := range parents {
+		for _, parent := range append(parents, route) {
 			if auth, ok := parent.(AuthorizingRoute); ok {
 				resp = auth.Authorize(req)
 				if resp != nil {
