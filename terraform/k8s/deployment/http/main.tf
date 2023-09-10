@@ -1,5 +1,6 @@
 variable "env" {}
 variable "name" {}
+variable "namespace" {}
 variable "profile" {}
 variable "image" {}
 variable "tag" {}
@@ -27,16 +28,17 @@ variable "conf" {
 
 locals {
   timestamptag = replace(timestamp(), "/[-:TZ]/", "")
+  tag          = var.tag == "latest" ? "latest-${local.timestamptag}" : var.tag
 }
 
 resource "kubernetes_deployment" "deploy" {
   metadata {
     name      = var.name
-    namespace = var.env.namespace
+    namespace = var.namespace
     labels = {
       app     = var.name
       deploy  = "http"
-      version = var.tag == "latest" ? "latest-${local.timestamptag}" : var.tag
+      version = local.tag
     }
   }
 
@@ -53,11 +55,11 @@ resource "kubernetes_deployment" "deploy" {
     template {
       metadata {
         name      = var.name
-        namespace = var.env.namespace
+        namespace = var.namespace
         labels = {
           app     = var.name
           deploy  = "http"
-          version = var.tag == "latest" ? "latest-${local.timestamptag}" : var.tag
+          version = local.tag
         }
       }
 
@@ -67,7 +69,7 @@ resource "kubernetes_deployment" "deploy" {
 
           image = "${var.image}:${var.tag}"
 
-          image_pull_policy = var.env.type == "dev" ? "Never" : "IfNotPresent"
+          image_pull_policy = var.env.is_dev ? "Never" : "IfNotPresent"
 
           command = var.cmd
           args    = var.args
@@ -92,8 +94,17 @@ resource "kubernetes_deployment" "deploy" {
             initial_delay_seconds = 5
             period_seconds        = 5
           }
+
+          dynamic "env" {
+            for_each = var.conf.values
+            content {
+              name  = env.key
+              value = env.value
+            }
+          }
         }
       }
     }
   }
+
 }

@@ -7,14 +7,16 @@ variable "http" {
   default = null
 }
 variable "name" {}
+variable "namespace" {}
 variable "image" {}
 variable "tag" {}
 variable "conf" {
   type = object({
-    configmaps = list(string)
-    secrets    = list(string)
-    values     = map(string)
+    configmaps = optional(list(string))
+    secrets    = optional(list(string))
+    values     = optional(map(string))
   })
+  default = {}
 }
 variable "profile" {}
 variable "cmd" {
@@ -37,13 +39,14 @@ module "http" {
 
   source = "./http"
 
-  name    = var.name
-  image   = var.image
-  tag     = var.tag
-  env     = var.env
-  setup   = var.http
-  conf    = var.conf
-  profile = module.profile
-  cmd     = var.cmd
-  args    = var.args
+  name      = var.name
+  namespace = var.namespace
+  image     = var.image
+  tag       = var.tag
+  env       = var.env
+  setup     = var.http
+  conf      = var.conf
+  profile   = module.profile
+  cmd       = var.cmd
+  args      = var.args
 }

@@ -1,5 +1,6 @@
 variable "env" {}
 variable "name" {}
+variable "namespace" {}
 
 locals {
   name = "mysql-${var.name}"
@@ -13,7 +14,7 @@ locals {
 resource "kubernetes_config_map" "config" {
   metadata {
     name      = "cfg-${local.name}"
-    namespace = var.env.namespace
+    namespace = var.namespace
 
     labels = {
       app = local.name
@@ -36,7 +37,7 @@ resource "kubernetes_config_map" "config" {
 resource "kubernetes_service" "svc" {
   metadata {
     name      = local.name
-    namespace = var.env.namespace
+    namespace = var.namespace
 
     labels = {
       app = local.name
@@ -60,7 +61,7 @@ resource "kubernetes_service" "svc" {
 resource "kubernetes_stateful_set" "sts" {
   metadata {
     name      = local.name
-    namespace = var.env.namespace
+    namespace = var.namespace
   }
 
   spec {
@@ -208,7 +209,7 @@ resource "kubernetes_stateful_set" "sts" {
 resource "kubernetes_config_map" "client" {
   metadata {
     name      = local.name
-    namespace = var.env.namespace
+    namespace = var.namespace
 
     labels = {
       app = local.name
