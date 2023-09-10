@@ -25,13 +25,10 @@ func (e Env) Bool(name string) bool {
 
 func (e Env) Int(name string) int {
 	v := e.context.Value(name)
-	f := e.flag(name)
 
-	if _, ok := f.(*cli.IntFlag); ok {
-		i, err := cast.ToIntE(v)
-		if err == nil {
-			return i
-		}
+	i, err := cast.ToIntE(v)
+	if err == nil {
+		return i
 	}
 
 	return 0
