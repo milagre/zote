@@ -5,7 +5,7 @@ variable "minikube" {
   default = false
 }
 
-resource "helm_release" "ngrok" {
+resource "helm_release" "nginx" {
   chart      = "ingress-nginx"
   name       = "ingress-nginx"
   namespace  = var.namespace

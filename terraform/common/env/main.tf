@@ -1,4 +1,5 @@
 variable "type" {}
+variable "minikube" { type = bool }
 variable "root" {}
 variable "dev_types" {
   type = list(string)
@@ -6,6 +7,10 @@ variable "dev_types" {
     "dev",
     "local",
   ]
+}
+
+locals {
+  is_dev = contains(var.dev_types, var.type)
 }
 
 output "type" {
@@ -17,5 +22,9 @@ output "root" {
 }
 
 output "is_dev" {
-  value = contains(var.dev_types, var.type)
+  value = local.is_dev
+}
+
+output "lb_type" {
+  value = var.minikube ? "NodePort" : "External"
 }

@@ -10,6 +10,13 @@ variable "name" {}
 variable "namespace" {}
 variable "image" {}
 variable "tag" {}
+variable "ngrok" {
+  type = object({
+    enabled = bool
+    domain  = string
+  })
+  default = null
+}
 variable "conf" {
   type = object({
     configmaps = optional(list(string))
@@ -43,10 +50,17 @@ module "http" {
   namespace = var.namespace
   image     = var.image
   tag       = var.tag
-  env       = var.env
-  setup     = var.http
-  conf      = var.conf
-  profile   = module.profile
-  cmd       = var.cmd
-  args      = var.args
+
+  env = var.env
+
+  setup = var.http
+  ngrok = var.ngrok
+
+  conf    = var.conf
+  profile = module.profile
+  cmd     = var.cmd
+  args    = var.args
 }
+
+
+

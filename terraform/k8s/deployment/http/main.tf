@@ -25,6 +25,13 @@ variable "conf" {
     values     = map(string)
   })
 }
+variable "ngrok" {
+  type = object({
+    enabled = bool
+    domain  = string
+  })
+  default = null
+}
 
 locals {
   timestamptag = replace(timestamp(), "/[-:TZ]/", "")
@@ -106,5 +113,106 @@ resource "kubernetes_deployment" "deploy" {
       }
     }
   }
+}
 
+
+resource "kubernetes_service" "service" {
+  metadata {
+    name      = var.name
+    namespace = var.namespace
+  }
+
+  spec {
+
+    type = var.env.lb_type
+    port {
+      port        = 80
+      target_port = var.setup.port
+      protocol    = "TCP"
+    }
+
+    selector = {
+      app    = var.name
+      deploy = "http"
+    }
+  }
+
+}
+
+resource "kubernetes_ingress_v1" "private_nginx" {
+  metadata {
+    name      = "${var.name}-nginx-private"
+    namespace = var.namespace
+    annotations = {
+      "kubernetes.io/ingress.class" = "nginx"
+    }
+  }
+
+  wait_for_load_balancer = false
+
+  spec {
+    ingress_class_name = "nginx"
+
+    rule {
+      host = "${var.name}.${var.namespace}.internal.localhost.localdomain"
+
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+
+          backend {
+            service {
+              name = kubernetes_service.service.metadata[0].name
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+/*
+resource "kubernetes_service" "ngrok_external" {
+  count = var.ngrok == null ? 0 : 1
+
+}
+*/
+
+resource "kubernetes_ingress_v1" "ngrok" {
+  count = var.ngrok == null ? 0 : 1
+
+  metadata {
+    name      = "${var.name}-ngrok"
+    namespace = "infra"
+    annotations = {
+      "kubernetes.io/ingress.class" = "ngrok"
+    }
+  }
+
+  spec {
+    ingress_class_name = "ngrok"
+
+    rule {
+      host = "${var.name}.${var.namespace}.${var.ngrok.domain}"
+
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+
+          backend {
+            service {
+              name = "ingress-nginx-controller"
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
