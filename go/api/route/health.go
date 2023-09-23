@@ -1,9 +1,11 @@
 package route
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/milagre/zote/go/api"
+	"github.com/milagre/zote/go/build"
 )
 
 type health struct {
@@ -38,6 +40,18 @@ func (r *health) Methods() api.Methods {
 	}
 }
 
+type result struct {
+	Version string `json:"version"`
+}
+
 func (r *health) health(req api.Request) api.ResponseBuilder {
-	return api.Response200OK()
+	result := result{
+		Version: build.Version(),
+	}
+	b, _ := json.Marshal(result)
+	return api.BasicResponse(
+		http.StatusOK,
+		http.Header{},
+		b,
+	)
 }

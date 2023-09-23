@@ -154,6 +154,44 @@ resource "kubernetes_ingress_v1" "private_nginx" {
     ingress_class_name = "nginx"
 
     rule {
+      host = "${var.name}.${var.namespace}.localhost.localdomain"
+
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+
+          backend {
+            service {
+              name = kubernetes_service.service.metadata[0].name
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_ingress_v1" "public_nginx" {
+  count = 1 # TODO: conditional
+
+  metadata {
+    name      = "${var.name}-nginx-public"
+    namespace = var.namespace
+    annotations = {
+      "kubernetes.io/ingress.class" = "nginx"
+    }
+  }
+
+  wait_for_load_balancer = false
+
+  spec {
+    ingress_class_name = "nginx"
+
+    rule {
       host = "${var.name}.${var.namespace}.${var.ngrok.domain}"
 
       http {
@@ -174,36 +212,14 @@ resource "kubernetes_ingress_v1" "private_nginx" {
     }
   }
 }
-/*
-resource "kubernetes_service" "ngrok_external" {
-  count = var.ngrok == null ? 0 : 1
 
-}
-*/
-
-/*
-resource "kubernetes_service" "ngrok_target" {
-  count = var.ngrok == null ? 0 : 1
-
-  metadata {
-    name      = "${var.name}-ngrok-target"
-    namespace = var.namespace
-  }
-
-  spec {
-    type          = "ExternalName"
-    external_name = "ingress-nginx-controller.infra.svc.cluster.local"
-  }
-}
-*/
 
 resource "kubernetes_ingress_v1" "ngrok" {
   count = var.ngrok == null ? 0 : 1
 
   metadata {
-    name = "${var.name}-ngrok"
-    //namespace = var.namespace
-    namespace = "infra"
+    name      = "${var.name}-ngrok"
+    namespace = var.namespace
     annotations = {
       "kubernetes.io/ingress.class" = "ngrok"
     }
@@ -222,9 +238,7 @@ resource "kubernetes_ingress_v1" "ngrok" {
 
           backend {
             service {
-
-              //name = kubernetes_service.ngrok_target[0].metadata[0].name
-              name = "ingress-nginx-controller"
+              name = kubernetes_service.service.metadata[0].name
               port {
                 number = 80
               }

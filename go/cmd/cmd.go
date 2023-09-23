@@ -10,6 +10,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/urfave/cli/v2"
 
+	"github.com/milagre/zote/go/build"
 	zotelog "github.com/milagre/zote/go/log"
 )
 
@@ -48,6 +49,7 @@ func NewApp(
 		app: &cli.App{
 			Name:     name,
 			Commands: make([]*cli.Command, 0, len(commands)),
+			Version:  build.Version(),
 		},
 	}
 
