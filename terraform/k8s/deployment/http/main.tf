@@ -154,7 +154,7 @@ resource "kubernetes_ingress_v1" "private_nginx" {
     ingress_class_name = "nginx"
 
     rule {
-      host = "${var.name}.${var.namespace}.internal.localhost.localdomain"
+      host = "${var.name}.${var.namespace}.${var.ngrok.domain}"
 
       http {
         path {
@@ -181,11 +181,28 @@ resource "kubernetes_service" "ngrok_external" {
 }
 */
 
+/*
+resource "kubernetes_service" "ngrok_target" {
+  count = var.ngrok == null ? 0 : 1
+
+  metadata {
+    name      = "${var.name}-ngrok-target"
+    namespace = var.namespace
+  }
+
+  spec {
+    type          = "ExternalName"
+    external_name = "ingress-nginx-controller.infra.svc.cluster.local"
+  }
+}
+*/
+
 resource "kubernetes_ingress_v1" "ngrok" {
   count = var.ngrok == null ? 0 : 1
 
   metadata {
-    name      = "${var.name}-ngrok"
+    name = "${var.name}-ngrok"
+    //namespace = var.namespace
     namespace = "infra"
     annotations = {
       "kubernetes.io/ingress.class" = "ngrok"
@@ -205,6 +222,8 @@ resource "kubernetes_ingress_v1" "ngrok" {
 
           backend {
             service {
+
+              //name = kubernetes_service.ngrok_target[0].metadata[0].name
               name = "ingress-nginx-controller"
               port {
                 number = 80
