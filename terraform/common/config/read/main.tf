@@ -2,19 +2,20 @@
 variable "env" {}
 
 locals {
-  config_files = [
-    file("${local.config_folder}/1.main.yaml"),
-    file("${local.config_folder}/4.backend.yaml"),
-    file("${local.config_folder}/5.info.yaml"),
-  ]
+  config_files  = sort(fileset(local.config_folder, "[0-9].*.yaml"))
   config_folder = "${var.env.root}/env/${var.env.type}/${var.env.type == "local" ? "" : "${var.env.name}/"}"
-  config = merge([
+  config_data = [
     for f in local.config_files :
-    yamldecode(f)
-  ]...)
+    yamldecode(file("${local.config_folder}/${f}"))
+  ]
+}
+
+module "deepmerge" {
+  source = "github.com/cloudposse/terraform-yaml-config/modules/deepmerge"
+  maps   = local.config_data
 }
 
 output "data" {
-  value = local.config
+  value = module.deepmerge.merged
 }
 
