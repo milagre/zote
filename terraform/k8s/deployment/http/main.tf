@@ -25,6 +25,14 @@ variable "conf" {
     values     = map(string)
   })
 }
+variable "files" {
+  type = object({
+    configmaps = map(string),
+  })
+  default = {
+    configmaps = {},
+  }
+}
 variable "ngrok" {
   type = object({
     enabled = bool
@@ -107,6 +115,17 @@ resource "kubernetes_deployment" "deploy" {
             content {
               name  = env.key
               value = env.value
+            }
+          }
+        }
+
+        dynamic "volume" {
+          for_each = var.files.configmaps
+
+          content {
+            name = volume.key
+            config_map {
+              name = volume.value
             }
           }
         }

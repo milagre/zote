@@ -25,6 +25,14 @@ variable "conf" {
   })
   default = {}
 }
+variable "files" {
+  type = object({
+    configmaps = map(string),
+  })
+  default = {
+    configmaps = {},
+  }
+}
 variable "profile" {}
 variable "cmd" {
   type    = list(string)
@@ -57,6 +65,7 @@ module "http" {
   ngrok = var.ngrok
 
   conf    = var.conf
+  files   = var.files
   profile = module.profile
   cmd     = var.cmd
   args    = var.args
