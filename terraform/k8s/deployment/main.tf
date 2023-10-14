@@ -11,12 +11,10 @@ variable "namespace" {}
 variable "image" {}
 variable "tag" {}
 variable "ngrok" {
-  type = object({
-    enabled = bool
-    domain  = string
-  })
-  default = null
+  type    = bool
+  default = false
 }
+variable "public_domain" {}
 variable "conf" {
   type = object({
     configmaps = optional(list(string))
@@ -69,7 +67,22 @@ module "http" {
   profile = module.profile
   cmd     = var.cmd
   args    = var.args
+
+  internal = {
+    public_hostname  = local.public_hostname
+    private_hostname = local.private_hostname
+  }
 }
 
+locals {
+  public_hostname  = "${var.name}.${var.namespace}.${var.public_domain}"
+  private_hostname = "${var.name}.${var.namespace}.svc.cluster.local"
+}
 
+output "public_hostname" {
+  value = local.public_hostname
+}
 
+output "private_hostname" {
+  value = local.private_hostname
+}

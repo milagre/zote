@@ -34,11 +34,14 @@ variable "files" {
   }
 }
 variable "ngrok" {
+  type    = bool
+  default = false
+}
+variable "internal" {
   type = object({
-    enabled = bool
-    domain  = string
+    public_hostname  = string
+    private_hostname = string
   })
-  default = null
 }
 
 locals {
@@ -107,23 +110,53 @@ resource "kubernetes_deployment" "deploy" {
             }
 
             initial_delay_seconds = 5
-            period_seconds        = 5
+            period_seconds        = 15
           }
 
+          // Attach configmaps to environment
+          dynamic "env_from" {
+            for_each = coalesce(var.conf.configmaps, [])
+            content {
+              config_map_ref {
+                name = env_from.value
+              }
+            }
+          }
+
+          // Attach secrets to environment
+          dynamic "env_from" {
+            for_each = coalesce(var.conf.secrets, [])
+            content {
+              secret_ref {
+                name = env_from.value
+              }
+            }
+          }
+
+          // Attach arbitrary env values
           dynamic "env" {
-            for_each = var.conf.values
+            for_each = coalesce(var.conf.values, {})
             content {
               name  = env.key
               value = env.value
             }
           }
+
+          // Mount configmaps needed for files in container
+          dynamic "volume_mount" {
+            for_each = coalesce(var.files.configmaps, {})
+            content {
+              name       = volume_mount.value
+              mount_path = volume_mount.key
+            }
+          }
         }
 
+        // Attach configmaps needed for files to spec
         dynamic "volume" {
-          for_each = var.files.configmaps
-
+          for_each = coalesce(var.files.configmaps, {})
           content {
-            name = volume.key
+            name = volume.value
             config_map {
               name = volume.value
             }
@@ -173,7 +206,7 @@ resource "kubernetes_ingress_v1" "private_nginx" {
     ingress_class_name = "nginx"
 
     rule {
-      host = "${var.name}.${var.namespace}.localhost.localdomain"
+      host = var.internal.private_hostname
 
       http {
         path {
@@ -211,7 +244,7 @@ resource "kubernetes_ingress_v1" "public_nginx" {
     ingress_class_name = "nginx"
 
     rule {
-      host = "${var.name}.${var.namespace}.${var.ngrok.domain}"
+      host = var.internal.public_hostname
 
       http {
         path {
@@ -234,7 +267,7 @@ resource "kubernetes_ingress_v1" "public_nginx" {
 
 
 resource "kubernetes_ingress_v1" "ngrok" {
-  count = var.ngrok == null ? 0 : 1
+  count = var.ngrok ? 1 : 0
 
   metadata {
     name      = "${var.name}-ngrok"
@@ -248,7 +281,7 @@ resource "kubernetes_ingress_v1" "ngrok" {
     ingress_class_name = "ngrok"
 
     rule {
-      host = "${var.name}.${var.namespace}.${var.ngrok.domain}"
+      host = var.internal.public_hostname
 
       http {
         path {
