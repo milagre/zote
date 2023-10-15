@@ -1,7 +1,6 @@
 variable "type" {}
 variable "tier" {}
 variable "name" {}
-variable "minikube" { type = bool }
 variable "root" {}
 variable "dev_types" {
   type = list(string)
@@ -47,5 +46,5 @@ output "is_local" {
 }
 
 output "lb_type" {
-  value = var.minikube ? "NodePort" : "LoadBalancer"
+  value = local.is_local ? "NodePort" : "LoadBalancer"
 }
