@@ -111,6 +111,31 @@ resource "kubernetes_deployment" "deploy" {
             }
           }
         }
+
+        # Pods attempt to spread out across nodes when possible
+        affinity {
+          pod_anti_affinity {
+            preferred_during_scheduling_ignored_during_execution {
+              pod_affinity_term {
+                label_selector {
+                  match_expressions {
+                    key      = "app"
+                    operator = "In"
+                    values   = [var.name]
+                  }
+                  match_expressions {
+                    key      = "version"
+                    operator = "In"
+                    values   = [var.tag]
+                  }
+                }
+                topology_key = "kubernetes.io/hostname"
+              }
+              weight = 100
+            }
+          }
+        }
+
       }
     }
   }
