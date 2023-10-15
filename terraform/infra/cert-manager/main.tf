@@ -22,7 +22,7 @@ resource "kubernetes_manifest" "clusterissuer" {
     kind       = "ClusterIssuer"
 
     metadata = {
-      name = "letsencrypt"
+      name = "letsencrypt-http01"
     }
 
     spec = {
@@ -30,7 +30,7 @@ resource "kubernetes_manifest" "clusterissuer" {
         email  = var.acme_email
         server = "https://acme-v02.api.letsencrypt.org/directory"
         privateKeySecretRef = {
-          name = "letsencrypt"
+          name = "letsencrypt-http01"
         }
         solvers = [
           {

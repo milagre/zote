@@ -194,7 +194,7 @@ resource "kubernetes_ingress_v1" "public_nginx" {
     namespace = var.namespace
     annotations = {
       "kubernetes.io/ingress.class"    = "nginx"
-      "cert-manager.io/cluster-issuer" = "letsencrypt"
+      "cert-manager.io/cluster-issuer" = "letsencrypt-http01"
     }
   }
 
