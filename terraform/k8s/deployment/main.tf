@@ -10,11 +10,11 @@ variable "name" {}
 variable "namespace" {}
 variable "image" {}
 variable "tag" {}
-variable "ngrok" {
-  type    = bool
-  default = false
-}
 variable "public_domain" {}
+variable "veneers" {
+  type    = list(string)
+  default = []
+}
 variable "conf" {
   type = object({
     configmaps = optional(list(string))
@@ -60,7 +60,6 @@ module "http" {
   env = var.env
 
   setup = var.http
-  ngrok = var.ngrok
 
   conf    = var.conf
   files   = var.files
@@ -71,6 +70,7 @@ module "http" {
   internal = {
     public_hostname  = local.public_hostname
     private_hostname = local.private_hostname
+    veneer_hostnames = var.veneers
   }
 }
 

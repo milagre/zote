@@ -2,11 +2,27 @@
 variable "env" {}
 
 locals {
-  config_files  = sort(fileset(local.config_folder, "[0-9].*.yaml"))
-  config_folder = "${var.env.root}/env/${var.env.type}/${var.env.type == "local" ? "" : "${var.env.tier}/"}"
+  config_folders = [
+    "${var.env.root}/env/${var.env.type}",
+    "${var.env.root}/env/${var.env.type}/${var.env.tier}",
+    "${var.env.root}/env/${var.env.type}/${var.env.tier}/${var.env.name}",
+  ]
+  config_files = flatten(
+    [
+      for folder in local.config_folders :
+      [
+        for file in sort(fileset(folder, "[0-9].*.yaml")) :
+        "${folder}/${file}"
+      ]
+    ]
+  )
   config_data = [
-    for f in local.config_files :
-    yamldecode(file("${local.config_folder}/${f}"))
+    for file in local.config_files :
+    yamldecode(
+      templatefile("${file}", {
+        env = var.env
+      })
+    )
   ]
 }
 

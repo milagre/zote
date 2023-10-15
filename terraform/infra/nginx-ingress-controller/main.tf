@@ -1,9 +1,6 @@
 
 variable "namespace" {}
-variable "minikube" {
-  type    = bool
-  default = false
-}
+variable "env" {}
 
 resource "helm_release" "nginx" {
   chart      = "ingress-nginx"
@@ -13,7 +10,7 @@ resource "helm_release" "nginx" {
   version    = "4.7.2"
 
   dynamic "set" {
-    for_each = var.minikube ? {
+    for_each = var.env.is_local ? {
       "controller.service.type" = "NodePort"
     } : {}
     content {
