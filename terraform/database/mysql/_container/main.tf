@@ -1,23 +1,39 @@
 variable "env" {}
 variable "name" {}
 variable "namespace" {}
+variable "primary_profile" {}
+variable "replica_profile" {}
+variable "database" {}
+variable "username" {}
+variable "password" {}
 
 locals {
-  name = "mysql-${var.name}"
-  cfg  = "MYSQL_${upper(var.name)}"
   images = {
     xtrabackup = "bitnami/percona-xtrabackup:latest"
     mysql      = "mysql:8"
+    init       = "bash:5"
   }
+}
+
+module "primary_profile" {
+  source = "./../../../structs/profile"
+
+  profile = var.primary_profile
+}
+
+module "replica_profile" {
+  source = "./../../../structs/profile"
+
+  profile = var.replica_profile
 }
 
 resource "kubernetes_config_map" "config" {
   metadata {
-    name      = "cfg-${local.name}"
+    name      = "cfg-${var.name}"
     namespace = var.namespace
 
     labels = {
-      app = local.name
+      app = var.name
     }
   }
 
@@ -36,11 +52,11 @@ resource "kubernetes_config_map" "config" {
 
 resource "kubernetes_service" "svc" {
   metadata {
-    name      = local.name
+    name      = var.name
     namespace = var.namespace
 
     labels = {
-      app = local.name
+      app = var.name
     }
   }
 
@@ -51,33 +67,48 @@ resource "kubernetes_service" "svc" {
     }
 
     selector = {
-      app = local.name
+      app = var.name
     }
 
     cluster_ip = "None"
   }
 }
 
+resource "kubernetes_secret" "password" {
+  metadata {
+    name      = "cfg-${var.name}"
+    namespace = var.namespace
+
+    labels = {
+      app = var.name
+    }
+  }
+
+  data = {
+    MYSQL_PASSWORD = var.password
+  }
+}
+
 resource "kubernetes_stateful_set" "sts" {
   metadata {
-    name      = local.name
+    name      = var.name
     namespace = var.namespace
   }
 
   spec {
-    service_name = local.name
+    service_name = var.name
     replicas     = 1
 
     selector {
       match_labels = {
-        app = local.name
+        app = var.name
       }
     }
 
     template {
       metadata {
         labels = {
-          app = local.name
+          app = var.name
         }
       }
 
@@ -97,7 +128,7 @@ resource "kubernetes_stateful_set" "sts" {
 
         init_container {
           name  = "init-mysql"
-          image = local.images.mysql
+          image = local.images.init
           command = [
             "bash",
             "-c",
@@ -112,7 +143,7 @@ resource "kubernetes_stateful_set" "sts" {
                 # Add an offset to avoid reserved server-id=0 value.
                 echo server-id=$((100 + $ordinal)) >> /mnt/conf.d/server-id.cnf
 
-                # Copy appropriate conf.d files from config-map to emptyDir.
+                # Copy appropriate files from config-map to conf.d.
                 if [[ $ordinal -eq 0 ]]; then
                     cp /mnt/config-map/primary.cnf /mnt/conf.d/
                 else
@@ -141,16 +172,33 @@ resource "kubernetes_stateful_set" "sts" {
             container_port = 3306
           }
 
-          env {
-            name  = "MYSQL_ALLOW_EMPTY_PASSWORD"
-            value = "1"
+          dynamic "env" {
+            for_each = {
+              MYSQL_ALLOW_EMPTY_PASSWORD = "yes"
+              MYSQL_ROOT_HOST            = "127.0.0.1"
+              MYSQL_DATABASE             = var.database
+              MYSQL_USER                 = var.username
+            }
+            content {
+              name  = env.key
+              value = env.value
+            }
+          }
+
+          env_from {
+            secret_ref {
+              name = kubernetes_secret.password.metadata[0].name
+            }
           }
 
           resources {
             requests = {
-              cpu = "500m"
-
-              memory = "1Gi"
+              cpu    = module.primary_profile.cpu_cores.min
+              memory = "${module.primary_profile.mem_mb.min}M"
+            }
+            limits = {
+              cpu    = module.primary_profile.cpu_cores.max
+              memory = "${module.primary_profile.mem_mb.max}M"
             }
           }
 
@@ -177,7 +225,7 @@ resource "kubernetes_stateful_set" "sts" {
 
           readiness_probe {
             exec {
-              command = ["mysql", "-h", "127.0.0.1", "-e", "SELECT 1"]
+              command = ["mysqladmin", "ping"]
             }
 
             initial_delay_seconds = 5
@@ -203,23 +251,5 @@ resource "kubernetes_stateful_set" "sts" {
         }
       }
     }
-  }
-}
-
-resource "kubernetes_config_map" "client" {
-  metadata {
-    name      = local.name
-    namespace = var.namespace
-
-    labels = {
-      app = local.name
-    }
-  }
-
-  data = {
-    "${local.cfg}_HOST" = "${local.name}.svc.cluster.local"
-    "${local.cfg}_PORT" = "3306"
-    "${local.cfg}_USER" = "root"
-    "${local.cfg}_PASS" = ""
   }
 }

@@ -2,6 +2,7 @@ variable "type" {}
 variable "tier" {}
 variable "name" {}
 variable "root" {}
+variable "prefix" {}
 variable "dev_types" {
   type = list(string)
   default = [
@@ -47,4 +48,8 @@ output "is_local" {
 
 output "lb_type" {
   value = local.is_local ? "NodePort" : "LoadBalancer"
+}
+
+output "prefix" {
+  value = var.prefix
 }

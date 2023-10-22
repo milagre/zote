@@ -52,7 +52,7 @@ variable "profile" {
   // Num
 
   validation {
-    condition     = can(var.profile.num.max < var.profile.num.min)
+    condition     = var.profile.num == null || can(var.profile.num.max < var.profile.num.min)
     error_message = "num maximum must be greater or equal to num minimum"
   }
 }
@@ -72,7 +72,7 @@ output "mem_mb" {
 }
 
 output "num" {
-  value = {
+  value = var.profile.num == null ? null : {
     min = tonumber(var.profile.num.min)
     max = tonumber(var.profile.num.max)
   }
