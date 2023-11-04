@@ -26,6 +26,7 @@ type Request interface {
 	Context() context.Context
 	AddContextValue(key any, val any)
 
+	Body() ([]byte, error)
 	Header() http.Header
 	Method() string
 	Param(p string) string

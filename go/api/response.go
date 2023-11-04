@@ -45,6 +45,12 @@ func Response200OK() ResponseBuilder {
 	}
 }
 
+func Response400BadRequest() ResponseBuilder {
+	return simpleResponse{
+		status: http.StatusBadRequest,
+	}
+}
+
 func Response401Unauthorized() ResponseBuilder {
 	return simpleResponse{
 		status: http.StatusUnauthorized,

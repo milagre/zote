@@ -2,12 +2,20 @@ package logrus
 
 import (
 	"github.com/sirupsen/logrus"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
 	zotelog "github.com/milagre/zote/go/log"
 )
 
 func New(level zotelog.Level) zotelog.Destination {
-	return Wrap(logrus.New(), level)
+	l := logrus.New()
+	l.Formatter = &prefixed.TextFormatter{
+		//DisableColors:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+		FullTimestamp:   true,
+		ForceFormatting: true,
+	}
+	return Wrap(l, level)
 }
 
 func Wrap(l *logrus.Logger, level zotelog.Level) zotelog.Destination {

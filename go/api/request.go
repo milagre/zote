@@ -2,6 +2,8 @@ package api
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -9,9 +11,10 @@ import (
 var _ Request = &request{}
 
 type request struct {
-	request *http.Request
-	route   Route
-	params  map[string][]string
+	request   *http.Request
+	route     Route
+	params    map[string][]string
+	bodyCache []byte
 }
 
 func (r *request) HTTPRequest() *http.Request {
@@ -34,6 +37,22 @@ func (r *request) Header() http.Header {
 
 func (r *request) Method() string {
 	return strings.ToUpper(r.request.Method)
+}
+
+func (r *request) Body() ([]byte, error) {
+	if r.bodyCache != nil {
+		return r.bodyCache, nil
+	}
+
+	r.bodyCache = make([]byte, 0)
+
+	data, err := io.ReadAll(r.HTTPRequest().Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading request body: %w", err)
+	}
+
+	r.bodyCache = data
+	return r.bodyCache, nil
 }
 
 func (r *request) Param(p string) string {
