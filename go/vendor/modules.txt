@@ -1,3 +1,7 @@
+# github.com/breml/rootcerts v0.2.13
+## explicit; go 1.19
+github.com/breml/rootcerts
+github.com/breml/rootcerts/embedded
 # github.com/cpuguy83/go-md2man/v2 v2.0.2
 ## explicit; go 1.11
 github.com/cpuguy83/go-md2man/v2/md2man

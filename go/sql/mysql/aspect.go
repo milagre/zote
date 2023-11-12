@@ -4,8 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/go-sql-driver/mysql"
-	"github.com/spf13/cast"
+	"github.com/davecgh/go-spew/spew"
 
 	"github.com/milagre/zote/go/cmd"
 	"github.com/milagre/zote/go/cmd/aspects"
@@ -33,14 +32,16 @@ func (a Aspect) Apply(c cmd.Configurable) {
 }
 
 func (a Aspect) Connection(env cmd.Env, options zotesql.Options) (*zotesql.Connection, error) {
-	cfg := mysql.NewConfig()
-	cfg.User = env.String(a.user())
-	cfg.Passwd = env.String(a.pass())
-	cfg.DBName = env.String(a.database())
-	cfg.Addr = fmt.Sprintf("%s:%d", env.String(a.host()), env.Int(a.port()))
-	cfg.Params = cast.ToStringMapString(options)
+	dsn := TCPConnectionString(
+		env.String(a.user()),
+		env.String(a.pass()),
+		env.String(a.host()),
+		env.Int(a.port()),
+		env.String(a.database()),
+		options,
+	)
 
-	dsn := cfg.FormatDSN()
+	spew.Dump(dsn)
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {

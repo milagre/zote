@@ -49,6 +49,14 @@ func (o Options) Merge(opts Options) Options {
 	return res
 }
 
+func (o Options) ToStringMapString() map[string]string {
+	res := map[string]string{}
+	for k, v := range o {
+		res[k] = fmt.Sprintf("%v", v)
+	}
+	return res
+}
+
 func Begin(ctx context.Context, db *sql.DB, cb func(ctx context.Context, x *sql.Tx) error) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {

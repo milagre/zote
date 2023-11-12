@@ -18,7 +18,7 @@ func init() {
 
 func DefaultOptions() zotesql.Options {
 	return zotesql.Options{
-		"collation": "utf8mb4_unicode_cs",
+		"collation": "utf8mb4_bin",
 		"charset":   "utf8mb4",
 		"parseTime": true,
 		"timeout":   5 * time.Second, // Connection timeout only
@@ -30,17 +30,13 @@ func TCPConnectionString(user string, pass string, host string, port int, db str
 		opts = DefaultOptions()
 	}
 
-	params := map[string]string{}
-	for k, v := range opts {
-		params[k] = fmt.Sprintf("%s", v)
-	}
-
 	c := mysql.Config{
 		User:   user,
 		Passwd: pass,
-		Addr:   fmt.Sprintf("tcp(%s:%d)", host, port),
+		Addr:   fmt.Sprintf("%s:%d", host, port),
 		DBName: db,
-		Params: params,
+		Params: opts.ToStringMapString(),
+		Net:    "tcp",
 	}
 
 	return c.FormatDSN()
