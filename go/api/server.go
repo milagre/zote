@@ -20,10 +20,12 @@ type Server interface {
 }
 
 type server struct {
-	handler  *handlerTree
-	logger   log.Logger
-	defaults struct {
-		methodNotAllowed    func() ResponseBuilder
+	handler    *handlerTree
+	logger     log.Logger
+	middleware []Middleware
+	defaults   struct {
+		optionsRequest      HandleFunc
+		methodNotAllowed    HandleFunc
 		notFound            func() ResponseBuilder
 		internalServerError func() ResponseBuilder
 	}
@@ -37,13 +39,22 @@ type server struct {
 	shutdown chan struct{}
 }
 
-func NewServer(logger log.Logger, routes []Route) (*server, error) {
+type Option func(s *server)
+
+func ServerOptionDefaultOptionsRequest(f HandleFunc) Option {
+	return func(s *server) {
+		s.defaults.optionsRequest = f
+	}
+}
+
+func NewServer(logger log.Logger, routes []Route, options ...Option) (*server, error) {
 	server := &server{
-		logger:   logger,
-		handler:  &handlerTree{},
-		shutdown: make(chan struct{}),
-		routes:   map[string]Route{},
-		parents:  map[string]Route{},
+		logger:     logger,
+		handler:    &handlerTree{},
+		shutdown:   make(chan struct{}),
+		routes:     map[string]Route{},
+		parents:    map[string]Route{},
+		middleware: []Middleware{},
 	}
 	server.handler.server = server
 
@@ -55,7 +66,7 @@ func NewServer(logger log.Logger, routes []Route) (*server, error) {
 	}
 
 	if server.defaults.methodNotAllowed == nil {
-		server.defaults.methodNotAllowed = func() ResponseBuilder {
+		server.defaults.methodNotAllowed = func(req Request) ResponseBuilder {
 			return Response405MethodNotAllowed()
 		}
 	}
@@ -72,7 +83,41 @@ func NewServer(logger log.Logger, routes []Route) (*server, error) {
 		}
 	}
 
+	if server.defaults.optionsRequest == nil {
+		server.defaults.optionsRequest = func(req Request) ResponseBuilder {
+			return server.defaults.methodNotAllowed(req)
+		}
+	}
+
+	for _, opt := range options {
+		opt(server)
+	}
+
 	return server, nil
+}
+
+func (s *server) AddMiddleware(m Middleware) {
+	s.middleware = append(s.middleware, m)
+}
+
+func (s *server) middlewareChain(handle HandleFunc) HandleFunc {
+	var reversed []Middleware
+	for _, m := range s.middleware {
+		reversed = append([]Middleware{m}, reversed...)
+	}
+
+	target := handle
+	for _, m := range reversed {
+		target = func(m Middleware, next HandleFunc) HandleFunc {
+			return func(req Request) ResponseBuilder {
+				return m(req, next)
+			}
+		}(m, target)
+	}
+
+	return func(req Request) ResponseBuilder {
+		return target(req)
+	}
 }
 
 type handlerTree struct {
@@ -148,11 +193,17 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 
 		method, ok := route.Methods()[r.Method]
-		if !ok {
-			resp = h.server.defaults.methodNotAllowed()
+		var handler HandleFunc
+		if ok {
+			handler = method.Handler
 		} else {
-			resp = method.Handler(req)
+			if r.Method == http.MethodOptions {
+				handler = h.server.defaults.optionsRequest
+			} else {
+				handler = h.server.defaults.methodNotAllowed
+			}
 		}
+		resp = h.server.middlewareChain(handler)(req)
 	}
 
 	path := r.URL.Path

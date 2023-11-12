@@ -39,6 +39,18 @@ func BasicResponse(
 	}
 }
 
+func BasicResponseReader(
+	status int,
+	headers http.Header,
+	content io.Reader,
+) ResponseBuilder {
+	return simpleResponse{
+		status:  status,
+		headers: headers,
+		body:    content,
+	}
+}
+
 func Response200OK() ResponseBuilder {
 	return simpleResponse{
 		status: http.StatusOK,
