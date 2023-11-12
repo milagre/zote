@@ -69,8 +69,6 @@ resource "kubernetes_service" "svc" {
     selector = {
       app = var.name
     }
-
-    cluster_ip = "None"
   }
 }
 
@@ -252,4 +250,8 @@ resource "kubernetes_stateful_set" "sts" {
       }
     }
   }
+}
+
+output "hostname" {
+  value = "${var.name}.${var.namespace}.svc.cluster.local"
 }

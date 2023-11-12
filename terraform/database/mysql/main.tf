@@ -47,9 +47,8 @@ locals {
 
 resource "random_password" "password" {
   length  = 64
-  special = true
+  special = false
 
-  min_special = 8
   min_numeric = 8
   min_lower   = 8
   min_upper   = 8
@@ -68,7 +67,7 @@ resource "kubernetes_config_map" "client" {
   }
 
   data = {
-    "${local.cfg}_HOST"     = "${local.name}.svc.cluster.local"
+    "${local.cfg}_HOST"     = module.container[0].hostname
     "${local.cfg}_PORT"     = "3306"
     "${local.cfg}_DATABASE" = var.database
     "${local.cfg}_USER"     = var.username
