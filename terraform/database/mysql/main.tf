@@ -31,6 +31,20 @@ variable "container" {
   default = null
 }
 variable "cloud" {
+  type = object({
+    digitalocean = optional(object({
+      vpc_id     = string
+      project_id = string
+      version    = string
+      primary = object({
+        class = string
+      })
+      replicas = object({
+        num   = number
+        class = string
+      })
+    }))
+  })
   default = null
 }
 variable "database" {
@@ -43,17 +57,11 @@ variable "username" {
 locals {
   name = "mysql-${var.name}"
   cfg  = "${var.env.prefix}_${upper(var.namespace)}_${upper(var.name)}_MYSQL"
-}
 
-resource "random_password" "password" {
-  length  = 64
-  special = false
-
-  min_numeric = 8
-  min_lower   = 8
-  min_upper   = 8
-
-  override_special = "$%&*()-_=+[]{}<>:?"
+  dbmodule = coalesce(
+    try(module.container[0], null),
+    try(module.digitalocean[0], null),
+  )
 }
 
 resource "kubernetes_config_map" "client" {
@@ -67,10 +75,10 @@ resource "kubernetes_config_map" "client" {
   }
 
   data = {
-    "${local.cfg}_HOST"     = module.container[0].hostname
-    "${local.cfg}_PORT"     = "3306"
+    "${local.cfg}_HOST"     = local.dbmodule.hostname
+    "${local.cfg}_PORT"     = local.dbmodule.port
+    "${local.cfg}_USER"     = local.dbmodule.username
     "${local.cfg}_DATABASE" = var.database
-    "${local.cfg}_USER"     = var.username
   }
 }
 
@@ -85,7 +93,7 @@ resource "kubernetes_secret" "client" {
   }
 
   data = {
-    "${local.cfg}_PASS" = random_password.password.result
+    "${local.cfg}_PASS" = local.dbmodule.password
   }
 }
 

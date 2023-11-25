@@ -19,7 +19,7 @@ locals {
   config_data = [
     for file in local.config_files :
     yamldecode(
-      templatefile("${file}", {
+      templatefile(file, {
         env = var.env
       })
     )
@@ -27,8 +27,17 @@ locals {
 }
 
 module "deepmerge" {
-  source = "github.com/cloudposse/terraform-yaml-config/modules/deepmerge"
-  maps   = local.config_data
+  source  = "cloudposse/config/yaml//modules/deepmerge"
+  version = "0.2.0"
+  maps    = local.config_data
+}
+
+output "sources" {
+  value = local.config_files
+}
+
+output "raw" {
+  value = local.config_data
 }
 
 output "data" {

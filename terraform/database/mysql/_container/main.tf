@@ -5,7 +5,6 @@ variable "primary_profile" {}
 variable "replica_profile" {}
 variable "database" {}
 variable "username" {}
-variable "password" {}
 
 locals {
   images = {
@@ -25,6 +24,21 @@ module "replica_profile" {
   source = "./../../../structs/profile"
 
   profile = var.replica_profile
+}
+
+resource "random_password" "password" {
+  length  = 64
+  special = false
+
+  min_numeric = 8
+  min_lower   = 8
+  min_upper   = 8
+
+  override_special = "$%&*()-_=+[]{}<>:?"
+}
+
+locals {
+  password = random_password.password.result
 }
 
 resource "kubernetes_config_map" "config" {
@@ -50,6 +64,21 @@ resource "kubernetes_config_map" "config" {
   }
 }
 
+resource "kubernetes_secret" "password" {
+  metadata {
+    name      = "cfg-${var.name}"
+    namespace = var.namespace
+
+    labels = {
+      app = var.name
+    }
+  }
+
+  data = {
+    MYSQL_PASSWORD = local.password
+  }
+}
+
 resource "kubernetes_service" "svc" {
   metadata {
     name      = var.name
@@ -69,21 +98,6 @@ resource "kubernetes_service" "svc" {
     selector = {
       app = var.name
     }
-  }
-}
-
-resource "kubernetes_secret" "password" {
-  metadata {
-    name      = "cfg-${var.name}"
-    namespace = var.namespace
-
-    labels = {
-      app = var.name
-    }
-  }
-
-  data = {
-    MYSQL_PASSWORD = var.password
   }
 }
 
@@ -252,6 +266,22 @@ resource "kubernetes_stateful_set" "sts" {
   }
 }
 
+output "username" {
+  value     = var.username
+  sensitive = false
+}
+
 output "hostname" {
-  value = "${var.name}.${var.namespace}.svc.cluster.local"
+  value     = "${var.name}.${var.namespace}.svc.cluster.local"
+  sensitive = false
+}
+
+output "port" {
+  value     = 3306
+  sensitive = false
+}
+
+output "password" {
+  value     = local.password
+  sensitive = true
 }

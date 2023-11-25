@@ -12,6 +12,5 @@ module "container" {
 
   database = var.database
   username = var.username
-  password = random_password.password.result
 }
 
