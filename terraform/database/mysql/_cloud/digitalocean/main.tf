@@ -17,7 +17,7 @@ data "digitalocean_project" "project" {
 }
 
 resource "digitalocean_database_cluster" "cluster" {
-  name                 = var.name
+  name                 = "${data.digitalocean_vpc.vpc.name}-${var.name}"
   engine               = "mysql"
   version              = var.vers
   size                 = var.primary.class
