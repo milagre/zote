@@ -183,26 +183,30 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			params:  params,
 		}
 
-		for _, parent := range append(parents, route) {
-			if auth, ok := parent.(AuthorizingRoute); ok {
-				resp = auth.Authorize(req)
-				if resp != nil {
-					return
-				}
-			}
-		}
-
 		method, ok := route.Methods()[r.Method]
 		var handler HandleFunc
-		if ok {
-			handler = method.Handler
-		} else {
+		if !ok {
 			if r.Method == http.MethodOptions {
 				handler = h.server.defaults.optionsRequest
 			} else {
 				handler = h.server.defaults.methodNotAllowed
 			}
+
+		} else {
+			handler = method.Handler
+
+			// We only authorize calls that hit a handler,
+			// calls that hit a default can execute alone
+			for _, parent := range append(parents, route) {
+				if auth, ok := parent.(AuthorizingRoute); ok {
+					resp = auth.Authorize(req)
+					if resp != nil {
+						return
+					}
+				}
+			}
 		}
+
 		resp = h.server.middlewareChain(handler)(req)
 	}
 
