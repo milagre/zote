@@ -16,8 +16,12 @@ data "digitalocean_project" "project" {
   id = var.project_id
 }
 
+locals {
+  name = "${data.digitalocean_vpc.vpc.name}-${var.name}"
+}
+
 resource "digitalocean_database_cluster" "cluster" {
-  name                 = "${data.digitalocean_vpc.vpc.name}-${var.name}"
+  name                 = local.name
   engine               = "mysql"
   version              = var.vers
   size                 = var.primary.class
@@ -45,7 +49,7 @@ resource "digitalocean_database_replica" "replicas" {
   count = var.replicas.num
 
   cluster_id = digitalocean_database_cluster.cluster.id
-  name       = "${var.name}-replica-${count.index}"
+  name       = "${local.name}-replica-${count.index}"
   size       = var.replicas.class
   region     = data.digitalocean_vpc.vpc.region
 }
@@ -56,7 +60,7 @@ output "username" {
 }
 
 output "hostname" {
-  value     = digitalocean_database_cluster.cluster.host
+  value     = digitalocean_database_cluster.cluster.private_host
   sensitive = false
 }
 
