@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
-
 	"github.com/milagre/zote/go/zcmd"
 	"github.com/milagre/zote/go/zcmd/zaspect"
 	"github.com/milagre/zote/go/zsql"
@@ -40,8 +38,6 @@ func (a Aspect) Connection(env zcmd.Env, options zsql.Options) (*zsql.Connection
 		env.String(a.database()),
 		options,
 	)
-
-	spew.Dump(dsn)
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
