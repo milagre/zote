@@ -56,10 +56,11 @@ resource "kubernetes_deployment" "deploy" {
             http_get {
               path = var.setup.health
               port = var.setup.port
+
             }
 
             initial_delay_seconds = 5
-            period_seconds        = 15
+            period_seconds        = coalesce(var.setup.freq, 15)
           }
 
           // Attach configmaps to environment

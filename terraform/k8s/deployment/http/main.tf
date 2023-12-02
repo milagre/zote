@@ -16,6 +16,7 @@ variable "setup" {
   type = object({
     port   = number
     health = string
+    freq   = optional(number)
   })
 }
 variable "conf" {

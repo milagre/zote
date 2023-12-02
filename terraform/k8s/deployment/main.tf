@@ -3,6 +3,7 @@ variable "http" {
   type = object({
     port   = number
     health = string
+    freq   = optional(number)
   })
   default = null
 }
