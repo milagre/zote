@@ -25,6 +25,10 @@ type Connection struct {
 	driver Driver
 }
 
+type Queryable interface {
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
 func NewConnection(db *sql.DB, driver Driver) *Connection {
 	return &Connection{
 		DB:     db,
@@ -79,4 +83,34 @@ func Begin(ctx context.Context, db *sql.DB, cb func(ctx context.Context, x *sql.
 	}
 
 	return nil
+}
+
+type ScanFunc func(dest ...any) error
+type QueryCallback func(ScanFunc) error
+
+func Query(ctx context.Context, db Queryable, cb QueryCallback, query string, args ...any) (bool, error) {
+	rows, err := db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return false, fmt.Errorf("executing query: %w", err)
+	}
+
+	defer func() {
+		if err = rows.Close(); err != nil {
+			err = fmt.Errorf("closing rows: %w", err)
+		}
+	}()
+
+	found := false
+	for rows.Next() {
+		found = true
+		if err = cb(rows.Scan); err != nil {
+			return false, fmt.Errorf("scanning row: %w", err)
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return false, fmt.Errorf("processing rows: %w", err)
+	}
+
+	return found, err
 }
