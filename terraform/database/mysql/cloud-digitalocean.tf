@@ -11,7 +11,7 @@ module "digitalocean" {
 
   vpc_id     = var.cloud.digitalocean.vpc_id
   project_id = var.cloud.digitalocean.project_id
-  vers       = var.cloud.digitalocean.version
+  ver        = var.ver
   primary    = var.cloud.digitalocean.primary
   replicas   = var.cloud.digitalocean.replicas
 }

@@ -7,6 +7,7 @@ module "container" {
   name      = local.name
   namespace = var.namespace
 
+  ver             = var.ver
   primary_profile = var.container.primary.profile
   replica_profile = var.container.replica.profile
 

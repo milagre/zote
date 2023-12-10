@@ -1,6 +1,7 @@
 variable "env" {}
 variable "name" {}
 variable "namespace" {}
+variable "ver" {}
 variable "container" {
   type = object({
     primary = object({
@@ -35,7 +36,6 @@ variable "cloud" {
     digitalocean = optional(object({
       vpc_id     = string
       project_id = string
-      version    = string
       primary = object({
         class = string
       })

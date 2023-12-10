@@ -1,6 +1,7 @@
 variable "env" {}
 variable "name" {}
 variable "namespace" {}
+variable "ver" {}
 variable "primary_profile" {}
 variable "replica_profile" {}
 variable "database" {}
@@ -9,7 +10,7 @@ variable "username" {}
 locals {
   images = {
     xtrabackup = "bitnami/percona-xtrabackup:latest"
-    mysql      = "mysql:8"
+    mysql      = "mysql:${var.ver}"
     init       = "bash:5"
   }
 }

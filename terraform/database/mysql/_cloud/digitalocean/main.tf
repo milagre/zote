@@ -4,7 +4,7 @@ variable "namespace" {}
 variable "database" {}
 variable "vpc_id" {}
 variable "project_id" {}
-variable "vers" {}
+variable "ver" {}
 variable "primary" {}
 variable "replicas" {}
 
@@ -23,7 +23,7 @@ locals {
 resource "digitalocean_database_cluster" "cluster" {
   name                 = local.name
   engine               = "mysql"
-  version              = var.vers
+  version              = var.ver
   size                 = var.primary.class
   region               = data.digitalocean_vpc.vpc.region
   node_count           = 1
