@@ -15,7 +15,7 @@ import (
 	zormsqlite3_test_mappers "github.com/milagre/zote/go/zorm/zormsql/driver/zormsqlite3/zormsqlite3_test/mappers"
 )
 
-func setup(t *testing.T, cb func(*zsql.Connection, zorm.Repository)) {
+func setup(t *testing.T, cb func(zsql.Connection, zorm.Repository)) {
 	t.Helper()
 
 	f, err := os.CreateTemp("zote_sqlite3_test", fmt.Sprintf("test.%s.*.db", t.Name()))

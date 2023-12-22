@@ -42,10 +42,10 @@ func TCPConnectionString(user string, pass string, host string, port int, db str
 	return c.FormatDSN()
 }
 
-func Open(dsn string, poolSize int) (*zsql.Connection, error) {
+func Open(dsn string, poolSize int) (zsql.Connection, error) {
 	pool, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("opening mysql connection: %w", err)
+		return zsql.Connection{}, fmt.Errorf("opening mysql connection: %w", err)
 	}
 
 	pool.SetConnMaxIdleTime(5 * time.Minute)

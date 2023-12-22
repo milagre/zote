@@ -29,7 +29,7 @@ func (a Aspect) Apply(c zcmd.Configurable) {
 	c.AddInt(a.port()).Default(3306)
 }
 
-func (a Aspect) Connection(env zcmd.Env, options zsql.Options) (*zsql.Connection, error) {
+func (a Aspect) Connection(env zcmd.Env, options zsql.Options) (zsql.Connection, error) {
 	dsn := TCPConnectionString(
 		env.String(a.user()),
 		env.String(a.pass()),
@@ -41,7 +41,7 @@ func (a Aspect) Connection(env zcmd.Env, options zsql.Options) (*zsql.Connection
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("opening mysql connection: %w", err)
+		return zsql.Connection{}, fmt.Errorf("opening mysql connection: %w", err)
 	}
 
 	return zsql.NewConnection(db, driver), nil
@@ -50,21 +50,21 @@ func (a Aspect) Connection(env zcmd.Env, options zsql.Options) (*zsql.Connection
 // Option constructors
 
 func (a Aspect) port() string {
-	return zaspect.Prefix(a.name, "mysql-port")
+	return zaspect.Format("mysql-%s-port", a.name)
 }
 
 func (a Aspect) host() string {
-	return zaspect.Prefix(a.name, "mysql-host")
+	return zaspect.Format("mysql-%s-host", a.name)
 }
 
 func (a Aspect) user() string {
-	return zaspect.Prefix(a.name, "mysql-user")
+	return zaspect.Format("mysql-%s-user", a.name)
 }
 
 func (a Aspect) pass() string {
-	return zaspect.Prefix(a.name, "mysql-pass")
+	return zaspect.Format("mysql-%s-pass", a.name)
 }
 
 func (a Aspect) database() string {
-	return zaspect.Prefix(a.name, "mysql-database")
+	return zaspect.Format("mysql-%s-database", a.name)
 }

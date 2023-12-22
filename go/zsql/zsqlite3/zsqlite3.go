@@ -45,10 +45,10 @@ func connectionString(path string, opts zsql.Options) string {
 	return path + params.Encode()
 }
 
-func Open(dsn string, poolSize int) (*zsql.Connection, error) {
+func Open(dsn string, poolSize int) (zsql.Connection, error) {
 	pool, err := sql.Open("sqlite3", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("opening sqlite3 connection: %w", err)
+		return zsql.Connection{}, fmt.Errorf("opening sqlite3 connection: %w", err)
 	}
 
 	pool.SetConnMaxIdleTime(5 * time.Minute)

@@ -7,9 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/iancoleman/strcase"
+	"github.com/stoewer/go-strcase"
+
 	"github.com/milagre/zote/go/zbuild"
-	zotelog "github.com/milagre/zote/go/zlog"
+	"github.com/milagre/zote/go/zlog"
 	"github.com/urfave/cli/v2"
 )
 
@@ -64,7 +65,7 @@ func (a App) RunArgs(ctx context.Context, args []string) {
 
 	home, err := os.UserHomeDir()
 	if err != nil {
-		zotelog.FromContext(ctx).
+		zlog.FromContext(ctx).
 			WithField("error", err).
 			Warnf("Finding user home dir for configuration file.")
 	} else {
@@ -72,10 +73,10 @@ func (a App) RunArgs(ctx context.Context, args []string) {
 		err := LoadFile(cfg, a.envPrefix)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {
-				zotelog.FromContext(ctx).
+				zlog.FromContext(ctx).
 					Debugf("Configuration file not found in user home dir.")
 			} else {
-				zotelog.FromContext(ctx).
+				zlog.FromContext(ctx).
 					WithField("error", err).
 					Warnf("Reading configuration file at ")
 			}
@@ -84,7 +85,7 @@ func (a App) RunArgs(ctx context.Context, args []string) {
 
 	err = a.app.RunContext(ctx, args)
 	if err != nil {
-		zotelog.FromContext(ctx).
+		zlog.FromContext(ctx).
 			WithField("error", err).
 			Errorf("Application terminated with error.")
 		os.Exit(1)
@@ -110,7 +111,7 @@ func (a *App) AddString(name string) StringFlag {
 }
 
 func (a App) envVar(name string) string {
-	return strcase.ToScreamingSnake(
+	return strcase.UpperSnakeCase(
 		strings.Join(
 			[]string{strings.Trim(a.envPrefix, "_"), name},
 			"_",

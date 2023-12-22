@@ -5,7 +5,7 @@ import (
 )
 
 type Aspect interface {
-	Apply(r Configurable)
+	Apply(c Configurable)
 }
 
 type Configurable interface {

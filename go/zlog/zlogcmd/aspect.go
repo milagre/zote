@@ -1,7 +1,6 @@
 package zlogcmd
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/milagre/zote/go/zcmd"
@@ -24,29 +23,27 @@ func (a Aspect) Apply(c zcmd.Configurable) {
 	c.AddString("log-level").Default("info")
 }
 
-func (a Aspect) LogLevel(e zcmd.Env) (zlog.Level, error) {
+func (a Aspect) LogLevel(e zcmd.Env) zlog.Level {
 	switch strings.ToLower(e.String("log-level")) {
-	case "":
-		return a.defaultLevel, nil
+	default:
+		return a.defaultLevel
 
 	case "fatal", "panic", "ftl":
-		return zlog.LevelFatal, nil
+		return zlog.LevelFatal
 
 	case "error", "err":
-		return zlog.LevelError, nil
+		return zlog.LevelError
 
 	case "warning", "warn", "wrn":
-		return zlog.LevelWarn, nil
+		return zlog.LevelWarn
 
 	case "info", "inf", "default":
-		return zlog.LevelInfo, nil
+		return zlog.LevelInfo
 
 	case "debug", "dbg":
-		return zlog.LevelDebug, nil
+		return zlog.LevelDebug
 
 	case "trace", "trc":
-		return zlog.LevelTrace, nil
+		return zlog.LevelTrace
 	}
-
-	return zlog.LevelInfo, fmt.Errorf("unknown log level name provided")
 }

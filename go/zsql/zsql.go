@@ -29,8 +29,8 @@ type Queryable interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
-func NewConnection(db *sql.DB, driver Driver) *Connection {
-	return &Connection{
+func NewConnection(db *sql.DB, driver Driver) Connection {
+	return Connection{
 		DB:     db,
 		driver: driver,
 	}

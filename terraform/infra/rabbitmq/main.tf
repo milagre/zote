@@ -40,9 +40,13 @@ variable "setup" {
 }
 
 locals {
-  name       = "rabbitmq-${var.name}"
-  client_cfg = "RABBITMQ_${upper(var.name)}"
-  admin_cfg  = "RABBITMQ_ADMIN_${upper(var.name)}"
+  name = "rabbitmq-${var.name}"
+
+  name_amqp  = "amqp-${var.name}"
+  name_admin = "rabbitmq-${var.name}"
+
+  cfg_amqp  = "${var.env.prefix}_AMQP_${upper(var.name)}"
+  cfg_admin = "${var.env.prefix}_RABBITMQ_${upper(var.name)}"
 
   targetmodule = coalesce(
     try(module.container[0], null),
@@ -52,13 +56,13 @@ locals {
 
 resource "kubernetes_config_map" "common" {
   metadata {
-    name      = local.name
+    name      = local.name_amqp
     namespace = var.namespace
   }
 
   data = {
-    "${local.client_cfg}_HOST" = local.targetmodule.hostname
-    "${local.client_cfg}_PORT" = local.targetmodule.port
+    "${local.cfg_amqp}_HOST" = local.targetmodule.hostname
+    "${local.cfg_amqp}_PORT" = local.targetmodule.port
   }
 }
 
@@ -66,12 +70,12 @@ resource "kubernetes_config_map" "users" {
   for_each = toset([for user in var.setup.users : user.name])
 
   metadata {
-    name      = "${local.name}-${each.key}"
+    name      = "${local.name_amqp}-${each.key}"
     namespace = var.namespace
   }
 
   data = {
-    "${local.client_cfg}_USER" = each.key
+    "${local.cfg_amqp}_USER" = each.key
   }
 }
 
@@ -79,12 +83,12 @@ resource "kubernetes_secret" "passwords" {
   for_each = toset([for user in var.setup.users : user.name])
 
   metadata {
-    name      = "${local.name}-${each.key}"
+    name      = "${local.name_amqp}-${each.key}"
     namespace = var.namespace
   }
 
   data = {
-    "${local.client_cfg}_PASS" = local.targetmodule.passwords[each.key]
+    "${local.cfg_amqp}_PASS" = local.targetmodule.passwords[each.key]
   }
 }
 

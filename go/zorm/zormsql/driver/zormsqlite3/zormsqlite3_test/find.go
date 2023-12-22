@@ -11,7 +11,7 @@ import (
 func TestSimpleFind(t *testing.T) {
 	assert.True(t, true)
 
-	setup(t, func(c *zsql.Connection, r zorm.Repository) {
+	setup(t, func(c zsql.Connection, r zorm.Repository) {
 
 	})
 }

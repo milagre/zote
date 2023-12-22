@@ -56,7 +56,7 @@ variable "username" {
 
 locals {
   name = "mysql-${var.name}"
-  cfg  = "${var.env.prefix}_${upper(var.namespace)}_${upper(var.name)}_MYSQL"
+  cfg  = "${var.env.prefix}_MYSQL_${upper(var.name)}"
 
   dbmodule = coalesce(
     try(module.container[0], null),

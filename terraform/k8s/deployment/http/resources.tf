@@ -1,144 +1,25 @@
-resource "kubernetes_deployment" "deploy" {
-  metadata {
-    name      = var.name
-    namespace = var.namespace
-    labels = {
-      app     = var.name
-      deploy  = "http"
-      version = local.tag
-    }
-  }
+module "deployment" {
+  source = "../_deployment"
+  env    = var.env
 
-  spec {
-    replicas = var.profile.num.min
+  namespace = var.namespace
+  name      = var.name
+  type      = "http"
 
-    selector {
-      match_labels = {
-        app    = var.name
-        deploy = "http"
-      }
-    }
+  image   = var.image
+  tag     = var.tag
+  profile = var.profile
 
-    template {
-      metadata {
-        name      = var.name
-        namespace = var.namespace
-        labels = {
-          app     = var.name
-          deploy  = "http"
-          version = local.tag
-        }
-      }
+  cmd  = var.cmd
+  args = var.args
 
-      spec {
-        container {
-          name = var.name
+  conf  = var.conf
+  files = var.files
 
-          image = "${var.image}:${var.tag}"
-
-          image_pull_policy = var.env.is_local ? "Never" : "IfNotPresent"
-
-          command = var.cmd
-          args    = var.args
-
-          resources {
-            limits = {
-              cpu    = var.profile.cpu_cores.max
-              memory = "${var.profile.mem_mb.max}M"
-            }
-            requests = {
-              cpu    = var.profile.cpu_cores.min
-              memory = "${var.profile.mem_mb.min}M"
-            }
-          }
-
-          liveness_probe {
-            http_get {
-              path = var.setup.health
-              port = var.setup.port
-
-            }
-
-            initial_delay_seconds = 5
-            period_seconds        = coalesce(var.setup.freq, 15)
-          }
-
-          // Attach configmaps to environment
-          dynamic "env_from" {
-            for_each = coalesce(var.conf.configmaps, [])
-            content {
-              config_map_ref {
-                name = env_from.value
-              }
-            }
-          }
-
-          // Attach secrets to environment
-          dynamic "env_from" {
-            for_each = coalesce(var.conf.secrets, [])
-            content {
-              secret_ref {
-                name = env_from.value
-              }
-            }
-          }
-
-          // Attach arbitrary env values
-          dynamic "env" {
-            for_each = coalesce(var.conf.values, {})
-            content {
-              name  = env.key
-              value = env.value
-            }
-          }
-
-          // Mount configmaps needed for files in container
-          dynamic "volume_mount" {
-            for_each = coalesce(var.files.configmaps, {})
-            content {
-              name       = volume_mount.value
-              mount_path = volume_mount.key
-            }
-          }
-        }
-
-        // Attach configmaps needed for files to spec
-        dynamic "volume" {
-          for_each = coalesce(var.files.configmaps, {})
-          content {
-            name = volume.value
-            config_map {
-              name = volume.value
-            }
-          }
-        }
-
-        # Pods attempt to spread out across nodes when possible
-        affinity {
-          pod_anti_affinity {
-            preferred_during_scheduling_ignored_during_execution {
-              pod_affinity_term {
-                label_selector {
-                  match_expressions {
-                    key      = "app"
-                    operator = "In"
-                    values   = [var.name]
-                  }
-                  match_expressions {
-                    key      = "version"
-                    operator = "In"
-                    values   = [var.tag]
-                  }
-                }
-                topology_key = "kubernetes.io/hostname"
-              }
-              weight = 100
-            }
-          }
-        }
-
-      }
-    }
+  http_liveness_probe = {
+    path = var.setup.health
+    port = var.setup.port
+    freq = var.setup.freq
   }
 }
 

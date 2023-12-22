@@ -1,17 +1,11 @@
 variable "env" {}
-variable "http" {
-  type = object({
-    port   = number
-    health = string
-    freq   = optional(number)
-  })
-  default = null
-}
 variable "name" {}
 variable "namespace" {}
 variable "image" {}
 variable "tag" {}
-variable "public_domain" {}
+variable "public_domain" {
+  default = null
+}
 variable "veneers" {
   type    = list(string)
   default = []
@@ -42,31 +36,53 @@ variable "args" {
   default = null
 }
 
+// Process types
+variable "http" {
+  type = object({
+    port   = number
+    health = string
+    freq   = optional(number)
+  })
+  default = null
+}
+variable "socket" {
+  default = null
+}
+
+
 module "profile" {
   source = "./../../structs/profile"
 
   profile = var.profile
 }
 
+locals {
+  type = (
+    var.http != null ? "http" :
+    var.socket != null ? "socket" :
+    "proc"
+  )
+}
+
 module "http" {
-  count = var.http != null ? 1 : 0
+  count = local.type == "http" ? 1 : 0
 
   source = "./http"
+  env    = var.env
 
-  name      = var.name
   namespace = var.namespace
-  image     = var.image
-  tag       = var.tag
+  name      = var.name
 
-  env = var.env
-
-  setup = var.http
-
-  conf    = var.conf
-  files   = var.files
-  profile = module.profile
+  image   = var.image
+  tag     = var.tag
   cmd     = var.cmd
   args    = var.args
+  profile = module.profile
+
+  conf  = var.conf
+  files = var.files
+
+  setup = var.http
 
   internal = {
     public_hostname  = local.public_hostname
@@ -75,8 +91,27 @@ module "http" {
   }
 }
 
+module "proc" {
+  count = local.type == "proc" ? 1 : 0
+
+  source = "./proc"
+  env    = var.env
+
+  name      = var.name
+  namespace = var.namespace
+
+  image   = var.image
+  tag     = var.tag
+  cmd     = var.cmd
+  args    = var.args
+  profile = module.profile
+
+  conf  = var.conf
+  files = var.files
+}
+
 locals {
-  public_hostname  = "${var.name}.${var.namespace}.${var.public_domain}"
+  public_hostname  = var.public_domain != null ? "${var.name}.${var.namespace}.${var.public_domain}" : null
   private_hostname = "${var.name}.${var.namespace}.svc.cluster.local"
 }
 

@@ -1,3 +1,8 @@
+resource "random_bytes" "salts" {
+  for_each = toset([for user in var.setup.users : user.name])
+
+  length = 4
+}
 
 resource "random_password" "passwords" {
   for_each = toset([for user in var.setup.users : user.name])
@@ -6,10 +11,15 @@ resource "random_password" "passwords" {
   special = false
 }
 
-resource "terraform_data" "password_hashes" {
+data "external" "password_hashes" {
   for_each = toset([for user in var.setup.users : user.name])
 
-  input = sha512(random_password.passwords[each.key].result)
+  program = [
+    "bash",
+    "${path.module}/pwhash.sh",
+    random_bytes.salts[each.key].base64,
+    random_password.passwords[each.key].result,
+  ]
 }
 
 locals {
@@ -28,7 +38,7 @@ locals {
         for user in vhost.users :
         {
           user      = user,
-          vhost     = "/${trimprefix(vhost.name, "/")}",
+          vhost     = "${trimprefix(vhost.name, "/")}",
           configure = ".*",
           read      = ".*",
           write     = ".*",
@@ -40,14 +50,14 @@ locals {
       {
         hashing_algorithm = "rabbit_password_hashing_sha512",
         name              = user.name,
-        password_hash     = terraform_data.password_hashes[user.name].output,
+        password_hash     = data.external.password_hashes[user.name].result.hash,
         tags              = user.tags,
       }
     ],
     vhosts = [
       for vhost in var.setup.vhosts :
       {
-        name = "/${trimprefix(vhost.name, "/")}",
+        name = "${trimprefix(vhost.name, "/")}",
       }
     ]
   }
@@ -239,9 +249,9 @@ resource "kubernetes_stateful_set" "rabbitmq" {
               command = ["rabbitmq-diagnostics", "ping"]
             }
 
-            initial_delay_seconds = 20
+            initial_delay_seconds = 10
             timeout_seconds       = 10
-            period_seconds        = 60
+            period_seconds        = 10
           }
 
           resources {
