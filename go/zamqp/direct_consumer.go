@@ -46,15 +46,17 @@ func (c *directConsumer) Start(processCtx context.Context, workerContext context
 	wait := sync.WaitGroup{}
 	restart := make(chan int)
 
-	channel, err := makeConsumeChannel(c.conn, c.concurrency)
+	consumeChannel, err := makeConsumeChannel(c.conn, c.concurrency)
 	if err != nil {
 		return err
 	}
-	defer channel.Close()
+	defer consumeChannel.Close()
+
+	publisher := NewPublisherFromConnection(c.conn)
 
 	go func() {
 		c := make(chan *amqp091.Error)
-		channel.channel.NotifyClose(c)
+		consumeChannel.channel.NotifyClose(c)
 		err := <-c
 		if err != nil {
 			logger.Warnf("channel closed unexpectedly: %v", err)
@@ -62,7 +64,7 @@ func (c *directConsumer) Start(processCtx context.Context, workerContext context
 		cancel()
 	}()
 
-	err = ExecuteDeclarations(channel, c.declarations)
+	err = ExecuteDeclarations(consumeChannel, c.declarations)
 	if err != nil {
 		return err
 	}
@@ -87,12 +89,12 @@ func (c *directConsumer) Start(processCtx context.Context, workerContext context
 				}
 			}()
 
-			c.consume(consumerContext, messages)
+			c.consume(consumerContext, publisher, messages)
 		}(id)
 	}
 
 	logger.Infof("Starting consume")
-	deliveries, err := channel.channel.ConsumeWithContext(processCtx, c.queueName, "direct", false, false, false, false, amqp091.Table{})
+	deliveries, err := consumeChannel.channel.ConsumeWithContext(processCtx, c.queueName, "direct", false, false, false, false, amqp091.Table{})
 	if err != nil {
 		return fmt.Errorf("starting channel consume: %w", err)
 	}
@@ -104,7 +106,7 @@ func (c *directConsumer) Start(processCtx context.Context, workerContext context
 		logger.Info("Dispatcher started")
 
 		for delivery := range deliveries {
-			messages <- wrapDelivery(channel, c.queueName, delivery)
+			messages <- wrapDelivery(consumeChannel, c.queueName, delivery)
 		}
 
 		close(messages)
@@ -155,7 +157,7 @@ func makeConsumeChannel(conn Connection, concurrency int) (Channel, error) {
 	return channel, nil
 }
 
-func (c *directConsumer) consume(ctx context.Context, deliveries chan Delivery) {
+func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliveries chan Delivery) {
 	logger := zlog.FromContext(ctx)
 	for {
 		select {
@@ -182,7 +184,7 @@ func (c *directConsumer) consume(ctx context.Context, deliveries chan Delivery) 
 					}
 				}()
 
-				c.process(msgCtx, del)
+				c.process(msgCtx, publisher, del)
 			}()
 		}
 	}

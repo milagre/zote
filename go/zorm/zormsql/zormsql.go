@@ -14,8 +14,8 @@ var _ zorm.Repository = &Repository{}
 var _ Connection = zsql.NewConnection(nil, zsql.NewDriver("_"))
 
 type Queryable interface {
-	ExecContext(ctx context.Context, q string, args ...any) (sql.Result, error)
-	QueryContext(ctx context.Context, q string, args ...any) (*sql.Rows, error)
+	Exec(ctx context.Context, q string, args ...any) (sql.Result, error)
+	Query(ctx context.Context, q string, args ...any) (*sql.Rows, error)
 }
 
 type Transaction interface {
@@ -28,7 +28,7 @@ type Connection interface {
 	Queryable
 
 	Driver() string
-	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+	Begin(ctx context.Context, opts *sql.TxOptions) (zsql.Transaction, error)
 }
 
 type Source struct {

@@ -12,4 +12,4 @@ type Consumer interface {
 	Start(processCtx context.Context, workerCtx context.Context) error
 }
 
-type ConsumeFunc func(ctx context.Context, msg Delivery)
+type ConsumeFunc func(ctx context.Context, publisher Publisher, msg Delivery)

@@ -20,24 +20,98 @@ func (d Driver) Name() string {
 	return d.name
 }
 
-type Connection struct {
-	*sql.DB
-	driver Driver
+type Transactor interface {
+	Queryer
+	TransactionBeginner
 }
 
+type Transaction interface {
+	Queryer
+	TransactionEnder
+}
+
+type TransactionBeginner interface {
+	Begin(ctx context.Context, opts *sql.TxOptions) (Transaction, error)
+}
+
+type TransactionEnder interface {
+	Rollback() error
+	Commit() error
+}
+
+type Queryer interface {
+	Selector
+	Executor
+}
+
+type Selector interface {
+	Query(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+type Executor interface {
+	Exec(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+// Deprecated: Use selector
 type Queryable interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
+type Connection struct {
+	db     *sql.DB
+	driver Driver
+}
+
+var _ interface {
+	Transactor
+} = Connection{}
+
 func NewConnection(db *sql.DB, driver Driver) Connection {
 	return Connection{
-		DB:     db,
+		db:     db,
 		driver: driver,
 	}
 }
 
 func (c Connection) Driver() string {
 	return c.driver.name
+}
+
+func (c Connection) Begin(ctx context.Context, opts *sql.TxOptions) (Transaction, error) {
+	tx, err := c.db.BeginTx(ctx, opts)
+	return transaction{tx: tx}, err
+}
+
+func (c Connection) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	return c.db.QueryContext(ctx, query, args...)
+}
+
+func (c Connection) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	return c.db.ExecContext(ctx, query, args...)
+}
+
+func (c Connection) Close() error {
+	return c.db.Close()
+}
+
+type transaction struct {
+	tx *sql.Tx
+}
+
+func (t transaction) Commit() error {
+	return t.tx.Commit()
+}
+
+func (t transaction) Rollback() error {
+	return t.tx.Rollback()
+}
+
+func (t transaction) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	return t.tx.QueryContext(ctx, query, args...)
+}
+
+func (t transaction) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	return t.tx.ExecContext(ctx, query, args...)
 }
 
 type Options map[string]interface{}
@@ -61,8 +135,8 @@ func (o Options) ToStringMapString() map[string]string {
 	return res
 }
 
-func Begin(ctx context.Context, db *sql.DB, cb func(ctx context.Context, x *sql.Tx) error) error {
-	tx, err := db.BeginTx(ctx, nil)
+func Begin(ctx context.Context, db Transactor, cb func(context.Context, Transaction) error) error {
+	tx, err := db.Begin(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("starting transaction: %w", err)
 	}
@@ -88,8 +162,8 @@ func Begin(ctx context.Context, db *sql.DB, cb func(ctx context.Context, x *sql.
 type ScanFunc func(dest ...any) error
 type QueryCallback func(ScanFunc) error
 
-func Query(ctx context.Context, db Queryable, cb QueryCallback, query string, args ...any) (bool, error) {
-	rows, err := db.QueryContext(ctx, query, args...)
+func Query(ctx context.Context, db Selector, cb QueryCallback, query string, args ...any) (bool, error) {
+	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return false, fmt.Errorf("executing query: %w", err)
 	}
