@@ -374,7 +374,7 @@ resource "kubernetes_service" "client" {
 
   lifecycle {
     ignore_changes = [
-      metadata[*].annotations["kubernetes.digitalocean.com/load-balancer-id"]
+      metadata[0].annotations["kubernetes.digitalocean.com/load-balancer-id"]
     ]
   }
 }
