@@ -371,6 +371,12 @@ resource "kubernetes_service" "client" {
 
     type = var.env.lb_type
   }
+
+  lifecycle {
+    ignore_changes = [
+      metadata[*].annotations["kubernetes.digitalocean.com/load-balancer-id"]
+    ]
+  }
 }
 
 resource "kubernetes_service" "headless" {
