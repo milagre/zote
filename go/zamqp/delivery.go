@@ -157,6 +157,7 @@ func (m *delivery) Reject(ctx context.Context) error {
 }
 
 func (m *delivery) Retry(ctx context.Context) error {
+	// TODO: use `m.requeue` to increment attempt count properly
 	err := m.respond(func() error {
 		return m.delivery.Nack(false, true)
 	})

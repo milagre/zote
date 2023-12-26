@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rabbitmq/amqp091-go"
+	"github.com/spf13/cast"
 )
 
 type ConnectionDetails struct {
@@ -143,8 +144,8 @@ func attempt(headers Headers) int {
 		return 1
 	}
 
-	i, ok := v.(int)
-	if !ok {
+	i, err := cast.ToIntE(v)
+	if err != nil {
 		return 1
 	}
 

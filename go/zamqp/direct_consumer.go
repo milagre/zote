@@ -166,11 +166,14 @@ func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliv
 
 		case del := <-deliveries:
 			if del == nil {
-				// Channel was closed
+				logger.Debugf("Channel closed, ending consume loop")
 				return
 			}
 
-			msgLogger := logger.WithField("message", del.Tag())
+			msgLogger := logger.WithFields(zlog.Fields{
+				"attempt": del.Attempt(),
+				"message": del.Tag(),
+			})
 			msgCtx := zlog.Context(ctx, msgLogger)
 
 			func() {

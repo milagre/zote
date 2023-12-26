@@ -117,8 +117,9 @@ var _ Message = requeueMessage{}
 
 func (m requeueMessage) Options() MessageOptions {
 	return MessageOptions{
-		RoutingKey: m.queueDefinition().Name,
 		Compress:   false,
+		Headers:    m.finalHeaders(),
+		RoutingKey: m.queueDefinition().Name,
 	}
 }
 
@@ -126,7 +127,11 @@ func (m requeueMessage) Content() ([]byte, string, error) {
 	return m.data, m.contentType, nil
 }
 
-func (m requeueMessage) Headers() Headers {
+func (m requeueMessage) Exchange() Exchange {
+	return AnonymousExchange
+}
+
+func (m requeueMessage) finalHeaders() Headers {
 	headers := Headers{}
 	for k, v := range m.headers {
 		headers[k] = v
@@ -139,10 +144,6 @@ func (m requeueMessage) Headers() Headers {
 	}
 
 	return headers
-}
-
-func (m requeueMessage) Exchange() Exchange {
-	return AnonymousExchange
 }
 
 func (m *requeueMessage) queueDefinition() Queue {

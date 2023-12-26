@@ -62,14 +62,13 @@ func (p connPublisher) Publish(ctx context.Context, msg Message) error {
 		return fmt.Errorf("enabling confirm mode: %w", err)
 	}
 
-	headers := amqp091.Table{}
-	for k, v := range msg.Options().Headers {
-		headers[k] = v
-	}
-
 	publishing, err := messageToPublishing(msg)
 	if err != nil {
 		return fmt.Errorf("preparing publishing: %w", err)
+	}
+
+	for k, v := range msg.Options().Headers {
+		publishing.Headers[k] = v
 	}
 
 	err = ch.channel.PublishWithContext(ctx, exchange.Name, msg.Options().RoutingKey, true, false, publishing)
