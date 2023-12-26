@@ -1,18 +1,25 @@
+locals {
+  users = concat(var.setup.users, [{
+    "name" : "admin",
+    "tags" : ["administrator", "management"]
+  }])
+}
+
 resource "random_bytes" "salts" {
-  for_each = toset([for user in var.setup.users : user.name])
+  for_each = toset([for user in local.users : user.name])
 
   length = 4
 }
 
 resource "random_password" "passwords" {
-  for_each = toset([for user in var.setup.users : user.name])
+  for_each = toset([for user in local.users : user.name])
 
   length  = 32
   special = false
 }
 
 data "external" "password_hashes" {
-  for_each = toset([for user in var.setup.users : user.name])
+  for_each = toset([for user in local.users : user.name])
 
   program = [
     "bash",
@@ -34,7 +41,7 @@ locals {
     topic_permissions = [],
     */
     permissions = flatten([
-      for vhost in var.setup.vhosts : [
+      for vhost in var.setup.vhosts : concat([
         for user in vhost.users :
         {
           user      = user,
@@ -43,10 +50,17 @@ locals {
           read      = ".*",
           write     = ".*",
         }
-      ]
-    ]),
+        ], [
+        {
+          user      = "admin",
+          vhost     = "${trimprefix(vhost.name, "/")}",
+          configure = ".*",
+          read      = ".*",
+          write     = ".*",
+        }
+    ])]),
     users = [
-      for user in var.setup.users :
+      for user in local.users :
       {
         hashing_algorithm = "rabbit_password_hashing_sha512",
         name              = user.name,
@@ -54,12 +68,16 @@ locals {
         tags              = user.tags,
       }
     ],
-    vhosts = [
+    vhosts = concat([
       for vhost in var.setup.vhosts :
       {
         name = "${trimprefix(vhost.name, "/")}",
       }
-    ]
+      ], [
+      {
+        name = "/"
+      }
+    ])
   }
 
 }
@@ -69,7 +87,7 @@ resource "random_password" "password" {
   special = false
 }
 
-resource "random_password" "erland_cookie" {
+resource "random_password" "erlang_cookie" {
   length  = 32
   special = false
 }
@@ -93,9 +111,18 @@ resource "kubernetes_config_map" "config" {
 
       definitions.import_backend = local_filesystem
       definitions.local.path = /etc/rabbitmq/definitions.json
-      
+
       queue_master_locator=min-masters
 
+      loopback_users.admin = true
+      default_vhost = /
+      default_user = admin
+      default_pass = ${random_password.passwords["admin"].result}
+      default_permissions.configure = .*
+      default_permissions.read = .*
+      default_permissions.write = .*
+      default_user_tags.administrator = true
+      default_user_tags.management = true
     END
 
     "username" = "rabbitmq"
@@ -110,7 +137,7 @@ resource "kubernetes_secret" "config" {
 
   data = {
     "password"      = random_password.password.result
-    "erlang_cookie" = random_password.erland_cookie.result
+    "erlang_cookie" = random_password.erlang_cookie.result
   }
 }
 
