@@ -182,6 +182,7 @@ func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliv
 
 				defer func() {
 					if r := recover(); r != nil {
+						msgLogger.Info("Panic while processing message, requeuing with delay")
 						del.RetryDelayed(ctx, 1*time.Second)
 						panic(r)
 					}
