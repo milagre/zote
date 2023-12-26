@@ -188,3 +188,17 @@ func Query(ctx context.Context, db Selector, cb QueryCallback, query string, arg
 
 	return found, err
 }
+
+func Exec(ctx context.Context, db Executor, query string, args ...any) (int, error) {
+	res, err := db.Exec(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("executing query: %w", err)
+	}
+
+	count, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("getting affected rows: %w", err)
+	}
+
+	return int(count), nil
+}
