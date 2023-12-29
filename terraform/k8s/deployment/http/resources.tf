@@ -94,7 +94,7 @@ locals {
 }
 
 resource "kubernetes_ingress_v1" "public_nginx" {
-  count = 1 # TODO: conditional
+  count = var.internal.public_hostname == null ? 0 : 1
 
   metadata {
     name      = "${var.name}-nginx-public"
