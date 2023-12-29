@@ -1,8 +1,6 @@
 package zsort
 
-import (
-	"github.com/milagre/zote/go/zelement/zelem"
-)
+import "github.com/milagre/zote/go/zelement"
 
 type Direction int8
 
@@ -12,6 +10,6 @@ const (
 )
 
 type Sort struct {
-	Field     zelem.Field
+	Field     zelement.Field
 	Direction Direction
 }

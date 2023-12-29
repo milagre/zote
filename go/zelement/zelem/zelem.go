@@ -1,36 +1,31 @@
 package zelem
 
-type Visitor interface {
-	VisitValue(e Value) error
-	VisitField(e Field) error
-	VisitMethod(e Method) error
+import (
+	"github.com/milagre/zote/go/zelement"
+	"github.com/milagre/zote/go/zelement/zclause"
+)
+
+func Field(path string) zelement.Field {
+	return zelement.Field{
+		Name: path,
+	}
 }
 
-type Element interface {
-	Accept(v Visitor) error
+func Value(v interface{}) zelement.Value {
+	return zelement.Value{
+		Value: v,
+	}
 }
 
-type Value struct {
-	Value interface{}
+func And(clauses ...zclause.Clause) zclause.And {
+	return zclause.And{
+		Elem: clauses,
+	}
 }
 
-func (e Value) Accept(v Visitor) error {
-	return v.VisitValue(e)
-}
-
-type Field struct {
-	Name string
-}
-
-func (e Field) Accept(v Visitor) error {
-	return v.VisitField(e)
-}
-
-type Method struct {
-	Name   string
-	Params []interface{}
-}
-
-func (e Method) Accept(v Visitor) error {
-	return v.VisitMethod(e)
+func Eq(left zelement.Element, right zelement.Element) zclause.Eq {
+	return zclause.Eq{
+		Left:  left,
+		Right: right,
+	}
 }

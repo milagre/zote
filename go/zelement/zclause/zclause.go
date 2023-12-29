@@ -1,75 +1,75 @@
 package zclause
 
 import (
-	"github.com/milagre/zote/go/zelement/zelem"
+	"github.com/milagre/zote/go/zelement"
 )
 
 type Clause interface {
 	Accept(v Visitor) error
 }
 
-type Binary struct {
-	Left  zelem.Element
-	Right zelem.Element
+type BinaryLeaf struct {
+	Left  zelement.Element
+	Right zelement.Element
 }
 
-type Unary struct {
-	Elem zelem.Element
+type UnaryLeaf struct {
+	Elem zelement.Element
 }
 
-type Nary struct {
-	Elem []zelem.Element
+type Node struct {
+	Elem []Clause
 }
 
-type Eq Binary
+type Eq BinaryLeaf
 
 func (c Eq) Accept(v Visitor) error {
 	return v.VisitEq(c)
 }
 
-type Neq Binary
+type Neq BinaryLeaf
 
 func (c Neq) Accept(v Visitor) error {
 	return v.VisitNeq(c)
 }
 
-type Gt Binary
+type Gt BinaryLeaf
 
 func (c Gt) Accept(v Visitor) error {
 	return v.VisitGt(c)
 }
 
-type Gte Binary
+type Gte BinaryLeaf
 
 func (c Gte) Accept(v Visitor) error {
 	return v.VisitGte(c)
 }
 
-type Lt Binary
+type Lt BinaryLeaf
 
 func (c Lt) Accept(v Visitor) error {
 	return v.VisitLt(c)
 }
 
-type Lte Binary
+type Lte BinaryLeaf
 
 func (c Lte) Accept(v Visitor) error {
 	return v.VisitLte(c)
 }
 
-type Not Unary
+type Not UnaryLeaf
 
 func (c Not) Accept(v Visitor) error {
 	return v.VisitNot(c)
 }
 
-type And Nary
+type And Node
 
 func (c And) Accept(v Visitor) error {
 	return v.VisitAnd(c)
 }
 
-type Or Nary
+type Or Node
 
 func (c Or) Accept(v Visitor) error {
 	return v.VisitOr(c)

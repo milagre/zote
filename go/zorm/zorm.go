@@ -3,12 +3,12 @@ package zorm
 import (
 	"context"
 
+	"github.com/milagre/zote/go/zelement"
 	"github.com/milagre/zote/go/zelement/zclause"
-	"github.com/milagre/zote/go/zelement/zelem"
 	"github.com/milagre/zote/go/zelement/zsort"
 )
 
-var _ zelem.Element
+var _ zelement.Element
 var _ zsort.Sort
 
 type Model interface {
