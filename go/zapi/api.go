@@ -29,6 +29,7 @@ type Request interface {
 	Body() ([]byte, error)
 	Header() http.Header
 	Method() string
+	Query(key string) string
 	Param(p string) string
 	//Params() map[string][]string
 }

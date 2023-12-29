@@ -55,6 +55,17 @@ func (r *request) Body() ([]byte, error) {
 	return r.bodyCache, nil
 }
 
+func (r *request) Query(key string) string {
+	q := r.request.URL.Query()
+
+	vals, ok := q[key]
+	if !ok {
+		return ""
+	}
+
+	return vals[len(vals)-1]
+}
+
 func (r *request) Param(p string) string {
 	vals, ok := r.params[p]
 	if !ok {
