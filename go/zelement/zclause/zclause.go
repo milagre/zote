@@ -13,12 +13,12 @@ type BinaryLeaf struct {
 	Right zelement.Element
 }
 
-type UnaryLeaf struct {
-	Elem zelement.Element
+type UnaryNode struct {
+	Clause Clause
 }
 
 type Node struct {
-	Elem []Clause
+	Clauses []Clause
 }
 
 type Eq BinaryLeaf
@@ -57,7 +57,7 @@ func (c Lte) Accept(v Visitor) error {
 	return v.VisitLte(c)
 }
 
-type Not UnaryLeaf
+type Not UnaryNode
 
 func (c Not) Accept(v Visitor) error {
 	return v.VisitNot(c)

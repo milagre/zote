@@ -19,7 +19,7 @@ func Value(v interface{}) zelement.Value {
 
 func And(clauses ...zclause.Clause) zclause.And {
 	return zclause.And{
-		Elem: clauses,
+		Clauses: clauses,
 	}
 }
 

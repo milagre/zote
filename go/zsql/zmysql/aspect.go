@@ -44,7 +44,7 @@ func (a Aspect) Connection(env zcmd.Env, options zsql.Options) (zsql.Connection,
 		return zsql.Connection{}, fmt.Errorf("opening mysql connection: %w", err)
 	}
 
-	return zsql.NewConnection(db, driver), nil
+	return zsql.NewConnection(db, Driver), nil
 }
 
 // Option constructors

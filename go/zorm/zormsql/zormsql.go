@@ -2,44 +2,26 @@ package zormsql
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"reflect"
 
 	"github.com/milagre/zote/go/zorm"
+	"github.com/milagre/zote/go/zreflect"
 	"github.com/milagre/zote/go/zsql"
 )
 
-var _ zorm.Repository = &Repository{}
-var _ Connection = zsql.NewConnection(nil, zsql.NewDriver("_"))
-
-type Queryable interface {
-	Exec(ctx context.Context, q string, args ...any) (sql.Result, error)
-	Query(ctx context.Context, q string, args ...any) (*sql.Rows, error)
-}
-
-type Transaction interface {
-	Queryable
-	Commit() error
-	Rollback() error
-}
-
-type Connection interface {
-	Queryable
-
-	Driver() string
-	Begin(ctx context.Context, opts *sql.TxOptions) (zsql.Transaction, error)
-}
-
 type Source struct {
 	name string
-	conn Connection
+	conn zsql.Connection
+
+	mappings map[string]Mapping
 }
 
-func NewSource(name string, conn Connection) Source {
-	return Source{
-		name: name,
-		conn: conn,
+func NewSource(name string, conn zsql.Connection) *Source {
+	return &Source{
+		name:     name,
+		conn:     conn,
+		mappings: map[string]Mapping{},
 	}
 }
 
@@ -47,92 +29,144 @@ func (s Source) Name() string {
 	return s.name
 }
 
-type Repository struct {
-	mappers map[reflect.Type]Mapper
+func (s *Source) Find(ctx context.Context, model any, opts zorm.FindOptions) error {
+	return find(ctx, s, model, opts)
 }
 
-type Mapper struct {
-	Type       reflect.Type
-	Source     Source
+func (s *Source) AddMapping(m Mapping) {
+	s.mappings[zreflect.TypeID(reflect.TypeOf(m.Type))] = m
+}
+
+type Mapping struct {
+	Type       interface{}
 	Table      string
 	PrimaryKey []string
-	Columns    Columns
-	Relations  Relations
+	UniqueKeys [][]string
+	Columns    []Column
+	Relations  []Relation
 }
 
-type Struct interface {
-	struct{}
+func (m Mapping) escapedTable(source *Source) string {
+	return source.conn.Driver().EscapeTable(m.Table)
 }
 
-func NewMapper[T any](source Source, table string, pk []string, cols Columns, rels Relations) (Mapper, error) {
-	t := reflect.TypeOf(new(T)).Elem()
-	if t.Kind() == reflect.Pointer {
-		t = t.Elem()
+func (m Mapping) allFields() []string {
+	result := make([]string, 0, len(m.Columns))
+	for _, c := range m.Columns {
+		result = append(result, c.Field)
 	}
-	if t.Kind() != reflect.Struct {
-		return Mapper{}, fmt.Errorf("mappers must have struct types")
-	}
-
-	return Mapper{
-		Type:       t,
-		Source:     source,
-		Table:      table,
-		PrimaryKey: pk,
-		Columns:    cols,
-		Relations:  rels,
-	}, nil
+	return result
 }
 
-func New(mappers []Mapper) Repository {
-	maps := make(map[reflect.Type]Mapper)
-	for _, m := range mappers {
-		maps[m.Type] = m
+func (m Mapping) insertFields() []string {
+	result := make([]string, 0, len(m.Columns))
+	for _, c := range m.Columns {
+		if !c.NoInsert {
+			result = append(result, c.Field)
+		}
 	}
-	return Repository{
-		mappers: maps,
-	}
+	return result
 }
 
-func (r Repository) Find(ctx context.Context, models any, opts zorm.FindOptions) error {
-	return nil
+func (m Mapping) updateFields() []string {
+	result := make([]string, 0, len(m.Columns))
+	for _, c := range m.Columns {
+		if !c.NoUpdate {
+			result = append(result, c.Field)
+		}
+	}
+	return result
 }
 
-func (r Repository) Get(ctx context.Context, model any, opts zorm.GetOptions) error {
-	return nil
+func (m Mapping) mapField(source *Source, tableAlias string, columnAliasPrefix string, field string) (string, interface{}, error) {
+	for _, c := range m.Columns {
+		if field == c.Field {
+			col := c.Name
+			if columnAliasPrefix != "" {
+				col = columnAliasPrefix + "_" + col
+			}
+
+			structField, ok := reflect.TypeOf(m.Type).FieldByName(field)
+			if !ok {
+				return "", nil, fmt.Errorf("getting struct field %s on %T", field, m.Type)
+			}
+
+			return source.conn.Driver().EscapeTableColumn(tableAlias, col), reflect.New(structField.Type).Interface(), nil
+		}
+	}
+
+	return "", nil, fmt.Errorf("field %s is not mapped", field)
+}
+
+func (m Mapping) mapFields(source *Source, tableAlias string, columnAliasPrefix string, fields []string) ([]string, []interface{}, error) {
+	columns := make([]string, 0, len(fields))
+	target := make([]interface{}, 0, len(fields))
+
+	colMap := map[string]string{}
+	for _, c := range m.Columns {
+		colMap[c.Field] = c.Name
+	}
+
+	for _, f := range fields {
+		col, ok := colMap[f]
+		if !ok {
+			return nil, nil, fmt.Errorf("field %s is not mapped", f)
+		}
+		if columnAliasPrefix != "" {
+			col = columnAliasPrefix + "_" + col
+		}
+
+		structField, ok := reflect.TypeOf(m.Type).FieldByName(f)
+		if !ok {
+			return nil, nil, fmt.Errorf("getting struct field %s on %T", f, m.Type)
+		}
+
+		columns = append(columns, source.conn.Driver().EscapeTableColumn(tableAlias, col))
+		target = append(target, reflect.New(structField.Type).Interface())
+	}
+
+	return columns, target, nil
+}
+
+func (m Mapping) mappedPrimaryKeyColumns(source *Source, tableAlias string, columnAliasPrefix string) ([]string, []interface{}, error) {
+	result := make([]string, 0, len(m.PrimaryKey))
+	target := make([]interface{}, 0, len(m.PrimaryKey))
+
+	colMap := map[string]string{}
+	for _, c := range m.Columns {
+		colMap[c.Name] = c.Field
+	}
+
+	for i, col := range m.PrimaryKey {
+		f, ok := colMap[col]
+		if !ok {
+			return nil, nil, fmt.Errorf("primary key column %s is not mapped", col)
+		}
+		if columnAliasPrefix != "" {
+			col = columnAliasPrefix + "_" + col
+		}
+
+		structField, ok := reflect.TypeOf(m.Type).FieldByName(f)
+		if !ok {
+			return nil, nil, fmt.Errorf("getting struct field %s on %T", f, m.Type)
+		}
+
+		result = append(result, source.conn.Driver().EscapeTableColumn(tableAlias, col)+" AS "+fmt.Sprintf("_%d", i))
+		target = append(target, reflect.New(structField.Type).Interface())
+	}
+
+	return result, target, nil
+}
+
+type Column struct {
+	Name     string
+	Field    string
+	NoInsert bool
+	NoUpdate bool
 }
 
 type Relation struct {
-	Src []string
-	Dst []string
-}
-
-type Field struct {
-	name     string
-	noInsert bool
-	noUpdate bool
-}
-
-type Columns map[string]Field
-type Relations map[string]Relation
-
-func F(name string) Field {
-	return Field{name: name}
-}
-
-func (f Field) Name() string {
-	return f.name
-}
-
-func (f Field) NoInsert() Field {
-	f.noInsert = true
-	return f
-}
-
-func (f Field) NoUpdate() Field {
-	f.noUpdate = true
-	return f
-}
-
-func C(names ...string) []string {
-	return names
+	Table   string
+	Columns map[string]string
+	Field   string
 }

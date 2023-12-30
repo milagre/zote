@@ -6,18 +6,12 @@ import (
 	"fmt"
 )
 
-type Driver struct {
-	name string
-}
-
-func NewDriver(name string) Driver {
-	return Driver{
-		name: name,
-	}
-}
-
-func (d Driver) Name() string {
-	return d.name
+type Driver interface {
+	Name() string
+	EscapeTable(t string) string
+	EscapeColumn(c string) string
+	EscapeTableColumn(t string, c string) string
+	NullSafeEqualityOperator() string
 }
 
 type Transactor interface {
@@ -73,8 +67,8 @@ func NewConnection(db *sql.DB, driver Driver) Connection {
 	}
 }
 
-func (c Connection) Driver() string {
-	return c.driver.name
+func (c Connection) Driver() Driver {
+	return c.driver
 }
 
 func (c Connection) Begin(ctx context.Context, opts *sql.TxOptions) (Transaction, error) {

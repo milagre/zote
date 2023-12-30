@@ -3,42 +3,37 @@ package zorm
 import (
 	"context"
 
-	"github.com/milagre/zote/go/zelement"
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zsort"
 )
 
-var _ zelement.Element
-var _ zsort.Sort
-
-type Model interface {
-}
-
-type RepositoryStore struct{}
-
-func (s RepositoryStore) Register(model Model, source Source, mapper Mapper) {
-
-}
-
 type Source interface {
 	Name() string
+
+	//Get(ctx context.Context, model any, opts GetOptions) error
+	Find(ctx context.Context, model any, opts FindOptions) error
 }
 
-func Repo[T Model](source Source) (Repository, error) {
-	return nil, nil
+type UpsertOptions struct {
+	Include   Include
+	Relations map[string]Include
 }
 
-type Repository interface {
-	Find(ctx context.Context, models any, opts FindOptions) error
-	Get(ctx context.Context, model any, opts GetOptions) error
+type InsertOptions struct {
+	Include   Include
+	Relations map[string]Include
 }
 
-type Mapper interface{}
+type DeleteOptions struct {
+	Include   Include
+	Relations map[string]Include
+}
 
 type FindOptions struct {
-	Where   zclause.Clause
 	Include Include
 	Sort    zsort.Sort
+	Where   zclause.Clause
+	Offset  int
 }
 
 type GetOptions struct {
@@ -50,5 +45,34 @@ type Include struct {
 	Fields    []string
 	Relations map[string]Include
 	Where     zclause.Clause
-	Sort      zsort.Sort
+	Sort      []zsort.Sort
 }
+
+func Get[T any](ctx context.Context, source Source, obj *T, opts GetOptions) error {
+	return nil
+	//return source.Get(ctx, store, obj, opts)
+}
+
+func Find[T any](ctx context.Context, source Source, list *[]*T, opts FindOptions) error {
+	return source.Find(ctx, list, opts)
+}
+
+/*
+
+func Upsert[T any](ctx context.Context, source Source, list []T, opts UpsertOptions) error {
+	return upsert(ctx, source, list, opts)
+}
+
+func Insert[T any](ctx context.Context, source Source, list []T, opts InsertOptions) error {
+	return insert(ctx, source, list, opts)
+}
+
+func Delete[T any](ctx context.Context, source Source, list []T, opts DeleteOptions) error {
+	return delete(ctx, source, list, opts)
+}
+
+func DeleteWhere[T any](ctx context.Context, source Source, list []T, clause zclause.Clause, opts DeleteOptions) (int, error) {
+	return deleteWhere(ctx, source, list, clause, opts)
+}
+
+*/

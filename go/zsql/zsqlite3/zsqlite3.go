@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -11,10 +12,29 @@ import (
 	"github.com/milagre/zote/go/zsql"
 )
 
-var driver zsql.Driver
+var Driver zsql.Driver = driver{}
 
-func init() {
-	driver = zsql.NewDriver("sqlite3")
+type driver struct {
+}
+
+func (d driver) Name() string {
+	return "sqlite3"
+}
+
+func (d driver) EscapeTable(t string) string {
+	return "\"" + strings.ReplaceAll(t, "\"", "\\\"") + "\""
+}
+
+func (d driver) EscapeColumn(c string) string {
+	return "\"" + strings.ReplaceAll(c, "\"", "\\\"") + "\""
+}
+
+func (d driver) EscapeTableColumn(t string, c string) string {
+	return d.EscapeTable(t) + "." + d.EscapeColumn(c)
+}
+
+func (d driver) NullSafeEqualityOperator() string {
+	return "IS"
 }
 
 func DefaultOptions() zsql.Options {
@@ -42,7 +62,7 @@ func connectionString(path string, opts zsql.Options) string {
 		params[k] = []string{fmt.Sprintf("%s", v)}
 	}
 
-	return path + params.Encode()
+	return path + "?" + params.Encode()
 }
 
 func Open(dsn string, poolSize int) (zsql.Connection, error) {
@@ -55,5 +75,5 @@ func Open(dsn string, poolSize int) (zsql.Connection, error) {
 	pool.SetMaxIdleConns((poolSize / 2) + 1)
 	pool.SetMaxOpenConns(poolSize)
 
-	return zsql.NewConnection(pool, driver), nil
+	return zsql.NewConnection(pool, Driver), nil
 }
