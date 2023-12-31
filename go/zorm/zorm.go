@@ -8,8 +8,8 @@ import (
 )
 
 type Repository interface {
-	//Get(ctx context.Context, model any, opts GetOptions) error
 	Find(ctx context.Context, ptrToListOfPtrs any, opts FindOptions) error
+	Get(ctx context.Context, listOfPtrs any, opts GetOptions) error
 }
 
 type UpsertOptions struct {
@@ -46,9 +46,8 @@ type Include struct {
 	Sort      []zsort.Sort
 }
 
-func Get[T any](ctx context.Context, repo Repository, obj *T, opts GetOptions) error {
-	return nil
-	//return source.Get(ctx, store, obj, opts)
+func Get[T any](ctx context.Context, repo Repository, list []*T, opts GetOptions) error {
+	return repo.Get(ctx, list, opts)
 }
 
 func Find[T any](ctx context.Context, repo Repository, list *[]*T, opts FindOptions) error {

@@ -107,6 +107,32 @@ func (v *whereVisitor) VisitOr(c zclause.Or) error {
 	return v.visitNode("OR", zclause.Node(c))
 }
 
+func (v *whereVisitor) VisitIn(c zclause.In) error {
+	for _, list := range c.Right {
+		if len(list) != len(c.Left) {
+			return fmt.Errorf("cannot visit in clause with mismatched left and right lengths")
+		}
+	}
+
+	ands := make([]zclause.Clause, 0, len(c.Left))
+	for _, list := range c.Right {
+		eqs := make([]zclause.Clause, 0, len(list))
+		for i, elem := range c.Left {
+			eqs = append(eqs, zclause.Eq{
+				Left:  elem,
+				Right: list[i],
+			})
+		}
+		ands = append(ands, zclause.And{Clauses: eqs})
+	}
+
+	rewrite := zclause.Or{
+		Clauses: ands,
+	}
+
+	return rewrite.Accept(v)
+}
+
 func (v *whereVisitor) VisitValue(e zelement.Value) error {
 	v.result += "?"
 	v.values = append(v.values, e.Value)
@@ -119,7 +145,7 @@ func (v *whereVisitor) VisitField(e zelement.Field) error {
 		return fmt.Errorf("visiting field: %w", err)
 	}
 
-	result += result
+	v.result += result
 
 	return nil
 }

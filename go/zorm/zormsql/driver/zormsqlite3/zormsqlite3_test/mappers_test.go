@@ -28,6 +28,9 @@ type User struct {
 var AccountMapping = zormsql.Mapping{
 	Type:  Account{},
 	Table: "accounts",
+	PrimaryKey: []string{
+		"id",
+	},
 	Columns: []zormsql.Column{
 		{
 			Name:     "id",
@@ -51,9 +54,6 @@ var AccountMapping = zormsql.Mapping{
 			Name:  "company",
 			Field: "Company",
 		},
-	},
-	PrimaryKey: []string{
-		"id",
 	},
 }
 

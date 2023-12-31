@@ -75,6 +75,15 @@ func (c Or) Accept(v Visitor) error {
 	return v.VisitOr(c)
 }
 
+type In struct {
+	Left  []zelement.Element
+	Right [][]zelement.Element
+}
+
+func (c In) Accept(v Visitor) error {
+	return v.VisitIn(c)
+}
+
 type Visitor interface {
 	VisitEq(eq Eq) error
 	VisitNeq(neq Neq) error
@@ -89,4 +98,6 @@ type Visitor interface {
 
 	VisitAnd(and And) error
 	VisitOr(or Or) error
+
+	VisitIn(in In) error
 }

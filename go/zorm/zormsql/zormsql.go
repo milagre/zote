@@ -51,6 +51,24 @@ func (m Mapping) updateFields() []string {
 	return result
 }
 
+func (m Mapping) primaryKeyFields() ([]string, error) {
+	result := make([]string, 0, len(m.PrimaryKey))
+	for _, pkCol := range m.PrimaryKey {
+		for _, col := range m.Columns {
+			if pkCol == col.Name {
+				result = append(result, col.Field)
+				break
+			}
+		}
+	}
+
+	if len(result) != len(m.PrimaryKey) {
+		return nil, fmt.Errorf("primary key not fully mapped for %T", m.Type)
+	}
+
+	return result, nil
+}
+
 func (m Mapping) mapField(driver zsql.Driver, tableAlias string, columnAliasPrefix string, field string) (string, interface{}, error) {
 	for _, c := range m.Columns {
 		if field == c.Field {

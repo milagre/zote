@@ -7,6 +7,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/milagre/zote/go/zelement"
+	"github.com/milagre/zote/go/zelement/zclause"
+	"github.com/milagre/zote/go/zelement/zelem"
 	"github.com/milagre/zote/go/zelement/zsort"
 	"github.com/milagre/zote/go/zfunc"
 	"github.com/milagre/zote/go/zorm"
@@ -37,55 +40,24 @@ func (r *Repository) AddMapping(m Mapping) {
 }
 
 func (r *Repository) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) error {
-	if ptrToListOfPtrs == nil {
-		return fmt.Errorf("cannot find with a nil result target")
+	targetList, modelType, err := validatePtrToListOfPtr(ptrToListOfPtrs)
+	if err != nil {
+		return fmt.Errorf("invalid argument to Find: %w", err)
 	}
-
-	targetVal := reflect.ValueOf(ptrToListOfPtrs)
-	if targetVal.Type().Kind() != reflect.Ptr {
-		return fmt.Errorf("cannot find with a non-pointer result target")
-	}
-
-	if targetVal.Type().Elem().Kind() != reflect.Slice {
-		return fmt.Errorf("cannot find with a non-list result target")
-	}
-
-	targetList := targetVal.Elem()
-
-	modelPtrType := targetVal.Type().Elem().Elem()
-	if modelPtrType.Kind() != reflect.Ptr {
-		return fmt.Errorf("cannot find with result list of non-pointer models")
-	}
-
-	modelType := targetVal.Type().Elem().Elem().Elem()
 
 	mapping, ok := r.mappings[zreflect.TypeID(modelType)]
 	if !ok {
 		return fmt.Errorf("cannot find mapping for type %v", modelType)
 	}
 
-	plan, err := buildSelectQueryPlan(modelType, r, mapping, opts.Include)
+	plan, err := buildSelectQueryPlan(modelType, r, mapping, opts.Include.Fields, opts.Include.Where, opts.Include.Sort)
 	if err != nil {
 		return fmt.Errorf("building query plan for list: %w", err)
 	}
 
-	query := fmt.Sprintf(`
-		SELECT
-			%s
-		FROM
-			%s
-		%s
-		%s
-		LIMIT %d
-		OFFSET %d
-	`,
-		strings.Join(append(plan.primaryKeyColumns, plan.columns...), ", "),
-		strings.Join(plan.joins, " LEFT JOIN "),
-		plan.where,
-		plan.sort,
-		targetList.Cap(),
-		opts.Offset,
-	)
+	limit := fmt.Sprintf(" LIMIT %d OFFSET %d", targetList.Cap(), opts.Offset)
+
+	query := plan.query(limit)
 
 	// fmt.Printf("Q: %s\n", query)
 
@@ -132,12 +104,150 @@ func (r *Repository) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.Fi
 	return nil
 }
 
+func (r *Repository) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions) error {
+	targetVal, modelType, err := validateListOfPtr(listOfPtrs)
+	if err != nil {
+		return fmt.Errorf("invalid argument to Get: %w", err)
+	}
+
+	mapping, ok := r.mappings[zreflect.TypeID(modelType)]
+	if !ok {
+		return fmt.Errorf("cannot find mapping for type %v", modelType)
+	}
+
+	pk, err := mapping.primaryKeyFields()
+	if err != nil {
+		return fmt.Errorf("mapping primary key for in clause: %w", err)
+	}
+
+	pkValues := make([][]zelement.Element, 0, targetVal.Len())
+	for i := 0; i < targetVal.Len(); i++ {
+		val := targetVal.Index(i)
+
+		values := make([]zelement.Element, 0, len(pk))
+		for _, f := range pk {
+			values = append(values, zelem.Value(val.Elem().FieldByName(f).Interface()))
+		}
+
+		pkValues = append(pkValues, values)
+	}
+
+	where := zclause.In{
+		Left:  zfunc.Map(pk, func(f string) zelement.Element { return zelem.Field(f) }),
+		Right: pkValues,
+	}
+
+	plan, err := buildSelectQueryPlan(modelType, r, mapping, opts.Include.Fields, where, nil)
+	if err != nil {
+		return fmt.Errorf("building query plan for list: %w", err)
+	}
+
+	query := plan.query("")
+
+	fmt.Printf("Q: %s\n", query)
+
+	rows, err := r.conn.Query(ctx, query, plan.values...)
+	if err != nil {
+		return fmt.Errorf("executing query: %w", err)
+	}
+	defer rows.Close()
+
+	objList := zreflect.MakeAddressableSliceOf(reflect.PointerTo(modelType), 0, targetVal.Len())
+
+	var obj reflect.Value
+	var count int
+	var currentPrimaryKey string
+	scanTarget := append(plan.primaryKeyTarget, plan.target...)
+	for rows.Next() {
+		err := rows.Scan(scanTarget...)
+		if err != nil {
+			return fmt.Errorf("scanning result row: %w", err)
+		}
+
+		isNew := false
+		newPrimaryKey, err := plan.scannedPrimaryKey()
+		if err != nil {
+			return fmt.Errorf("creating primary slug: %w", err)
+		}
+
+		if count == 0 || newPrimaryKey != currentPrimaryKey {
+			isNew = true
+			obj = reflect.New(modelType).Elem()
+		}
+
+		plan.load(obj)
+
+		if isNew {
+			count++
+			objList.SetLen(count)
+			objList.Index(count - 1).Set(obj.Addr())
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("rows error: %w", err)
+	}
+
+	// TODO: ensure models are going into the right objects
+	for i := 0; i < targetVal.Len(); i++ {
+		targetVal.Index(i).Elem().Set(objList.Index(i).Elem())
+	}
+
+	return nil
+}
+
+func validateListOfPtr(listOfPtrs any) (reflect.Value, reflect.Type, error) {
+	if listOfPtrs == nil {
+		return reflect.Value{}, nil, fmt.Errorf("list of pointers required: nil provided")
+	}
+
+	targetList := reflect.ValueOf(listOfPtrs)
+	if targetList.Type().Kind() != reflect.Slice {
+		return reflect.Value{}, nil, fmt.Errorf("list of pointers required: non-list provided")
+	}
+
+	modelPtrType := targetList.Type().Elem()
+	if modelPtrType.Kind() != reflect.Ptr {
+		return reflect.Value{}, nil, fmt.Errorf("list of pointers required: list of non-pointer types provided")
+	}
+
+	modelType := targetList.Type().Elem().Elem()
+
+	return targetList, modelType, nil
+}
+
+func validatePtrToListOfPtr(ptrToListOfPtrs any) (reflect.Value, reflect.Type, error) {
+	if ptrToListOfPtrs == nil {
+		return reflect.Value{}, nil, fmt.Errorf("pointer to list of pointers required: nil provided")
+	}
+
+	targetVal := reflect.ValueOf(ptrToListOfPtrs)
+	if targetVal.Type().Kind() != reflect.Ptr {
+		return reflect.Value{}, nil, fmt.Errorf("pointer to list of pointers required: non-pointer provided")
+	}
+
+	if targetVal.Type().Elem().Kind() != reflect.Slice {
+		return reflect.Value{}, nil, fmt.Errorf("pointer to list of pointers required: non-list provided")
+	}
+
+	targetList := targetVal.Elem()
+
+	modelPtrType := targetVal.Type().Elem().Elem()
+	if modelPtrType.Kind() != reflect.Ptr {
+		return reflect.Value{}, nil, fmt.Errorf("pointer to list of pointers required: list of non-pointer types provided")
+	}
+
+	modelType := targetVal.Type().Elem().Elem().Elem()
+
+	return targetList, modelType, nil
+}
+
 type selectQueryPlan struct {
 	joins             []string
 	primaryKeyColumns []string
 	columns           []string
 	fields            []string
-	sort              string
+	order             string
 	where             string
 	values            []interface{}
 
@@ -156,8 +266,25 @@ func (plan selectQueryPlan) scannedPrimaryKey() (string, error) {
 	return string(data), err
 }
 
-func buildSelectQueryPlan(t reflect.Type, r *Repository, mapping Mapping, inc zorm.Include) (*selectQueryPlan, error) {
-	fields := inc.Fields
+func (plan selectQueryPlan) query(limit string) string {
+	return fmt.Sprintf(`
+		SELECT
+			%s
+		FROM
+			%s
+		/*where: */ %s 
+		/*order: */ %s
+		/*limit: */ %s
+	`,
+		strings.Join(append(plan.primaryKeyColumns, plan.columns...), ", "),
+		strings.Join(plan.joins, " LEFT JOIN "),
+		plan.where,
+		plan.order,
+		limit,
+	)
+}
+
+func buildSelectQueryPlan(t reflect.Type, r *Repository, mapping Mapping, fields []string, clause zclause.Clause, sorts []zsort.Sort) (*selectQueryPlan, error) {
 	if len(fields) == 0 {
 		fields = mapping.allFields()
 	}
@@ -183,8 +310,8 @@ func buildSelectQueryPlan(t reflect.Type, r *Repository, mapping Mapping, inc zo
 	}
 
 	// Order
-	var sort string
-	sorts, err := zfunc.MapE(inc.Sort, func(s zsort.Sort) (string, error) {
+	var order string
+	orders, err := zfunc.MapE(sorts, func(s zsort.Sort) (string, error) {
 		dir := "ASC"
 		if s.Direction == zsort.Desc {
 			dir = "DESC"
@@ -200,20 +327,20 @@ func buildSelectQueryPlan(t reflect.Type, r *Repository, mapping Mapping, inc zo
 	if err != nil {
 		return nil, fmt.Errorf("mapping sort: %w", err)
 	}
-	if len(sorts) > 0 {
-		sort = "ORDER BY " + strings.Join(sorts, ", ")
+	if len(orders) > 0 {
+		order = "ORDER BY " + strings.Join(orders, ", ")
 	}
 
 	// Where
 	var where string
 	var values []interface{}
-	if inc.Where != nil {
+	if clause != nil {
 		visitor := &whereVisitor{
 			driver:     r.conn.Driver(),
 			tableAlias: firstTableAlias,
 			mapping:    mapping,
 		}
-		w, v, err := visitor.Visit(inc.Where)
+		w, v, err := visitor.Visit(clause)
 		if err != nil {
 			return nil, fmt.Errorf("visiting select where: %w", err)
 		}
@@ -228,7 +355,7 @@ func buildSelectQueryPlan(t reflect.Type, r *Repository, mapping Mapping, inc zo
 		columns:           columns,
 		fields:            fields,
 
-		sort:   sort,
+		order:  order,
 		where:  where,
 		values: values,
 
