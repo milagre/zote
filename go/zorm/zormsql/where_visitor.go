@@ -5,13 +5,14 @@ import (
 
 	"github.com/milagre/zote/go/zelement"
 	"github.com/milagre/zote/go/zelement/zclause"
+	"github.com/milagre/zote/go/zsql"
 )
 
 var _ zclause.Visitor = &whereVisitor{}
 var _ zelement.Visitor = &whereVisitor{}
 
 type whereVisitor struct {
-	source            *Source
+	driver            zsql.Driver
 	tableAlias        string
 	columnAliasPrefix string
 	mapping           Mapping
@@ -57,7 +58,7 @@ func (v *whereVisitor) visitBinaryLeaf(operator string, c zclause.BinaryLeaf) er
 }
 
 func (v *whereVisitor) VisitEq(c zclause.Eq) error {
-	return v.visitBinaryLeaf(v.source.conn.Driver().NullSafeEqualityOperator(), zclause.BinaryLeaf(c))
+	return v.visitBinaryLeaf(v.driver.NullSafeEqualityOperator(), zclause.BinaryLeaf(c))
 }
 
 func (v *whereVisitor) VisitNeq(c zclause.Neq) error {
@@ -113,7 +114,7 @@ func (v *whereVisitor) VisitValue(e zelement.Value) error {
 }
 
 func (v *whereVisitor) VisitField(e zelement.Field) error {
-	result, _, err := v.mapping.mapField(v.source, v.tableAlias, v.columnAliasPrefix, e.Name)
+	result, _, err := v.mapping.mapField(v.driver, v.tableAlias, v.columnAliasPrefix, e.Name)
 	if err != nil {
 		return fmt.Errorf("visiting field: %w", err)
 	}

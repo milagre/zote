@@ -7,11 +7,9 @@ import (
 	"github.com/milagre/zote/go/zelement/zsort"
 )
 
-type Source interface {
-	Name() string
-
+type Repository interface {
 	//Get(ctx context.Context, model any, opts GetOptions) error
-	Find(ctx context.Context, model any, opts FindOptions) error
+	Find(ctx context.Context, ptrToListOfPtrs any, opts FindOptions) error
 }
 
 type UpsertOptions struct {
@@ -48,30 +46,30 @@ type Include struct {
 	Sort      []zsort.Sort
 }
 
-func Get[T any](ctx context.Context, source Source, obj *T, opts GetOptions) error {
+func Get[T any](ctx context.Context, repo Repository, obj *T, opts GetOptions) error {
 	return nil
 	//return source.Get(ctx, store, obj, opts)
 }
 
-func Find[T any](ctx context.Context, source Source, list *[]*T, opts FindOptions) error {
-	return source.Find(ctx, list, opts)
+func Find[T any](ctx context.Context, repo Repository, list *[]*T, opts FindOptions) error {
+	return repo.Find(ctx, list, opts)
 }
 
 /*
 
-func Upsert[T any](ctx context.Context, source Source, list []T, opts UpsertOptions) error {
+func Upsert[T any](ctx context.Context, list []T, opts UpsertOptions) error {
 	return upsert(ctx, source, list, opts)
 }
 
-func Insert[T any](ctx context.Context, source Source, list []T, opts InsertOptions) error {
+func Insert[T any](ctx context.Context, list []T, opts InsertOptions) error {
 	return insert(ctx, source, list, opts)
 }
 
-func Delete[T any](ctx context.Context, source Source, list []T, opts DeleteOptions) error {
+func Delete[T any](ctx context.Context, list []T, opts DeleteOptions) error {
 	return delete(ctx, source, list, opts)
 }
 
-func DeleteWhere[T any](ctx context.Context, source Source, list []T, clause zclause.Clause, opts DeleteOptions) (int, error) {
+func DeleteWhere[T any](ctx context.Context, list []T, clause zclause.Clause, opts DeleteOptions) (int, error) {
 	return deleteWhere(ctx, source, list, clause, opts)
 }
 

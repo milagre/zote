@@ -13,7 +13,7 @@ import (
 	"github.com/milagre/zote/go/zsql/zsqlite3"
 )
 
-func setup(t *testing.T, cb func(context.Context, zorm.Source)) {
+func setup(t *testing.T, cb func(context.Context, zorm.Repository)) {
 	t.Helper()
 
 	sourcedb, err := os.ReadFile("test.db")
@@ -34,10 +34,9 @@ func setup(t *testing.T, cb func(context.Context, zorm.Source)) {
 	require.NoError(t, err, "opening database")
 	defer conn.Close()
 
-	source := zormsql.NewSource("test.db", conn)
+	repo := zormsql.NewRepository("test.db", conn)
+	repo.AddMapping(AccountMapping)
+	repo.AddMapping(UserMapping)
 
-	source.AddMapping(AccountMapping)
-	source.AddMapping(UserMapping)
-
-	cb(context.Background(), source)
+	cb(context.Background(), repo)
 }

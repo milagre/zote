@@ -1,42 +1,15 @@
 package zormsql
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 
-	"github.com/milagre/zote/go/zorm"
-	"github.com/milagre/zote/go/zreflect"
 	"github.com/milagre/zote/go/zsql"
 )
 
-type Source struct {
-	name string
-	conn zsql.Connection
+var ErrNotFound = fmt.Errorf("not found")
 
-	mappings map[string]Mapping
-}
-
-func NewSource(name string, conn zsql.Connection) *Source {
-	return &Source{
-		name:     name,
-		conn:     conn,
-		mappings: map[string]Mapping{},
-	}
-}
-
-func (s Source) Name() string {
-	return s.name
-}
-
-func (s *Source) Find(ctx context.Context, model any, opts zorm.FindOptions) error {
-	return find(ctx, s, model, opts)
-}
-
-func (s *Source) AddMapping(m Mapping) {
-	s.mappings[zreflect.TypeID(reflect.TypeOf(m.Type))] = m
-}
-
+// Mapping
 type Mapping struct {
 	Type       interface{}
 	Table      string
@@ -46,8 +19,8 @@ type Mapping struct {
 	Relations  []Relation
 }
 
-func (m Mapping) escapedTable(source *Source) string {
-	return source.conn.Driver().EscapeTable(m.Table)
+func (m Mapping) escapedTable(driver zsql.Driver) string {
+	return driver.EscapeTable(m.Table)
 }
 
 func (m Mapping) allFields() []string {
@@ -78,7 +51,7 @@ func (m Mapping) updateFields() []string {
 	return result
 }
 
-func (m Mapping) mapField(source *Source, tableAlias string, columnAliasPrefix string, field string) (string, interface{}, error) {
+func (m Mapping) mapField(driver zsql.Driver, tableAlias string, columnAliasPrefix string, field string) (string, interface{}, error) {
 	for _, c := range m.Columns {
 		if field == c.Field {
 			col := c.Name
@@ -91,14 +64,14 @@ func (m Mapping) mapField(source *Source, tableAlias string, columnAliasPrefix s
 				return "", nil, fmt.Errorf("getting struct field %s on %T", field, m.Type)
 			}
 
-			return source.conn.Driver().EscapeTableColumn(tableAlias, col), reflect.New(structField.Type).Interface(), nil
+			return driver.EscapeTableColumn(tableAlias, col), reflect.New(structField.Type).Interface(), nil
 		}
 	}
 
 	return "", nil, fmt.Errorf("field %s is not mapped", field)
 }
 
-func (m Mapping) mapFields(source *Source, tableAlias string, columnAliasPrefix string, fields []string) ([]string, []interface{}, error) {
+func (m Mapping) mapFields(driver zsql.Driver, tableAlias string, columnAliasPrefix string, fields []string) ([]string, []interface{}, error) {
 	columns := make([]string, 0, len(fields))
 	target := make([]interface{}, 0, len(fields))
 
@@ -121,14 +94,14 @@ func (m Mapping) mapFields(source *Source, tableAlias string, columnAliasPrefix 
 			return nil, nil, fmt.Errorf("getting struct field %s on %T", f, m.Type)
 		}
 
-		columns = append(columns, source.conn.Driver().EscapeTableColumn(tableAlias, col))
+		columns = append(columns, driver.EscapeTableColumn(tableAlias, col))
 		target = append(target, reflect.New(structField.Type).Interface())
 	}
 
 	return columns, target, nil
 }
 
-func (m Mapping) mappedPrimaryKeyColumns(source *Source, tableAlias string, columnAliasPrefix string) ([]string, []interface{}, error) {
+func (m Mapping) mappedPrimaryKeyColumns(driver zsql.Driver, tableAlias string, columnAliasPrefix string) ([]string, []interface{}, error) {
 	result := make([]string, 0, len(m.PrimaryKey))
 	target := make([]interface{}, 0, len(m.PrimaryKey))
 
@@ -151,7 +124,7 @@ func (m Mapping) mappedPrimaryKeyColumns(source *Source, tableAlias string, colu
 			return nil, nil, fmt.Errorf("getting struct field %s on %T", f, m.Type)
 		}
 
-		result = append(result, source.conn.Driver().EscapeTableColumn(tableAlias, col)+" AS "+fmt.Sprintf("_%d", i))
+		result = append(result, driver.EscapeTableColumn(tableAlias, col)+" AS "+fmt.Sprintf("_%d", i))
 		target = append(target, reflect.New(structField.Type).Interface())
 	}
 

@@ -48,10 +48,8 @@ var AccountMapping = zormsql.Mapping{
 			NoUpdate: true,
 		},
 		{
-			Name:     "company",
-			Field:    "Company",
-			NoInsert: true,
-			NoUpdate: true,
+			Name:  "company",
+			Field: "Company",
 		},
 	},
 	PrimaryKey: []string{
