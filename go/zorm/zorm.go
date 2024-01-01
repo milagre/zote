@@ -35,16 +35,34 @@ type FindOptions struct {
 }
 
 type GetOptions struct {
-	Where   zclause.Clause
 	Include Include
 }
 
 type Include struct {
-	Fields    []string
-	Relations map[string]Include
+	Fields    Fields
+	Relations Relations
 	Where     zclause.Clause
 	Sort      []zsort.Sort
 }
+
+type Fields []string
+
+func (f *Fields) Add(fields ...string) {
+	for _, newField := range fields {
+		found := false
+		for _, currField := range *f {
+			if currField == newField {
+				found = true
+				break
+			}
+		}
+		if !found {
+			*f = append(*f, newField)
+		}
+	}
+}
+
+type Relations map[string]Include
 
 func Get[T any](ctx context.Context, repo Repository, list []*T, opts GetOptions) error {
 	return repo.Get(ctx, list, opts)

@@ -101,7 +101,7 @@ func (m Mapping) mapFields(driver zsql.Driver, tableAlias string, columnAliasPre
 	for _, f := range fields {
 		col, ok := colMap[f]
 		if !ok {
-			return nil, nil, fmt.Errorf("field %s is not mapped", f)
+			return nil, nil, fmt.Errorf("field '%s' is not mapped", f)
 		}
 		if columnAliasPrefix != "" {
 			col = columnAliasPrefix + "_" + col

@@ -22,7 +22,7 @@ type User struct {
 	AccountID string
 	Account   *Account
 
-	Name string
+	FirstName string
 }
 
 var AccountMapping = zormsql.Mapping{
@@ -87,8 +87,8 @@ var UserMapping = zormsql.Mapping{
 			Field: "AccountID",
 		},
 		{
-			Name:  "name",
-			Field: "Name",
+			Name:  "first_name",
+			Field: "FirstName",
 		},
 	},
 	Relations: []zormsql.Relation{

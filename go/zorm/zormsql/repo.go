@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/milagre/zote/go/zelement"
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zelem"
@@ -40,17 +41,17 @@ func (r *Repository) AddMapping(m Mapping) {
 }
 
 func (r *Repository) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) error {
-	targetList, modelType, err := validatePtrToListOfPtr(ptrToListOfPtrs)
+	targetList, modelPtrType, err := validatePtrToListOfPtr(ptrToListOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to Find: %w", err)
 	}
 
-	mapping, ok := r.mappings[zreflect.TypeID(modelType)]
+	mapping, ok := r.mappings[zreflect.TypeID(modelPtrType.Elem())]
 	if !ok {
-		return fmt.Errorf("cannot find mapping for type %v", modelType)
+		return fmt.Errorf("cannot find mapping for type %v", modelPtrType)
 	}
 
-	plan, err := buildSelectQueryPlan(modelType, r, mapping, opts.Include.Fields, opts.Include.Where, opts.Include.Sort)
+	plan, err := buildSelectQueryPlan(r, mapping, opts.Include.Fields, opts.Include.Where, opts.Include.Sort)
 	if err != nil {
 		return fmt.Errorf("building query plan for list: %w", err)
 	}
@@ -85,7 +86,7 @@ func (r *Repository) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.Fi
 
 		if count == 0 || newPrimaryKey != currentPrimaryKey {
 			isNew = true
-			obj = reflect.New(targetList.Type().Elem().Elem()).Elem()
+			obj = reflect.New(modelPtrType.Elem()).Elem()
 		}
 
 		plan.load(obj)
@@ -105,14 +106,14 @@ func (r *Repository) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.Fi
 }
 
 func (r *Repository) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions) error {
-	targetVal, modelType, err := validateListOfPtr(listOfPtrs)
+	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to Get: %w", err)
 	}
 
-	mapping, ok := r.mappings[zreflect.TypeID(modelType)]
+	mapping, ok := r.mappings[zreflect.TypeID(modelPtrType.Elem())]
 	if !ok {
-		return fmt.Errorf("cannot find mapping for type %v", modelType)
+		return fmt.Errorf("cannot find mapping for type %v", modelPtrType.Elem())
 	}
 
 	pk, err := mapping.primaryKeyFields()
@@ -120,16 +121,22 @@ func (r *Repository) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 		return fmt.Errorf("mapping primary key for in clause: %w", err)
 	}
 
+	objMap := reflect.MakeMap(reflect.MapOf(reflect.TypeOf(""), modelPtrType))
+
 	pkValues := make([][]zelement.Element, 0, targetVal.Len())
 	for i := 0; i < targetVal.Len(); i++ {
 		val := targetVal.Index(i)
 
-		values := make([]zelement.Element, 0, len(pk))
-		for _, f := range pk {
-			values = append(values, zelem.Value(val.Elem().FieldByName(f).Interface()))
+		fieldValues := extractFields(pk, val)
+		pkID, err := json.Marshal(fieldValues)
+		if err != nil {
+			return fmt.Errorf("rendering primary key values into string key: %w", err)
 		}
 
+		values := zfunc.Map(fieldValues, func(v any) zelement.Element { return zelem.Value(v) })
 		pkValues = append(pkValues, values)
+
+		objMap.SetMapIndex(reflect.ValueOf(string(pkID)), val)
 	}
 
 	where := zclause.In{
@@ -137,63 +144,44 @@ func (r *Repository) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 		Right: pkValues,
 	}
 
-	plan, err := buildSelectQueryPlan(modelType, r, mapping, opts.Include.Fields, where, nil)
+	findOpts := zorm.FindOptions{
+		Include: opts.Include,
+		Where:   where,
+	}
+	if len(findOpts.Include.Fields) > 0 {
+		findOpts.Include.Fields.Add(pk...)
+	}
+
+	findTarget := zreflect.MakeAddressableSliceOf(modelPtrType, 0, targetVal.Len())
+
+	spew.Dump(findTarget.Interface())
+	err = r.Find(ctx, findTarget.Addr().Interface(), findOpts)
 	if err != nil {
-		return fmt.Errorf("building query plan for list: %w", err)
+		return fmt.Errorf("executing find for get: %w", err)
 	}
+	spew.Dump(findTarget.Interface())
 
-	query := plan.query("")
-
-	fmt.Printf("Q: %s\n", query)
-
-	rows, err := r.conn.Query(ctx, query, plan.values...)
-	if err != nil {
-		return fmt.Errorf("executing query: %w", err)
-	}
-	defer rows.Close()
-
-	objList := zreflect.MakeAddressableSliceOf(reflect.PointerTo(modelType), 0, targetVal.Len())
-
-	var obj reflect.Value
-	var count int
-	var currentPrimaryKey string
-	scanTarget := append(plan.primaryKeyTarget, plan.target...)
-	for rows.Next() {
-		err := rows.Scan(scanTarget...)
+	for i := 0; i < findTarget.Len(); i++ {
+		findVal := findTarget.Index(i)
+		fieldValues := extractFields(pk, findVal)
+		pkID, err := json.Marshal(fieldValues)
 		if err != nil {
-			return fmt.Errorf("scanning result row: %w", err)
+			return fmt.Errorf("rendering primary key values into string key: %w", err)
 		}
 
-		isNew := false
-		newPrimaryKey, err := plan.scannedPrimaryKey()
-		if err != nil {
-			return fmt.Errorf("creating primary slug: %w", err)
-		}
-
-		if count == 0 || newPrimaryKey != currentPrimaryKey {
-			isNew = true
-			obj = reflect.New(modelType).Elem()
-		}
-
-		plan.load(obj)
-
-		if isNew {
-			count++
-			objList.SetLen(count)
-			objList.Index(count - 1).Set(obj.Addr())
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return fmt.Errorf("rows error: %w", err)
-	}
-
-	// TODO: ensure models are going into the right objects
-	for i := 0; i < targetVal.Len(); i++ {
-		targetVal.Index(i).Elem().Set(objList.Index(i).Elem())
+		spew.Dump(findVal.Interface())
+		objMap.MapIndex(reflect.ValueOf(string(pkID))).Elem().Set(findVal.Elem())
 	}
 
 	return nil
+}
+
+func extractFields(fields []string, val reflect.Value) []interface{} {
+	values := make([]interface{}, 0, len(fields))
+	for _, f := range fields {
+		values = append(values, val.Elem().FieldByName(f).Interface())
+	}
+	return values
 }
 
 func validateListOfPtr(listOfPtrs any) (reflect.Value, reflect.Type, error) {
@@ -211,9 +199,7 @@ func validateListOfPtr(listOfPtrs any) (reflect.Value, reflect.Type, error) {
 		return reflect.Value{}, nil, fmt.Errorf("list of pointers required: list of non-pointer types provided")
 	}
 
-	modelType := targetList.Type().Elem().Elem()
-
-	return targetList, modelType, nil
+	return targetList, modelPtrType, nil
 }
 
 func validatePtrToListOfPtr(ptrToListOfPtrs any) (reflect.Value, reflect.Type, error) {
@@ -237,9 +223,7 @@ func validatePtrToListOfPtr(ptrToListOfPtrs any) (reflect.Value, reflect.Type, e
 		return reflect.Value{}, nil, fmt.Errorf("pointer to list of pointers required: list of non-pointer types provided")
 	}
 
-	modelType := targetVal.Type().Elem().Elem().Elem()
-
-	return targetList, modelType, nil
+	return targetList, modelPtrType, nil
 }
 
 type selectQueryPlan struct {
@@ -284,7 +268,7 @@ func (plan selectQueryPlan) query(limit string) string {
 	)
 }
 
-func buildSelectQueryPlan(t reflect.Type, r *Repository, mapping Mapping, fields []string, clause zclause.Clause, sorts []zsort.Sort) (*selectQueryPlan, error) {
+func buildSelectQueryPlan(r *Repository, mapping Mapping, fields []string, clause zclause.Clause, sorts []zsort.Sort) (*selectQueryPlan, error) {
 	if len(fields) == 0 {
 		fields = mapping.allFields()
 	}
