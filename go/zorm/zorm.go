@@ -2,10 +2,13 @@ package zorm
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zsort"
 )
+
+var ErrNotFound = fmt.Errorf("not found")
 
 type Repository interface {
 	Find(ctx context.Context, ptrToListOfPtrs any, opts FindOptions) error

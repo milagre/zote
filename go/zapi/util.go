@@ -1,6 +1,9 @@
 package zapi
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
 func AppendRoutes(routelists ...[]Route) []Route {
 	result := []Route{}
@@ -16,5 +19,14 @@ func Pathf(template string, params ...string) string {
 		parts[i] = fmt.Sprintf("{%s}", p)
 	}
 
+	return fmt.Sprintf(template, parts...)
+}
+
+func RenderPathf(template string, params ...interface{}) string {
+	parts := make([]any, len(params))
+	for i, p := range params {
+		s := fmt.Sprintf("%s", p)
+		parts[i] = url.PathEscape(s)
+	}
 	return fmt.Sprintf(template, parts...)
 }

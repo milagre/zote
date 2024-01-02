@@ -1,9 +1,20 @@
 package zreflect
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 func TypeID(t reflect.Type) string {
-	return t.PkgPath() + "." + t.Name()
+	namePrefix := ""
+	if t.Kind() == reflect.Ptr {
+		namePrefix = "*"
+		t = t.Elem()
+	}
+
+	result := fmt.Sprintf("%s.%s%s", t.PkgPath(), namePrefix, t.Name())
+
+	return result
 }
 
 func MakeAddressableSliceOf(valueType reflect.Type, len int, cap int) reflect.Value {
