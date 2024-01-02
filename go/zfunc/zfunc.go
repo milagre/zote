@@ -19,3 +19,11 @@ func MapE[T, V any](ts []T, fn func(T) (V, error)) ([]V, error) {
 	}
 	return result, nil
 }
+
+func MakeSlice[T any](val T, len int) []T {
+	result := make([]T, 0, len)
+	for i := 0; i < len; i++ {
+		result = append(result, val)
+	}
+	return result
+}

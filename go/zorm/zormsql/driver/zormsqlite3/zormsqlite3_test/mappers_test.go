@@ -1,32 +1,12 @@
 package zormsqlite3_test
 
 import (
-	"time"
-
 	"github.com/milagre/zote/go/zorm/zormsql"
+	"github.com/milagre/zote/go/zorm/zormtest"
 )
 
-type Account struct {
-	ID       string
-	Created  time.Time
-	Modified *time.Time
-
-	Company string
-}
-
-type User struct {
-	ID       string
-	Created  time.Time
-	Modified *time.Time
-
-	AccountID string
-	Account   *Account
-
-	FirstName string
-}
-
 var AccountMapping = zormsql.Mapping{
-	PtrType: &Account{},
+	PtrType: &zormtest.Account{},
 	Table:   "accounts",
 	PrimaryKey: []string{
 		"id",
@@ -58,7 +38,7 @@ var AccountMapping = zormsql.Mapping{
 }
 
 var UserMapping = zormsql.Mapping{
-	PtrType: &User{},
+	PtrType: &zormtest.User{},
 	Table:   "users",
 	PrimaryKey: []string{
 		"id",

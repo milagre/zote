@@ -156,7 +156,7 @@ func Begin(ctx context.Context, db Transactor, cb func(context.Context, Transact
 type ScanFunc func(dest ...any) error
 type QueryCallback func(ScanFunc) error
 
-func Query(ctx context.Context, db Selector, cb QueryCallback, query string, args ...any) (bool, error) {
+func Query(ctx context.Context, db Selector, cb QueryCallback, query string, args []any) (bool, error) {
 	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return false, fmt.Errorf("executing query: %w", err)
@@ -183,16 +183,21 @@ func Query(ctx context.Context, db Selector, cb QueryCallback, query string, arg
 	return found, err
 }
 
-func Exec(ctx context.Context, db Executor, query string, args ...any) (int, error) {
+func Exec(ctx context.Context, db Executor, query string, args []any) (int, int64, error) {
 	res, err := db.Exec(ctx, query, args...)
 	if err != nil {
-		return 0, fmt.Errorf("executing query: %w", err)
+		return 0, 0, fmt.Errorf("executing query: %w", err)
 	}
 
 	count, err := res.RowsAffected()
 	if err != nil {
-		return 0, fmt.Errorf("getting affected rows: %w", err)
+		return 0, 0, fmt.Errorf("getting affected rows: %w", err)
 	}
 
-	return int(count), nil
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, 0, fmt.Errorf("getting last insert id: %w", err)
+	}
+
+	return int(count), id, nil
 }

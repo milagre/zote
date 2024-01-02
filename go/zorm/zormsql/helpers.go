@@ -5,10 +5,10 @@ import (
 	"reflect"
 )
 
-func extractFields(fields []string, val reflect.Value) []interface{} {
+func extractFields(fields []string, objPtr reflect.Value) []interface{} {
 	values := make([]interface{}, 0, len(fields))
 	for _, f := range fields {
-		values = append(values, val.Elem().FieldByName(f).Interface())
+		values = append(values, objPtr.Elem().FieldByName(f).Interface())
 	}
 	return values
 }

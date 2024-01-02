@@ -29,6 +29,15 @@ type Relation struct {
 	Field   string
 }
 
+func (m Mapping) hasValues(objPtr reflect.Value, fields []string) bool {
+	for _, f := range fields {
+		if objPtr.Elem().FieldByName(f).IsZero() {
+			return false
+		}
+	}
+	return true
+}
+
 func (m Mapping) escapedTable(driver zsql.Driver) string {
 	return driver.EscapeTable(m.Table)
 }
@@ -79,6 +88,10 @@ func (m Mapping) primaryKeyFields() ([]string, error) {
 	return result, nil
 }
 
+func (m Mapping) isNew(objPtr reflect.Value) {
+
+}
+
 func (m Mapping) mapField(driver zsql.Driver, tableAlias string, columnAliasPrefix string, field string) (string, interface{}, error) {
 	for _, c := range m.Columns {
 		if field == c.Field {
@@ -122,7 +135,14 @@ func (m Mapping) mapFields(driver zsql.Driver, tableAlias string, columnAliasPre
 			return nil, nil, fmt.Errorf("getting struct field %s on %T", f, m.PtrType)
 		}
 
-		columns = append(columns, driver.EscapeTableColumn(tableAlias, col))
+		var colRef string
+		if tableAlias != "" {
+			colRef = driver.EscapeTableColumn(tableAlias, col)
+		} else {
+			colRef = driver.EscapeColumn(col)
+		}
+
+		columns = append(columns, colRef)
 		target = append(target, reflect.New(structField.Type).Interface())
 	}
 
