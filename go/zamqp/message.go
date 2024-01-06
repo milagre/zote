@@ -3,6 +3,7 @@ package zamqp
 import (
 	"bytes"
 	"compress/zlib"
+	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -21,6 +22,11 @@ type Message interface {
 	Content() (data []byte, contentType string, err error)
 	Options() MessageOptions
 	Exchange() Exchange
+}
+
+func MarshalJsonContent(v any) (data []byte, contentType string, err error) {
+	data, err = json.Marshal(v)
+	return data, "application/json", err
 }
 
 // RawMessage fully implements the Message interface for any data

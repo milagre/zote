@@ -89,8 +89,9 @@ type Queue struct {
 }
 
 type Exchange struct {
-	Name       string
-	Type       ExchangeType
+	Name string
+	Type ExchangeType
+
 	NonDurable bool
 	AutoDelete bool
 	Internal   bool
