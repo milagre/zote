@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zsort"
 	"github.com/milagre/zote/go/zfunc"
@@ -63,7 +62,6 @@ func buildSelectQueryPlan(r *Repository, mapping Mapping, fields []string, claus
 	var where string
 	var values []interface{}
 	if clause != nil {
-		spew.Dump(clause)
 		visitor := &whereVisitor{
 			driver:     r.conn.Driver(),
 			tableAlias: firstTableAlias,

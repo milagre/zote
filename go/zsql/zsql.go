@@ -17,6 +17,8 @@ type Driver interface {
 type Transactor interface {
 	Queryer
 	TransactionBeginner
+
+	Driver() Driver
 }
 
 type Transaction interface {

@@ -20,11 +20,11 @@ import (
 // Repository
 type Repository struct {
 	name     string
-	conn     zsql.Connection
+	conn     zsql.Transactor
 	mappings map[string]Mapping
 }
 
-func NewRepository(name string, conn zsql.Connection) *Repository {
+func NewRepository(name string, conn zsql.Transactor) *Repository {
 	return &Repository{
 		name:     name,
 		conn:     conn,
