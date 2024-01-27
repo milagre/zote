@@ -45,7 +45,7 @@ locals {
         for user in vhost.users :
         {
           user      = user,
-          vhost     = "${trimprefix(vhost.name, "/")}",
+          vhost     = vhost.name,
           configure = ".*",
           read      = ".*",
           write     = ".*",
@@ -53,7 +53,7 @@ locals {
         ], [
         {
           user      = "admin",
-          vhost     = "${trimprefix(vhost.name, "/")}",
+          vhost     = vhost.name,
           configure = ".*",
           read      = ".*",
           write     = ".*",
@@ -68,16 +68,12 @@ locals {
         tags              = user.tags,
       }
     ],
-    vhosts = concat([
+    vhosts = [
       for vhost in var.setup.vhosts :
       {
-        name = "${trimprefix(vhost.name, "/")}",
+        name = vhost.name,
       }
-      ], [
-      {
-        name = "/"
-      }
-    ])
+    ],
   }
 
 }
