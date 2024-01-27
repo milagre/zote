@@ -17,6 +17,8 @@ import (
 // construct this yourself, as that risks not setting some values. Use
 // DefaultOptions() and manipulate the result.
 type Options struct {
+	SecureOnly bool
+
 	Timeouts Timeouts
 
 	TLSConfig *tls.Config
@@ -66,6 +68,7 @@ type NetworkTimeouts struct {
 
 func DefaultOptions() Options {
 	return Options{
+		SecureOnly: true,
 		Timeouts: Timeouts{
 			TimeLimit: 2 * time.Minute,
 			HTTPTimeouts: HTTPTimeouts{
@@ -94,8 +97,12 @@ func New(options Options) *http.Client {
 		Timeout:   options.Timeouts.NetworkTimeouts.ConnectionTimeout,
 		KeepAlive: 2500 * time.Millisecond,
 	}
-	t.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		return nil, fmt.Errorf("insecure http requests are disabled, please use https")
+
+	t.DialContext = netDialer.DialContext
+	if options.SecureOnly {
+		t.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return nil, fmt.Errorf("insecure http requests are disabled, please use https")
+		}
 	}
 
 	tlsDialer := &tls.Dialer{
