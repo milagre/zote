@@ -102,7 +102,7 @@ func (m Mapping) mapField(driver zsql.Driver, tableAlias string, columnAliasPref
 
 			structField, ok := reflect.TypeOf(m.PtrType).Elem().FieldByName(field)
 			if !ok {
-				return "", nil, fmt.Errorf("getting struct field %s on %T", field, m.PtrType)
+				return "", nil, fmt.Errorf("mapping field: getting struct field %s on %T", field, m.PtrType)
 			}
 
 			return driver.EscapeTableColumn(tableAlias, col), reflect.New(structField.Type).Interface(), nil
@@ -132,7 +132,7 @@ func (m Mapping) mapFields(driver zsql.Driver, tableAlias string, columnAliasPre
 
 		structField, ok := reflect.TypeOf(m.PtrType).Elem().FieldByName(f)
 		if !ok {
-			return nil, nil, fmt.Errorf("getting struct field %s on %T", f, m.PtrType)
+			return nil, nil, fmt.Errorf("mapping fields: getting struct field %s on %T", f, m.PtrType)
 		}
 
 		var colRef string
@@ -169,7 +169,7 @@ func (m Mapping) mappedPrimaryKeyColumns(driver zsql.Driver, tableAlias string, 
 
 		structField, ok := reflect.TypeOf(m.PtrType).Elem().FieldByName(f)
 		if !ok {
-			return nil, nil, fmt.Errorf("getting struct field %s on %T", f, m.PtrType)
+			return nil, nil, fmt.Errorf("mapping primary key: getting struct field %s on %T", f, m.PtrType)
 		}
 
 		result = append(result, driver.EscapeTableColumn(tableAlias, col)+" AS "+fmt.Sprintf("_%d", i))

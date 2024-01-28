@@ -12,6 +12,8 @@ type Driver interface {
 	EscapeColumn(c string) string
 	EscapeTableColumn(t string, c string) string
 	NullSafeEqualityOperator() string
+
+	IsConflictError(error) bool
 }
 
 type Transactor interface {

@@ -2,11 +2,13 @@ package zsqlite3
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/mattn/go-sqlite3"
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/milagre/zote/go/zsql"
@@ -35,6 +37,11 @@ func (d driver) EscapeTableColumn(t string, c string) string {
 
 func (d driver) NullSafeEqualityOperator() string {
 	return "IS"
+}
+
+func (d driver) IsConflictError(err error) bool {
+	var sqliteErr *sqlite3.Error
+	return errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique
 }
 
 func DefaultOptions() zsql.Options {

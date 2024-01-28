@@ -2,6 +2,7 @@ package zmysql
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -34,6 +35,11 @@ func (d driver) EscapeTableColumn(t string, c string) string {
 
 func (d driver) NullSafeEqualityOperator() string {
 	return "<=>"
+}
+
+func (d driver) IsConflictError(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	return errors.As(err, &mysqlErr) && mysqlErr.Number == 1062
 }
 
 func DefaultOptions() zsql.Options {

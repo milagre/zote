@@ -36,7 +36,13 @@ func (r *Repository) AddMapping(m Mapping) {
 	if r.mappings == nil {
 		r.mappings = map[string]Mapping{}
 	}
-	r.mappings[zreflect.TypeID(reflect.TypeOf(m.PtrType))] = m
+
+	key := zreflect.TypeID(reflect.TypeOf(m.PtrType))
+	if _, ok := r.mappings[key]; ok {
+		panic(fmt.Sprintf("Duplicate sql mapping for type %s", key))
+	}
+
+	r.mappings[key] = m
 }
 
 func (r *Repository) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) (err error) {
@@ -239,6 +245,9 @@ func (r *Repository) Put(ctx context.Context, listOfPtrs any, opts zorm.PutOptio
 		} else {
 			err := r.insert(ctx, mapping, primaryKeyFields, val)
 			if err != nil {
+				if r.conn.Driver().IsConflictError(err) {
+					err = zorm.ErrConflict
+				}
 				return fmt.Errorf("performing insert: %w", err)
 			}
 		}
@@ -277,7 +286,8 @@ func (r *Repository) insert(ctx context.Context, mapping Mapping, primaryKeyFiel
 		values = append(values, objPtr.Elem().FieldByName(f).Interface())
 	}
 
-	fmt.Printf("%s\n%v\n", query, values)
+	// fmt.Printf("Q: %s\nV: %s", query, plan.values)
+
 	_, id, err := zsql.Exec(ctx, r.conn, query, values)
 	if err != nil {
 		return fmt.Errorf("executing insert: %w", err)

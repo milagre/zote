@@ -9,6 +9,7 @@ import (
 )
 
 var ErrNotFound = fmt.Errorf("not found")
+var ErrConflict = fmt.Errorf("conflict")
 
 type Repository interface {
 	Find(ctx context.Context, ptrToListOfPtrs any, opts FindOptions) error
