@@ -29,3 +29,10 @@ func Eq(left zelement.Element, right zelement.Element) zclause.Eq {
 		Right: right,
 	}
 }
+
+func In(left []zelement.Element, right [][]zelement.Element) zclause.In {
+	return zclause.In{
+		Left:  left,
+		Right: right,
+	}
+}
