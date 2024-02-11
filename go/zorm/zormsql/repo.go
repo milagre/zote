@@ -73,6 +73,20 @@ func (r *Repository) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 	return r.get(ctx, listOfPtrs, opts)
 }
 
+func (r *Repository) Put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			if er, ok := e.(error); ok {
+				err = fmt.Errorf("panic in find: %w - %s", er, string(debug.Stack()))
+			} else {
+				err = fmt.Errorf("panic in find: %v - %s", e, string(debug.Stack()))
+			}
+		}
+	}()
+
+	return r.put(ctx, listOfPtrs, opts)
+}
+
 func (r *Repository) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) error {
 	targetList, modelPtrType, err := validatePtrToListOfPtr(ptrToListOfPtrs)
 	if err != nil {
@@ -143,6 +157,10 @@ func (r *Repository) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to get: %w", err)
+	}
+
+	if reflect.ValueOf(listOfPtrs).Len() == 0 {
+		return nil
 	}
 
 	typeID := zreflect.TypeID(modelPtrType)
@@ -217,10 +235,14 @@ func (r *Repository) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 	return nil
 }
 
-func (r *Repository) Put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) error {
+func (r *Repository) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) error {
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to get: %w", err)
+	}
+
+	if reflect.ValueOf(listOfPtrs).Len() == 0 {
+		return nil
 	}
 
 	typeID := zreflect.TypeID(modelPtrType)
