@@ -157,6 +157,8 @@ func (m *requeueMessage) queueDefinition() Queue {
 		return *m.queue
 	}
 
+	queueName := fmt.Sprintf("%s-%s", m.kind, m.originalQueueName)
+
 	opts := Options{}
 	if m.kind == "retry" {
 		opts = Options{
@@ -167,9 +169,8 @@ func (m *requeueMessage) queueDefinition() Queue {
 			"x-dead-letter-routing-key": m.originalQueueName,
 			"x-dead-letter-strategy":    "at-least-once",
 		}
+		queueName += "-" + m.delay.String()
 	}
-
-	queueName := fmt.Sprintf("%s-%s-%s", m.kind, m.delay, m.originalQueueName)
 
 	m.queue = &Queue{
 		Name:    queueName,
