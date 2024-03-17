@@ -44,10 +44,11 @@ func (d driver) IsConflictError(err error) bool {
 
 func DefaultOptions() zsql.Options {
 	return zsql.Options{
-		"collation": "utf8mb4_bin",
-		"charset":   "utf8mb4",
-		"parseTime": true,
-		"timeout":   5 * time.Second, // Connection timeout only
+		"collation":       "utf8mb4_bin",
+		"charset":         "utf8mb4",
+		"clientFoundRows": true,
+		"parseTime":       true,
+		"timeout":         5 * time.Second, // Connection timeout only
 	}
 }
 
