@@ -47,7 +47,7 @@ func (v *whereVisitor) visitBinaryLeaf(operator string, c zclause.BinaryLeaf) er
 
 	v.result += " " + operator + " "
 
-	c.Right.Accept(v)
+	err = c.Right.Accept(v)
 	if err != nil {
 		return fmt.Errorf("visiting binary leaf right side: %w", err)
 	}
@@ -108,6 +108,12 @@ func (v *whereVisitor) VisitOr(c zclause.Or) error {
 }
 
 func (v *whereVisitor) VisitIn(c zclause.In) error {
+	if len(c.Right) == 0 {
+		// An empty value list cannot produce results, but ins't an invalid query
+		v.result += "FALSE /* empty IN clause */"
+		return nil
+	}
+
 	for _, list := range c.Right {
 		if len(list) != len(c.Left) {
 			return fmt.Errorf("cannot visit in clause with mismatched left and right lengths")

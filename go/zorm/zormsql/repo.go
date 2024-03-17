@@ -108,8 +108,6 @@ func (r *Repository) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.Fi
 
 	query := plan.query(limit)
 
-	// fmt.Printf("Q: %s\nV: %s", query, plan.values)
-
 	rows, err := r.conn.Query(ctx, query, plan.values...)
 	if err != nil {
 		return fmt.Errorf("executing find query: %w", err)
@@ -375,10 +373,9 @@ func (r *Repository) update(ctx context.Context, mapping Mapping, primaryKeyFiel
 		values = append(values, objPtr.Elem().FieldByName(f).Interface())
 	}
 
-	fmt.Printf("%s\n%v\n", query, values)
 	affected, _, err := zsql.Exec(ctx, r.conn, query, values)
 	if err != nil {
-		return fmt.Errorf("executing insert: %w", err)
+		return fmt.Errorf("executing update: %w", err)
 	}
 
 	if affected == 0 {
