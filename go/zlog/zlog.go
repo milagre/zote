@@ -40,6 +40,9 @@ type Logger interface {
 
 	WithField(key string, value interface{}) Logger
 	WithFields(fields Fields) Logger
+
+	AddField(key string, value interface{})
+	AddFields(fields Fields)
 }
 
 type Destination interface {

@@ -49,6 +49,13 @@ func (l *logger) Tracef(format string, args ...interface{}) { l.sendf(LevelTrace
 func (l *logger) WithField(key string, value interface{}) Logger { return l.withField(key, value) }
 func (l *logger) WithFields(fields Fields) Logger                { return l.withFields(fields) }
 
+func (l *logger) AddField(key string, value interface{}) { l.fields[key] = value }
+func (l *logger) AddFields(fields Fields) {
+	for k, v := range fields {
+		l.fields[k] = v
+	}
+}
+
 func (l *logger) send(level Level, message string) {
 	for _, d := range l.destinations {
 		d.Send(level, l.fields, message)
