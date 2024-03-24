@@ -105,7 +105,16 @@ func (m Mapping) mapField(driver zsql.Driver, tableAlias string, columnAliasPref
 				return "", nil, fmt.Errorf("mapping field: getting struct field %s on %T", field, m.PtrType)
 			}
 
-			return driver.EscapeTableColumn(tableAlias, col), reflect.New(structField.Type).Interface(), nil
+			var ref string
+			if tableAlias == "" {
+				ref = driver.EscapeColumn(col)
+			} else {
+				ref = driver.EscapeTableColumn(tableAlias, col)
+			}
+
+			val := reflect.New(structField.Type).Interface()
+
+			return ref, val, nil
 		}
 	}
 

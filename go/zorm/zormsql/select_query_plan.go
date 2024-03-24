@@ -8,7 +8,6 @@ import (
 
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zsort"
-	"github.com/milagre/zote/go/zfunc"
 )
 
 func buildSelectQueryPlan(r *Repository, mapping Mapping, fields []string, clause zclause.Clause, sorts []zsort.Sort) (*selectQueryPlan, error) {
@@ -38,21 +37,22 @@ func buildSelectQueryPlan(r *Repository, mapping Mapping, fields []string, claus
 
 	// Order
 	var order string
-	orders, err := zfunc.MapE(sorts, func(s zsort.Sort) (string, error) {
-		dir := "ASC"
-		if s.Direction == zsort.Desc {
-			dir = "DESC"
+	var orders []string
+	var orderValues []interface{}
+	for _, s := range sorts {
+		sv := sortVisitor{
+			driver:     r.conn.Driver(),
+			tableAlias: firstTableAlias,
+			mapping:    mapping,
 		}
 
-		col, _, err := mapping.mapField(r.conn.Driver(), firstTableAlias, "", s.Field.Name)
+		order, vals, err := sv.Visit(s)
 		if err != nil {
-			return "", fmt.Errorf("mapping sort column: %w", err)
+			return nil, fmt.Errorf("visiting sort: %w", err)
 		}
 
-		return col + " " + dir, nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("mapping sort: %w", err)
+		orders = append(orders, order)
+		orderValues = append(orderValues, vals...)
 	}
 	if len(orders) > 0 {
 		order = "ORDER BY " + strings.Join(orders, ", ")
@@ -60,7 +60,7 @@ func buildSelectQueryPlan(r *Repository, mapping Mapping, fields []string, claus
 
 	// Where
 	var where string
-	var values []interface{}
+	var whereValues []interface{}
 	if clause != nil {
 		visitor := &whereVisitor{
 			driver:     r.conn.Driver(),
@@ -72,7 +72,7 @@ func buildSelectQueryPlan(r *Repository, mapping Mapping, fields []string, claus
 			return nil, fmt.Errorf("visiting select where: %w", err)
 		}
 		where = "WHERE " + w
-		values = v
+		whereValues = v
 	}
 
 	return &selectQueryPlan{
@@ -82,9 +82,10 @@ func buildSelectQueryPlan(r *Repository, mapping Mapping, fields []string, claus
 		columns:           columns,
 		fields:            fields,
 
-		order:  order,
-		where:  where,
-		values: values,
+		order:       order,
+		orderValues: orderValues,
+		where:       where,
+		whereValues: whereValues,
 
 		primaryKeyTarget: primaryKeyTarget,
 		target:           target,
@@ -97,8 +98,9 @@ type selectQueryPlan struct {
 	columns           []string
 	fields            []string
 	order             string
+	orderValues       []interface{}
 	where             string
-	values            []interface{}
+	whereValues       []interface{}
 
 	primaryKeyTarget []interface{}
 	target           []interface{}
@@ -115,8 +117,8 @@ func (plan selectQueryPlan) scannedPrimaryKey() (string, error) {
 	return string(data), err
 }
 
-func (plan selectQueryPlan) query(limit string) string {
-	return fmt.Sprintf(`
+func (plan selectQueryPlan) query(limit string) (string, []interface{}) {
+	result := fmt.Sprintf(`
 		SELECT
 			%s
 		FROM
@@ -131,4 +133,8 @@ func (plan selectQueryPlan) query(limit string) string {
 		plan.order,
 		limit,
 	)
+
+	values := append(plan.whereValues, plan.orderValues...)
+
+	return result, values
 }

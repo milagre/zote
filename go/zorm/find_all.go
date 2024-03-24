@@ -11,6 +11,7 @@ func FindAll[T any](ctx context.Context, repo Repository, pageSize int, opts Fin
 	page := 0
 
 	for {
+		list = list[0:0]
 		err := Find[T](ctx, repo, &list, opts)
 		if err != nil {
 			return fmt.Errorf("finding all on page %d: %w", page, err)

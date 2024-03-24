@@ -120,23 +120,41 @@ func (v *whereVisitor) VisitIn(c zclause.In) error {
 		}
 	}
 
-	ands := make([]zclause.Clause, 0, len(c.Left))
-	for _, list := range c.Right {
-		eqs := make([]zclause.Clause, 0, len(list))
-		for i, elem := range c.Left {
-			eqs = append(eqs, zclause.Eq{
-				Left:  elem,
-				Right: list[i],
-			})
+	v.result += "("
+
+	for _, left := range c.Left {
+		err := left.Accept(v)
+		if err != nil {
+			return fmt.Errorf("visiting left side of in clause: %w", err)
 		}
-		ands = append(ands, zclause.And{Clauses: eqs})
 	}
 
-	rewrite := zclause.Or{
-		Clauses: ands,
+	v.result += ") IN ("
+
+	for i, right := range c.Right {
+		v.result += "("
+
+		for j, elem := range right {
+			err := elem.Accept(v)
+			if err != nil {
+				return fmt.Errorf("visiting right side of in clause: %w", err)
+			}
+
+			if j != len(right)-1 {
+				v.result += ","
+			}
+		}
+
+		v.result += ")"
+
+		if i != len(c.Right)-1 {
+			v.result += ","
+		}
 	}
 
-	return rewrite.Accept(v)
+	v.result += ") "
+
+	return nil
 }
 
 func (v *whereVisitor) VisitValue(e zelement.Value) error {

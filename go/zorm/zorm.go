@@ -15,6 +15,7 @@ type Repository interface {
 	Find(ctx context.Context, ptrToListOfPtrs any, opts FindOptions) error
 	Get(ctx context.Context, listOfPtrs any, opts GetOptions) error
 	Put(ctx context.Context, listOfPtrs any, opts PutOptions) error
+	Delete(ctx context.Context, listOfPtrs any, opts DeleteOptions) error
 }
 
 type PutOptions struct {
@@ -24,13 +25,14 @@ type PutOptions struct {
 }
 
 type DeleteOptions struct {
-	Include   Include
-	Relations map[string]Include
+	Include    Include
+	Relations  map[string]Include
+	GetOptions GetOptions
 }
 
 type FindOptions struct {
 	Include Include
-	Sort    zsort.Sort
+	Sort    []zsort.Sort
 	Where   zclause.Clause
 	Offset  int
 }
@@ -81,11 +83,11 @@ func Put[T any](ctx context.Context, repo Repository, list []*T, opts PutOptions
 	return repo.Put(ctx, list, opts)
 }
 
-/*
-
-func Delete[T any](ctx context.Context, list []T, opts DeleteOptions) error {
-	return delete(ctx, source, list, opts)
+func Delete[T any](ctx context.Context, repo Repository, list []T, opts DeleteOptions) error {
+	return repo.Delete(ctx, list, opts)
 }
+
+/*
 
 func DeleteWhere[T any](ctx context.Context, list []T, clause zclause.Clause, opts DeleteOptions) (int, error) {
 	return deleteWhere(ctx, source, list, clause, opts)

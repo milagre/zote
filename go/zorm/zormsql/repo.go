@@ -63,9 +63,9 @@ func (r *Repository) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
-				err = fmt.Errorf("panic in find: %w - %s", er, string(debug.Stack()))
+				err = fmt.Errorf("panic in get: %w - %s", er, string(debug.Stack()))
 			} else {
-				err = fmt.Errorf("panic in find: %v - %s", e, string(debug.Stack()))
+				err = fmt.Errorf("panic in get: %v - %s", e, string(debug.Stack()))
 			}
 		}
 	}()
@@ -77,14 +77,28 @@ func (r *Repository) Put(ctx context.Context, listOfPtrs any, opts zorm.PutOptio
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
-				err = fmt.Errorf("panic in find: %w - %s", er, string(debug.Stack()))
+				err = fmt.Errorf("panic in put: %w - %s", er, string(debug.Stack()))
 			} else {
-				err = fmt.Errorf("panic in find: %v - %s", e, string(debug.Stack()))
+				err = fmt.Errorf("panic in put: %v - %s", e, string(debug.Stack()))
 			}
 		}
 	}()
 
 	return r.put(ctx, listOfPtrs, opts)
+}
+
+func (r *Repository) Delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			if er, ok := e.(error); ok {
+				err = fmt.Errorf("panic in delete: %w - %s", er, string(debug.Stack()))
+			} else {
+				err = fmt.Errorf("panic in delete: %v - %s", e, string(debug.Stack()))
+			}
+		}
+	}()
+
+	return r.delete(ctx, listOfPtrs, opts)
 }
 
 func (r *Repository) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) error {
@@ -99,16 +113,16 @@ func (r *Repository) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.Fi
 		return fmt.Errorf("find mapping unavailable type %s", typeID)
 	}
 
-	plan, err := buildSelectQueryPlan(r, mapping, opts.Include.Fields, opts.Where, opts.Include.Sort)
+	plan, err := buildSelectQueryPlan(r, mapping, opts.Include.Fields, opts.Where, opts.Sort)
 	if err != nil {
 		return fmt.Errorf("building query plan for find: %w", err)
 	}
 
 	limit := fmt.Sprintf(" LIMIT %d OFFSET %d", targetList.Cap(), opts.Offset)
 
-	query := plan.query(limit)
+	query, values := plan.query(limit)
 
-	rows, err := r.conn.Query(ctx, query, plan.values...)
+	rows, err := r.conn.Query(ctx, query, values...)
 	if err != nil {
 		return fmt.Errorf("executing find query: %w", err)
 	}
@@ -164,7 +178,7 @@ func (r *Repository) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 	typeID := zreflect.TypeID(modelPtrType)
 	mapping, ok := r.mappings[typeID]
 	if !ok {
-		return fmt.Errorf("get mapping unavailable for type %s", typeID)
+		return fmt.Errorf("mapping unavailable for type %s", typeID)
 	}
 
 	pk, err := mapping.primaryKeyFields()
@@ -211,7 +225,7 @@ func (r *Repository) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 	}
 
 	if findTarget.Len() != targetVal.Len() {
-		return zorm.ErrNotFound
+		return fmt.Errorf("expected %d rows found, but only got %d: %w", targetVal.Len(), findTarget.Len(), zorm.ErrNotFound)
 	}
 
 	for i := 0; i < findTarget.Len(); i++ {
@@ -246,7 +260,7 @@ func (r *Repository) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptio
 	typeID := zreflect.TypeID(modelPtrType)
 	mapping, ok := r.mappings[typeID]
 	if !ok {
-		return fmt.Errorf("get mapping unavailable for type %s", typeID)
+		return fmt.Errorf("mapping unavailable for type %s", typeID)
 	}
 
 	primaryKeyFields, err := mapping.primaryKeyFields()
@@ -276,6 +290,76 @@ func (r *Repository) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptio
 	err = r.Get(ctx, listOfPtrs, opts.GetOptions)
 	if err != nil {
 		return fmt.Errorf("error in get after put: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Repository) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) error {
+	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
+	if err != nil {
+		return fmt.Errorf("invalid argument to delete: %w", err)
+	}
+
+	if reflect.ValueOf(listOfPtrs).Len() == 0 {
+		return nil
+	}
+
+	typeID := zreflect.TypeID(modelPtrType)
+	mapping, ok := r.mappings[typeID]
+	if !ok {
+		return fmt.Errorf("mapping unavailable for type %s", typeID)
+	}
+
+	primaryKeyFields, err := mapping.primaryKeyFields()
+	if err != nil {
+		return fmt.Errorf("mapping primary key for delete in clause: %w", err)
+	}
+
+	primaryKeyColumns, _, err := mapping.mapFields(r.conn.Driver(), "", "", primaryKeyFields)
+	if err != nil {
+		return fmt.Errorf("mapping primary key columns for delete: %w", err)
+	}
+
+	err = r.Get(ctx, listOfPtrs, opts.GetOptions)
+	if err != nil {
+		return fmt.Errorf("error in get before delete: %w", err)
+	}
+
+	values := make([]interface{}, 0, targetVal.Len()*len(primaryKeyFields))
+	for i := 0; i < targetVal.Len(); i++ {
+		val := targetVal.Index(i)
+
+		primaryKeyValue := make([]interface{}, 0, len(primaryKeyFields))
+		for _, f := range primaryKeyFields {
+			primaryKeyValue = append(primaryKeyValue, val.Elem().FieldByName(f).Interface())
+		}
+
+		values = append(values, primaryKeyValue...)
+	}
+
+	query := fmt.Sprintf(
+		"DELETE FROM %s WHERE (%s) IN (%s)",
+		r.conn.Driver().EscapeTable(mapping.Table),
+		strings.Join(primaryKeyColumns, ","),
+		strings.Join(
+			zfunc.MakeSlice(
+				"("+strings.Join(zfunc.MakeSlice("?", len(primaryKeyFields)), ",")+")",
+				targetVal.Len(),
+			),
+			",",
+		),
+	)
+
+	// fmt.Printf("Q: %s\nV: %s", query, values)
+
+	count, _, err := zsql.Exec(ctx, r.conn, query, values)
+	if err != nil {
+		return fmt.Errorf("executing delete: %w", err)
+	}
+
+	if count != targetVal.Len() {
+		return fmt.Errorf("expected %d rows affected, but only got %d: %w", count, targetVal.Len(), zorm.ErrNotFound)
 	}
 
 	return nil
@@ -379,7 +463,7 @@ func (r *Repository) update(ctx context.Context, mapping Mapping, primaryKeyFiel
 	}
 
 	if affected == 0 {
-		return zorm.ErrNotFound
+		return fmt.Errorf("no rows affected for %v: %w", values, zorm.ErrNotFound)
 	}
 
 	if affected != 1 {

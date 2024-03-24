@@ -10,6 +10,6 @@ const (
 )
 
 type Sort struct {
-	Field     zelement.Field
+	Element   zelement.Element
 	Direction Direction
 }
