@@ -70,13 +70,13 @@ func DefaultOptions() Options {
 	return Options{
 		SecureOnly: true,
 		Timeouts: Timeouts{
-			TimeLimit: 2 * time.Minute,
+			TimeLimit: 1 * time.Minute,
 			HTTPTimeouts: HTTPTimeouts{
-				ExpectContinueTimeout: 2 * time.Second,
+				ExpectContinueTimeout: 5 * time.Second,
 			},
 			NetworkTimeouts: NetworkTimeouts{
-				ConnectionTimeout: 2 * time.Second,
-				TLSTimeout:        2 * time.Second,
+				ConnectionTimeout: 5 * time.Second,
+				TLSTimeout:        5 * time.Second,
 			},
 		},
 		TLSConfig: &tls.Config{
