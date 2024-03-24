@@ -177,8 +177,8 @@ func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliv
 			msgCtx := zlog.Context(ctx, msgLogger)
 
 			func() {
-				defer msgLogger.Info("Message processed")
-				msgLogger.Info("Message received")
+				defer msgLogger.Info("Complete")
+				msgLogger.Info("Starting")
 
 				defer func() {
 					if r := recover(); r != nil {
