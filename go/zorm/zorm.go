@@ -83,7 +83,7 @@ func Put[T any](ctx context.Context, repo Repository, list []*T, opts PutOptions
 	return repo.Put(ctx, list, opts)
 }
 
-func Delete[T any](ctx context.Context, repo Repository, list []T, opts DeleteOptions) error {
+func Delete[T any](ctx context.Context, repo Repository, list []*T, opts DeleteOptions) error {
 	return repo.Delete(ctx, list, opts)
 }
 
