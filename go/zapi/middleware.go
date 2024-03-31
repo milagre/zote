@@ -29,8 +29,13 @@ func NewCompressionMiddleware() Middleware {
 	return func(req Request, next HandleFunc) ResponseBuilder {
 		resp := next(req)
 		headers := resp.Headers()
+		body := resp.Body()
 
 		if headers.Get("Content-Encoding") != "" {
+			return resp
+		}
+
+		if body == nil {
 			return resp
 		}
 
@@ -54,7 +59,6 @@ func NewCompressionMiddleware() Middleware {
 		}
 
 		var ce string
-		body := resp.Body()
 
 		first := slices.Min(indexes)
 		switch first {
