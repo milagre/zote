@@ -2,6 +2,7 @@ package zormsql
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/milagre/zote/go/zelement"
 	"github.com/milagre/zote/go/zelement/zclause"
@@ -164,7 +165,7 @@ func (v *whereVisitor) VisitValue(e zelement.Value) error {
 }
 
 func (v *whereVisitor) VisitField(e zelement.Field) error {
-	result, _, err := v.mapping.mapField(v.driver, v.tableAlias, v.columnAliasPrefix, e.Name)
+	result, err := v.visitField(e)
 	if err != nil {
 		return fmt.Errorf("visiting field: %w", err)
 	}
@@ -174,8 +175,50 @@ func (v *whereVisitor) VisitField(e zelement.Field) error {
 	return nil
 }
 
+func (v *whereVisitor) visitField(e zelement.Field) (string, error) {
+	result, _, err := v.mapping.mapField(v.driver, v.tableAlias, v.columnAliasPrefix, e.Name)
+	return result, err
+}
+
 func (v *whereVisitor) VisitMethod(e zelement.Method) error {
-	return fmt.Errorf("methods not supported")
+	strp := v.driver.PrepareMethod(e.Name)
+
+	if strp != nil {
+		clause := *strp
+		for i, c := range e.Params {
+			if f, ok := c.(zelement.Field); ok {
+				fs, err := v.visitField(f)
+				if err != nil {
+					return fmt.Errorf("visiting field in method '%s' at param %d: %w", e.Name, i, err)
+				}
+
+				if strings.Contains(clause, "%s") {
+					clause = fmt.Sprintf(clause, fs)
+				} else {
+					return fmt.Errorf("visiting field in method '%s' at param %d - no placeholder in method template", e.Name, i)
+				}
+			} else if val, ok := c.(zelement.Value); ok {
+				value := v.driver.EscapeFulltextSearch(fmt.Sprintf("%s", val.Value))
+				v.values = append(v.values, value)
+			} else if _, ok := c.(zelement.Method); ok {
+				return fmt.Errorf("visiting nested method in method '%s' at param %d - unsupported", e.Name, i)
+			}
+		}
+
+		v.result += clause
+	} else {
+		v.result += e.Name
+		v.result += "("
+		for i, p := range e.Params {
+			err := p.Accept(v)
+			if err != nil {
+				return fmt.Errorf("visiting element in method '%s' at param %d: %w", e.Name, i, err)
+			}
+		}
+		v.result += ")"
+	}
+
+	return nil
 }
 
 func (v *whereVisitor) visitNode(joiner string, c zclause.Node) error {

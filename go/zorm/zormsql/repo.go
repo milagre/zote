@@ -118,7 +118,7 @@ func (r *Repository) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.Fi
 		return fmt.Errorf("building query plan for find: %w", err)
 	}
 
-	limit := fmt.Sprintf(" LIMIT %d OFFSET %d", targetList.Cap(), opts.Offset)
+	limit := fmt.Sprintf("LIMIT %d OFFSET %d", targetList.Cap(), opts.Offset)
 
 	query, values := plan.query(limit)
 

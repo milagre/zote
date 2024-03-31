@@ -39,6 +39,14 @@ func (d driver) NullSafeEqualityOperator() string {
 	return "IS"
 }
 
+func (d driver) EscapeFulltextSearch(search string) string {
+	return EscapeString(search)
+}
+
+func (d driver) PrepareMethod(m string) *string {
+	return nil
+}
+
 func (d driver) IsConflictError(err error) bool {
 	var sqliteErr *sqlite3.Error
 	return errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique
@@ -83,4 +91,22 @@ func Open(dsn string, poolSize int) (zsql.Connection, error) {
 	pool.SetMaxOpenConns(poolSize)
 
 	return zsql.NewConnection(pool, Driver), nil
+}
+
+func EscapeString(value string) string {
+	var sb strings.Builder
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		switch c {
+		case '\\', 0, '\n', '\r', '\'', '"', '`':
+			sb.WriteByte('\\')
+			sb.WriteByte(c)
+		case '\032':
+			sb.WriteByte('\\')
+			sb.WriteByte('Z')
+		default:
+			sb.WriteByte(c)
+		}
+	}
+	return sb.String()
 }

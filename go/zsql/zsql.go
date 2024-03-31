@@ -12,6 +12,9 @@ type Driver interface {
 	EscapeColumn(c string) string
 	EscapeTableColumn(t string, c string) string
 	NullSafeEqualityOperator() string
+	EscapeFulltextSearch(search string) string
+
+	PrepareMethod(m string) *string
 
 	IsConflictError(error) bool
 }

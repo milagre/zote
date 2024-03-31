@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 
+	"github.com/milagre/zote/go/zelement/zmethod"
 	"github.com/milagre/zote/go/zsql"
 )
 
@@ -35,6 +36,22 @@ func (d driver) EscapeTableColumn(t string, c string) string {
 
 func (d driver) NullSafeEqualityOperator() string {
 	return "<=>"
+}
+
+func (d driver) EscapeFulltextSearch(search string) string {
+	return EscapeString(search) + "*"
+}
+
+func (d driver) PrepareMethod(m string) *string {
+	var result *string
+
+	switch zmethod.Method(m) {
+	case zmethod.Match:
+		v := "MATCH(%s) AGAINST(? IN BOOLEAN MODE)"
+		result = &v
+	}
+
+	return result
 }
 
 func (d driver) IsConflictError(err error) bool {
@@ -80,4 +97,22 @@ func Open(dsn string, poolSize int) (zsql.Connection, error) {
 	pool.SetMaxOpenConns(poolSize)
 
 	return zsql.NewConnection(pool, Driver), nil
+}
+
+func EscapeString(value string) string {
+	var sb strings.Builder
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		switch c {
+		case '\\', 0, '\n', '\r', '\'', '"', '`':
+			sb.WriteByte('\\')
+			sb.WriteByte(c)
+		case '\032':
+			sb.WriteByte('\\')
+			sb.WriteByte('Z')
+		default:
+			sb.WriteByte(c)
+		}
+	}
+	return sb.String()
 }

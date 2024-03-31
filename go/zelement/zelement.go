@@ -28,7 +28,7 @@ func (e Field) Accept(v Visitor) error {
 
 type Method struct {
 	Name   string
-	Params []interface{}
+	Params []Element
 }
 
 func (e Method) Accept(v Visitor) error {
