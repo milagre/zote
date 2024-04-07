@@ -95,7 +95,15 @@ resource "kubernetes_config_map" "config" {
   }
 
   data = {
-    "enabled_plugins" = "[rabbitmq_peer_discovery_k8s, rabbitmq_management, rabbitmq_prometheus].\n"
+    "enabled_plugins" = "[${
+      join(",", [
+        "rabbitmq_management",
+        "rabbitmq_peer_discovery_k8s",
+        "rabbitmq_prometheus",
+        "rabbitmq_shovel_management",
+        "rabbitmq_shovel",
+      ])
+    }].\n"
 
     "definitions.json" : jsonencode(local.definitions)
 
