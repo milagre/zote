@@ -52,7 +52,7 @@ func (t Unix) MarshalJSON() ([]byte, error) {
 	case ResolutionNano:
 		s = t.time.UnixNano()
 	default:
-		return nil, fmt.Errorf("invalid timestamp resolution")
+		return nil, fmt.Errorf("invalid timestamp resolution: %v", t)
 	}
 
 	return []byte(strconv.FormatInt(s, 10)), nil
