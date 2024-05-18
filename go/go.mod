@@ -1,6 +1,6 @@
 module github.com/milagre/zote/go
 
-go 1.22.1
+go 1.22
 
 require (
 	github.com/breml/rootcerts v0.2.13
