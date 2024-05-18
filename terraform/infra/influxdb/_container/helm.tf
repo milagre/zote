@@ -6,7 +6,7 @@ resource "helm_release" "influxdb2" {
   chart      = "influxdb2"
   version    = "2.1.2"
 
-  timeout = 120
+  timeout = 300
 
   set_sensitive {
     name  = "adminUser.password"
