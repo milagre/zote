@@ -19,6 +19,10 @@ func And(clauses ...zclause.Clause) zclause.And {
 	return zclause.And{Clauses: clauses}
 }
 
+func Or(clauses ...zclause.Clause) zclause.Or {
+	return zclause.Or{Clauses: clauses}
+}
+
 func Eq(left zelement.Element, right zelement.Element) zclause.Eq {
 	return zclause.Eq{Left: left, Right: right}
 }
