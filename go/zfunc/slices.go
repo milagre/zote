@@ -27,3 +27,13 @@ func MakeSlice[T any](val T, len int) []T {
 	}
 	return result
 }
+
+func Select[T any](list []T, cb func(T) bool) []T {
+	result := make([]T, 0, len(list))
+	for _, elem := range list {
+		if cb(elem) {
+			result = append(result, elem)
+		}
+	}
+	return result
+}
