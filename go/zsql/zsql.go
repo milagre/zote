@@ -43,6 +43,8 @@ type TransactionEnder interface {
 type Queryer interface {
 	Selector
 	Executor
+
+	Driver() Driver
 }
 
 type Selector interface {
@@ -80,7 +82,10 @@ func (c Connection) Driver() Driver {
 
 func (c Connection) Begin(ctx context.Context, opts *sql.TxOptions) (Transaction, error) {
 	tx, err := c.db.BeginTx(ctx, opts)
-	return transaction{tx: tx}, err
+	return transaction{
+		source: c,
+		tx:     tx,
+	}, err
 }
 
 func (c Connection) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
@@ -96,7 +101,12 @@ func (c Connection) Close() error {
 }
 
 type transaction struct {
-	tx *sql.Tx
+	source Connection
+	tx     *sql.Tx
+}
+
+func (t transaction) Driver() Driver {
+	return t.source.driver
 }
 
 func (t transaction) Commit() error {

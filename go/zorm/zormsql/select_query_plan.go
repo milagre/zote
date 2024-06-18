@@ -10,7 +10,7 @@ import (
 	"github.com/milagre/zote/go/zelement/zsort"
 )
 
-func buildSelectQueryPlan(r *Repository, mapping Mapping, fields []string, clause zclause.Clause, sorts []zsort.Sort) (*selectQueryPlan, error) {
+func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause zclause.Clause, sorts []zsort.Sort) (*selectQueryPlan, error) {
 	if len(fields) == 0 {
 		fields = mapping.allFields()
 	}

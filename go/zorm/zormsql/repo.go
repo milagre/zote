@@ -17,35 +17,88 @@ import (
 	"github.com/milagre/zote/go/zsql"
 )
 
-// Repository
-type Repository struct {
+type Config struct {
 	name     string
-	conn     zsql.Transactor
 	mappings map[string]Mapping
 }
 
+// Repository
+type Repository struct {
+	*Queryer
+	ts zsql.Transactor
+}
+
+type Transaction struct {
+	*Queryer
+	tx zsql.Transaction
+}
+
+type Queryer struct {
+	cfg  *Config
+	conn zsql.Queryer
+}
+
 func NewRepository(name string, conn zsql.Transactor) *Repository {
-	return &Repository{
+	cfg := &Config{
 		name:     name,
-		conn:     conn,
 		mappings: map[string]Mapping{},
+	}
+	return &Repository{
+		Queryer: &Queryer{
+			cfg:  cfg,
+			conn: conn,
+		},
+		ts: conn,
 	}
 }
 
 func (r *Repository) AddMapping(m Mapping) {
-	if r.mappings == nil {
-		r.mappings = map[string]Mapping{}
+	if r.cfg.mappings == nil {
+		r.cfg.mappings = map[string]Mapping{}
 	}
 
 	key := zreflect.TypeID(reflect.TypeOf(m.PtrType))
-	if _, ok := r.mappings[key]; ok {
+	if _, ok := r.cfg.mappings[key]; ok {
 		panic(fmt.Sprintf("Duplicate sql mapping for type %s", key))
 	}
 
-	r.mappings[key] = m
+	r.cfg.mappings[key] = m
 }
 
-func (r *Repository) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) (err error) {
+func (r *Repository) Begin(ctx context.Context) (zorm.Transaction, error) {
+	tx, err := r.ts.Begin(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("startin transaction: %w", err)
+	}
+
+	return &Transaction{
+		Queryer: &Queryer{
+			cfg:  r.cfg,
+			conn: tx,
+		},
+		tx: tx,
+	}, nil
+}
+
+func (t *Transaction) Commit() error {
+	err := t.tx.Commit()
+	if err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (t *Transaction) Rollback() error {
+	err := t.tx.Rollback()
+	if err != nil {
+		return fmt.Errorf("rolling back transaction: %w", err)
+	}
+
+	return nil
+}
+
+func (r *Queryer) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
@@ -59,7 +112,7 @@ func (r *Repository) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.Fi
 	return r.find(ctx, ptrToListOfPtrs, opts)
 }
 
-func (r *Repository) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions) (err error) {
+func (r *Queryer) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
@@ -73,7 +126,7 @@ func (r *Repository) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 	return r.get(ctx, listOfPtrs, opts)
 }
 
-func (r *Repository) Put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) (err error) {
+func (r *Queryer) Put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
@@ -87,7 +140,7 @@ func (r *Repository) Put(ctx context.Context, listOfPtrs any, opts zorm.PutOptio
 	return r.put(ctx, listOfPtrs, opts)
 }
 
-func (r *Repository) Delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) (err error) {
+func (r *Queryer) Delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
@@ -101,14 +154,14 @@ func (r *Repository) Delete(ctx context.Context, listOfPtrs any, opts zorm.Delet
 	return r.delete(ctx, listOfPtrs, opts)
 }
 
-func (r *Repository) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) error {
+func (r *Queryer) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) error {
 	targetList, modelPtrType, err := validatePtrToListOfPtr(ptrToListOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to find: %w", err)
 	}
 
 	typeID := zreflect.TypeID(modelPtrType)
-	mapping, ok := r.mappings[typeID]
+	mapping, ok := r.cfg.mappings[typeID]
 	if !ok {
 		return fmt.Errorf("find mapping unavailable type %s", typeID)
 	}
@@ -165,7 +218,7 @@ func (r *Repository) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.Fi
 	return nil
 }
 
-func (r *Repository) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions) error {
+func (r *Queryer) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions) error {
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to get: %w", err)
@@ -176,7 +229,7 @@ func (r *Repository) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 	}
 
 	typeID := zreflect.TypeID(modelPtrType)
-	mapping, ok := r.mappings[typeID]
+	mapping, ok := r.cfg.mappings[typeID]
 	if !ok {
 		return fmt.Errorf("mapping unavailable for type %s", typeID)
 	}
@@ -247,7 +300,7 @@ func (r *Repository) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptio
 	return nil
 }
 
-func (r *Repository) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) error {
+func (r *Queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) error {
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to get: %w", err)
@@ -258,7 +311,7 @@ func (r *Repository) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptio
 	}
 
 	typeID := zreflect.TypeID(modelPtrType)
-	mapping, ok := r.mappings[typeID]
+	mapping, ok := r.cfg.mappings[typeID]
 	if !ok {
 		return fmt.Errorf("mapping unavailable for type %s", typeID)
 	}
@@ -295,7 +348,7 @@ func (r *Repository) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptio
 	return nil
 }
 
-func (r *Repository) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) error {
+func (r *Queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) error {
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to delete: %w", err)
@@ -306,7 +359,7 @@ func (r *Repository) delete(ctx context.Context, listOfPtrs any, opts zorm.Delet
 	}
 
 	typeID := zreflect.TypeID(modelPtrType)
-	mapping, ok := r.mappings[typeID]
+	mapping, ok := r.cfg.mappings[typeID]
 	if !ok {
 		return fmt.Errorf("mapping unavailable for type %s", typeID)
 	}
@@ -365,7 +418,7 @@ func (r *Repository) delete(ctx context.Context, listOfPtrs any, opts zorm.Delet
 	return nil
 }
 
-func (r *Repository) insert(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
+func (r *Queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
 	fields := mapping.insertFields()
 	columns, _, err := mapping.mapFields(r.conn.Driver(), "", "", fields)
 	if err != nil {
@@ -415,7 +468,7 @@ func (r *Repository) insert(ctx context.Context, mapping Mapping, primaryKeyFiel
 	return nil
 }
 
-func (r *Repository) update(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
+func (r *Queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
 	primaryKeyColumns, _, err := mapping.mapFields(r.conn.Driver(), "", "", primaryKeyFields)
 	if err != nil {
 		return fmt.Errorf("mapping primary key columns for update: %w", err)
