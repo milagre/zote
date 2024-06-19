@@ -126,23 +126,41 @@ resource "kubernetes_deployment" "deploy" {
             }
           }
 
-          // Mount configmaps needed for files in container
+          // Configmaps as files:
+          // - as folder
           dynamic "volume_mount" {
-            for_each = coalesce(var.files.configmaps, {})
+            for_each = {
+              for key, value in coalesce(var.files.configmaps, {}) : key => value
+              if length(split("/", value)) == 1
+            }
             content {
-              name       = volume_mount.value
               mount_path = volume_mount.key
+              name       = volume_mount.value
+            }
+          }
+          // - single file
+          dynamic "volume_mount" {
+            for_each = {
+              for key, value in coalesce(var.files.configmaps, {}) : key => value
+              if length(split("/", value)) == 2
+            }
+            content {
+              mount_path = volume_mount.key
+              name       = split("/", volume_mount.value)[0]
+              sub_path   = split("/", volume_mount.value)[1]
             }
           }
         }
 
         // Attach configmaps needed for files to spec
         dynamic "volume" {
-          for_each = coalesce(var.files.configmaps, {})
+          for_each = toset([
+            for key, value in coalesce(var.files.configmaps, {}) : value
+          ])
           content {
-            name = volume.value
+            name = split("/", volume.value)[0]
             config_map {
-              name = volume.value
+              name = split("/", volume.value)[0]
             }
           }
         }
