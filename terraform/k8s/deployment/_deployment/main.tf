@@ -27,7 +27,6 @@ variable "http_liveness_probe" {
 
 locals {
   timestamptag = replace(timestamp(), "/[-:TZ]/", "")
-  tag          = var.tag == "latest" ? "latest-${local.timestamptag}" : var.tag
 }
 
 resource "kubernetes_deployment" "deploy" {
@@ -35,9 +34,8 @@ resource "kubernetes_deployment" "deploy" {
     name      = var.name
     namespace = var.namespace
     labels = {
-      app     = var.name
-      deploy  = var.type
-      version = local.tag
+      app    = var.name
+      deploy = var.type
     }
   }
 
@@ -56,9 +54,8 @@ resource "kubernetes_deployment" "deploy" {
         name      = var.name
         namespace = var.namespace
         labels = {
-          app     = var.name
-          deploy  = var.type
-          version = local.tag
+          app    = var.name
+          deploy = var.type
         }
       }
 

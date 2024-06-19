@@ -9,8 +9,8 @@ resource "kubernetes_cron_job_v1" "job" {
     name      = var.name
     namespace = var.namespace
     labels = {
-      app     = var.name
-      version = local.tag
+      // app     = var.name
+      // version = local.tag
     }
   }
 
@@ -26,8 +26,8 @@ resource "kubernetes_cron_job_v1" "job" {
       metadata {
         name = var.name
         labels = {
-          app     = var.name
-          version = local.tag
+          // app     = var.name
+          // version = local.tag
         }
       }
 
@@ -39,8 +39,8 @@ resource "kubernetes_cron_job_v1" "job" {
           metadata {
             name = var.name
             labels = {
-              app     = var.name
-              version = local.tag
+              // app     = var.name
+              // version = local.tag
             }
           }
 

@@ -145,7 +145,6 @@ resource "kubernetes_ingress_v1" "public_nginx" {
   }
 }
 
-
 resource "kubernetes_ingress_v1" "ngrok" {
   count = var.env.is_local && var.internal.public_hostname != null ? 1 : 0
 
@@ -181,4 +180,3 @@ resource "kubernetes_ingress_v1" "ngrok" {
     }
   }
 }
-
