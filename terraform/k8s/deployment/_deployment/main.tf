@@ -27,6 +27,10 @@ variable "http_liveness_probe" {
 
 locals {
   timestamptag = replace(timestamp(), "/[-:TZ]/", "")
+
+  configmap_files_dependencies = sort([
+    for key, value in coalesce(var.files.configmaps, {}) : split("/", value)[0]
+  ])
 }
 
 resource "kubernetes_deployment" "deploy" {
@@ -151,13 +155,11 @@ resource "kubernetes_deployment" "deploy" {
 
         // Attach configmaps needed for files to spec
         dynamic "volume" {
-          for_each = toset([
-            for key, value in coalesce(var.files.configmaps, {}) : value
-          ])
+          for_each = toset(local.configmap_files_dependencies)
           content {
-            name = split("/", volume.value)[0]
+            name = volume.value
             config_map {
-              name = split("/", volume.value)[0]
+              name = volume.value
             }
           }
         }

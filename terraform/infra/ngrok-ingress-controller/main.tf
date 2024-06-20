@@ -20,7 +20,7 @@ resource "helm_release" "ngrok" {
   name       = "ingress-ngrok"
   namespace  = var.namespace
   repository = "https://ngrok.github.io/kubernetes-ingress-controller"
-  version    = "0.12.0"
+  version    = "0.11.0"
 
   set {
     name  = "podSecurityPolicy.enabled"
