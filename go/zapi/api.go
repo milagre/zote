@@ -26,6 +26,8 @@ type Request interface {
 	Context() context.Context
 	AddContextValue(key any, val any)
 
+	Source() Source
+
 	Body() ([]byte, error)
 	Header() http.Header
 	Method() string
@@ -42,4 +44,11 @@ type Route interface {
 
 type AuthorizingRoute interface {
 	Authorize(req Request) ResponseBuilder
+}
+
+type Source struct {
+	Scheme string
+	Host   string
+	Remote string
+	Root   string
 }

@@ -22,11 +22,15 @@ func Pathf(template string, params ...string) string {
 	return fmt.Sprintf(template, parts...)
 }
 
-func RenderPathf(template string, params ...interface{}) string {
+func RenderPathf(source Source, template string, params ...interface{}) string {
 	parts := make([]any, len(params))
 	for i, p := range params {
 		s := fmt.Sprintf("%s", p)
 		parts[i] = url.PathEscape(s)
 	}
-	return fmt.Sprintf(template, parts...)
+
+	path := fmt.Sprintf(template, parts...)
+	return (&url.URL{
+		Path: source.Root,
+	}).JoinPath(path).Path
 }

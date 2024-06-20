@@ -31,6 +31,27 @@ func (r *request) AddContextValue(key any, val any) {
 	r.request = r.request.WithContext(ctx)
 }
 
+func (r *request) Source() Source {
+	return Source{
+		Scheme: defaultString(
+			r.request.Header.Get("X-Forwarded-Proto"),
+			r.request.URL.Scheme,
+		),
+		Host: defaultString(
+			r.request.Header.Get("X-Forwarded-Host"),
+			r.request.URL.Host,
+		),
+		Remote: defaultString(
+			r.request.Header.Get("X-Forwarded-For"),
+			r.request.RemoteAddr,
+		),
+		Root: defaultString(
+			r.request.Header.Get("X-Forwarded-Root"),
+			"/",
+		),
+	}
+}
+
 func (r *request) Header() http.Header {
 	return r.request.Header.Clone()
 }
@@ -76,5 +97,14 @@ func (r *request) Param(p string) string {
 		return vals[0]
 	}
 
+	return ""
+}
+
+func defaultString(list ...string) string {
+	for _, s := range list {
+		if s != "" {
+			return s
+		}
+	}
 	return ""
 }
