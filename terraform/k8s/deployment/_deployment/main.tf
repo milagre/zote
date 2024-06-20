@@ -175,11 +175,6 @@ resource "kubernetes_deployment" "deploy" {
                     operator = "In"
                     values   = [var.name]
                   }
-                  match_expressions {
-                    key      = "version"
-                    operator = "In"
-                    values   = [var.tag]
-                  }
                 }
                 topology_key = "kubernetes.io/hostname"
               }
