@@ -171,19 +171,19 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}()
 
 	// If a route is found, this will call it
-	execute := func(parents []Route, route Route, params map[string][]string) {
+	execute := func(allRoutes []Route, targetRoute Route, params map[string][]string) {
 		access = access.WithFields(zlog.Fields{
-			"route": route.Name(),
+			"route": targetRoute.Name(),
 		})
 		access.Info("Starting")
 
 		req := &request{
 			request: r,
-			route:   route,
+			route:   targetRoute,
 			params:  params,
 		}
 
-		method, ok := route.Methods()[r.Method]
+		method, ok := targetRoute.Methods()[r.Method]
 		var handler HandleFunc
 		if !ok {
 			if r.Method == http.MethodOptions {
@@ -197,8 +197,8 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 			// We only authorize calls that hit a handler,
 			// calls that hit a default can execute alone
-			for _, parent := range append(parents, route) {
-				if auth, ok := parent.(AuthorizingRoute); ok {
+			for _, route := range allRoutes {
+				if auth, ok := route.(AuthorizingRoute); ok {
 					resp = auth.Authorize(req)
 					if resp != nil {
 						return
