@@ -222,6 +222,10 @@ func (v *whereVisitor) VisitMethod(e zelement.Method) error {
 }
 
 func (v *whereVisitor) visitNode(joiner string, c zclause.Node) error {
+	if len(c.Clauses) == 0 {
+		return nil
+	}
+
 	v.result += "("
 
 	for i, child := range c.Clauses {

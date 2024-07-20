@@ -71,8 +71,10 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 		if err != nil {
 			return nil, fmt.Errorf("visiting select where: %w", err)
 		}
-		where = "WHERE " + w
-		whereValues = v
+		if w != "" {
+			where = "WHERE " + w
+			whereValues = v
+		}
 	}
 
 	return &selectQueryPlan{
