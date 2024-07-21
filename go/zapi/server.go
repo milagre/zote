@@ -150,7 +150,7 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		"method":    r.Method,
 	})
 
-	// Return when done, this will wrote the assigned response (or default) to caller
+	// Return when done, this will write the assigned response (or default) to caller
 	var resp ResponseBuilder
 	defer func() {
 		if r := recover(); r != nil {
@@ -199,9 +199,11 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			// calls that hit a default can execute alone
 			for _, route := range allRoutes {
 				if auth, ok := route.(AuthorizingRoute); ok {
-					resp = auth.Authorize(req)
-					if resp != nil {
-						return
+					authResp := auth.Authorize(req)
+					if authResp != nil {
+						handler = func(req Request) ResponseBuilder {
+							return authResp
+						}
 					}
 				}
 			}
