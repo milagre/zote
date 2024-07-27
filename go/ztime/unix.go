@@ -10,15 +10,6 @@ import (
 var _ json.Marshaler = Unix{}
 var _ json.Unmarshaler = &Unix{}
 
-type Resolution time.Duration
-
-const (
-	ResolutionSecond = Resolution(time.Second)
-	ResolutionMilli  = Resolution(time.Millisecond)
-	ResolutionMicro  = Resolution(time.Microsecond)
-	ResolutionNano   = Resolution(time.Nanosecond)
-)
-
 type Unix struct {
 	time time.Time
 	res  Resolution
