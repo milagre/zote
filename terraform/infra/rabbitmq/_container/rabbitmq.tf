@@ -400,7 +400,7 @@ resource "kubernetes_service" "client" {
       app = local.name
     }
 
-    type = var.env.lb_type
+    type = "ClusterIP"
   }
 
   lifecycle {

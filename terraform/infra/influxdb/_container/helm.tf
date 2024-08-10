@@ -59,7 +59,7 @@ resource "helm_release" "influxdb2" {
         failureThreshold    = 3
       }
       service = {
-        type = var.env.lb_type
+        type = "ClusterIP"
       }
     })
   ]
