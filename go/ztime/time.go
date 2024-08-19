@@ -36,6 +36,10 @@ func NewTime(t time.Time, res Resolution) Time {
 	}
 }
 
+func (t *Time) String() string {
+	return t.Format(timeFormats[t.res])
+}
+
 func (t *Time) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		t = nil
@@ -59,7 +63,7 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 }
 
 func (t Time) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.Format(timeFormats[t.res]))
+	return json.Marshal(t.String())
 }
 
 func (t *Time) Scan(data any) error {

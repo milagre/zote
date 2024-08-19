@@ -23,6 +23,10 @@ func NewDate(t time.Time) Date {
 	}
 }
 
+func (d *Date) String() string {
+	return d.Format(time.DateOnly)
+}
+
 func (d *Date) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		d = nil
@@ -46,7 +50,7 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 }
 
 func (d Date) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.Format(time.DateOnly))
+	return json.Marshal(d.String())
 }
 
 func (d *Date) Scan(data any) error {
