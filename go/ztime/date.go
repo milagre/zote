@@ -23,7 +23,7 @@ func NewDate(t time.Time) Date {
 	}
 }
 
-func (d *Date) String() string {
+func (d Date) String() string {
 	return d.Format(time.DateOnly)
 }
 

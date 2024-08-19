@@ -36,7 +36,7 @@ func NewTime(t time.Time, res Resolution) Time {
 	}
 }
 
-func (t *Time) String() string {
+func (t Time) String() string {
 	return t.Format(timeFormats[t.res])
 }
 
