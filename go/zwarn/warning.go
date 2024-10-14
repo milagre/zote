@@ -1,9 +1,22 @@
 package zwarn
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Warning interface {
 	Warning() string
+}
+
+type Warnings []Warning
+
+func (e Warnings) Warning() string {
+	var result []string
+	for _, w := range e {
+		result = append(result, w.Warning())
+	}
+	return "[" + strings.Join(result, ",") + "]"
 }
 
 type Wrapped interface{}
