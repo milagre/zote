@@ -29,7 +29,7 @@ variable "cloud" {
 
 locals {
   name = "redis-${var.name}"
-  cfg  = "REDIS_${join("_", split("-", upper(var.name)))}"
+  cfg  = "${var.env.prefix}_REDIS_${join("_", split("-", upper(var.name)))}"
 
   targetmodule = coalesce(
     try(module.container[0], null),

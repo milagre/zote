@@ -20,6 +20,6 @@ output "hostname" {
 }
 
 output "port" {
-  value     = 6873
+  value     = 6379
   sensitive = false
 }
