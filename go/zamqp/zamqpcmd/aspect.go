@@ -25,7 +25,7 @@ func (a Aspect) Apply(c zcmd.Configurable) {
 	c.AddString(a.user())
 	c.AddString(a.pass())
 	c.AddString(a.vhost()).Default("/")
-	c.AddInt(a.port()).Default(3306)
+	c.AddInt(a.port()).Default(5671)
 }
 
 func (a Aspect) Details(env zcmd.Env) zamqp.ConnectionDetails {
