@@ -9,41 +9,39 @@ import (
 	"github.com/milagre/zote/go/zcmd/zaspect"
 )
 
-var _ zcmd.Aspect = Aspect{}
+var _ zcmd.Aspect = ClusterAspect{}
 
-type Aspect struct {
+type ClusterAspect struct {
 	name string
 }
 
-func NewAspect(name string) Aspect {
-	return Aspect{
+func NewClusterAspect(name string) ClusterAspect {
+	return ClusterAspect{
 		name: name,
 	}
 }
 
-func (a Aspect) Apply(c zcmd.Configurable) {
+func (a ClusterAspect) Apply(c zcmd.Configurable) {
 	c.AddString(a.host()).Default("localhost")
 	c.AddInt(a.port()).Default(6379)
 }
 
-func (a Aspect) Client(env zcmd.Env) *redis.Client {
-	return redis.NewClient(
-		&redis.Options{
-			Addr: fmt.Sprintf(
-				"%s:%d",
-				env.String(a.host()),
-				env.Int(a.port()),
-			),
+func (a ClusterAspect) Client(env zcmd.Env) *redis.ClusterClient {
+	return redis.NewClusterClient(
+		&redis.ClusterOptions{
+			Addrs: []string{
+				fmt.Sprintf("%s:%d", env.String(a.host()), env.Int(a.port())),
+			},
 		},
 	)
 }
 
 // Option constructors
 
-func (a Aspect) port() string {
+func (a ClusterAspect) port() string {
 	return zaspect.Format("redis-%s-port", a.name)
 }
 
-func (a Aspect) host() string {
+func (a ClusterAspect) host() string {
 	return zaspect.Format("redis-%s-host", a.name)
 }

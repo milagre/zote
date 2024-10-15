@@ -7,7 +7,9 @@ module "container" {
   name      = var.name
   namespace = var.namespace
 
-  ver     = var.ver
-  profile = var.container.profile
+  ver      = var.ver
+  profile  = var.container.profile
+  replicas = var.replicas
+  shards   = var.shards
 }
 

@@ -10,11 +10,16 @@ import (
 	"github.com/milagre/zote/go/zcache"
 )
 
-type redisCache struct {
-	client *redis.Client
+type RedisClient interface {
+	SetEx(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+	Get(ctx context.Context, key string) *redis.StringCmd
 }
 
-func NewRedisCache(c *redis.Client) zcache.Cache {
+type redisCache struct {
+	client RedisClient
+}
+
+func NewRedisCache(c RedisClient) zcache.Cache {
 	return redisCache{
 		client: c,
 	}

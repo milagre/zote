@@ -1,9 +1,16 @@
+locals {
+  shard_ids = {
+    for idx in range(var.shards) :
+    idx => substr("abcdefghijklmnopqrstuvwxyz", idx, 1)
+  }
+}
+
 resource "kubernetes_service" "redis" {
   metadata {
     name      = "redis-${var.name}"
     namespace = var.namespace
     labels = {
-      app = var.name
+      app = "redis-${var.name}"
     }
   }
 
@@ -13,48 +20,55 @@ resource "kubernetes_service" "redis" {
     }
 
     selector = {
-      app = var.name
+      app = "redis-${var.name}"
     }
-
-    cluster_ip = "None"
   }
 }
 
-resource "kubernetes_config_map" "redis" {
+resource "kubernetes_config_map" "redis_conf" {
+  count = var.shards
+
   metadata {
-    name      = "cfg-redis-${var.name}"
+    name      = "cfg-redis-${var.name}-${local.shard_ids[count.index]}"
     namespace = var.namespace
     labels = {
-      app = var.name
+      app = "redis-${var.name}"
     }
   }
 
   data = {
-    "primary.conf" = "${file("${path.module}/primary.conf")}"
-    "replica.conf" = <<EOF
-        slaveof redis-${var.name}-0.redis-${var.name}.redis 6379
-        maxmemory ${floor(module.profile.mem_mb.max * 0.9)}mb
-        maxmemory-policy allkeys-lru
-        timeout 0
-        dir /data
-    EOF
+    "redis.conf" = file("${path.module}/redis.conf")
+  }
+}
+
+resource "kubernetes_config_map" "redis_scripts" {
+  metadata {
+    name      = "cfg-redis-${var.name}-scripts"
+    namespace = var.namespace
+    labels = {
+      app = "redis-${var.name}"
+    }
+  }
+
+  data = {
+    "update-nodes.sh" = "${file("${path.module}/update-nodes.sh")}"
   }
 }
 
 resource "kubernetes_stateful_set" "redis" {
+  count = var.shards
+
   metadata {
-    name      = "redis-${var.name}"
+    name      = "redis-${var.name}-${local.shard_ids[count.index]}"
     namespace = var.namespace
-    annotations = {
-    }
   }
 
   spec {
-    replicas = module.profile.num.max
+    replicas = var.replicas + 1
 
     selector {
       match_labels = {
-        app = var.name
+        app = "redis-${var.name}"
       }
     }
 
@@ -63,43 +77,11 @@ resource "kubernetes_stateful_set" "redis" {
     template {
       metadata {
         labels = {
-          app = var.name
-        }
-
-        annotations = {
+          app = "redis-${var.name}"
         }
       }
 
       spec {
-        init_container {
-          name              = "init"
-          image             = "redis:${var.ver}"
-          image_pull_policy = "IfNotPresent"
-          command           = ["/bin/bash", "-c", ]
-          args = [<<-EOF
-            set -ex
-            # Generate redis server-id from pod ordinal index.
-            [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
-            ordinal=$${BASH_REMATCH[1]}
-            # Copy appropriate redis config files from config-map to respective directories.
-            if [[ $ordinal -eq 0 ]]; then
-                cp /mnt/primary.conf /etc/redis.conf
-            else
-                cp /mnt/replica.conf /etc/redis.conf
-            fi
-            EOF
-          ]
-
-          volume_mount {
-            name       = "claim"
-            mount_path = "/etc"
-          }
-          volume_mount {
-            name       = "config"
-            mount_path = "/mnt/"
-          }
-        }
-
         container {
           name              = "redis"
           image             = "redis:${var.ver}"
@@ -107,9 +89,24 @@ resource "kubernetes_stateful_set" "redis" {
 
           port {
             container_port = 6379
-            name           = "redis"
+            name           = "client"
           }
-          command = ["redis-server", "/etc/redis.conf"]
+
+          port {
+            container_port = 16379
+            name           = "cluster"
+          }
+
+          command = ["/etc/scripts/update-nodes.sh", "redis-server", "/etc/redis/redis.conf"]
+
+          env {
+            name = "POD_IP"
+            value_from {
+              field_ref {
+                field_path = "status.podIP"
+              }
+            }
+          }
 
           volume_mount {
             name       = "data"
@@ -117,9 +114,15 @@ resource "kubernetes_stateful_set" "redis" {
           }
 
           volume_mount {
-            name       = "claim"
-            mount_path = "/etc"
+            name       = "config"
+            mount_path = "/etc/redis"
           }
+
+          volume_mount {
+            name       = "scripts"
+            mount_path = "/etc/scripts"
+          }
+
           resources {
             limits = {
               cpu    = module.profile.cpu_cores.max
@@ -132,10 +135,26 @@ resource "kubernetes_stateful_set" "redis" {
             }
           }
         }
+
         volume {
           name = "config"
           config_map {
-            name = kubernetes_config_map.redis.metadata[0].name
+            name = kubernetes_config_map.redis_conf[count.index].metadata[0].name
+          }
+        }
+
+        volume {
+          name = "scripts"
+          config_map {
+            name         = kubernetes_config_map.redis_scripts.metadata[0].name
+            default_mode = "0755"
+          }
+        }
+
+        volume {
+          name = "shared"
+          empty_dir {
+
           }
         }
       }
@@ -153,16 +172,42 @@ resource "kubernetes_stateful_set" "redis" {
         }
       }
     }
-    volume_claim_template {
+  }
+}
+
+resource "kubernetes_job" "cluster" {
+  metadata {
+    name      = "redis-${var.name}-cluster"
+    namespace = var.namespace
+  }
+
+  spec {
+    template {
       metadata {
-        name = "claim"
+        name = "redis-${var.name}-cluster"
       }
+
       spec {
-        access_modes = ["ReadWriteOnce"]
-        resources {
-          requests = {
-            storage = "${floor(module.profile.mem_mb.max * 1.1)}M"
-          }
+        container {
+          name              = "redis"
+          image             = "redis:${var.ver}"
+          image_pull_policy = "IfNotPresent"
+
+          command = flatten([
+            "redis-cli",
+            "-h", "redis-${var.name}-a-0.redis-${var.name}",
+            "-p", "6379",
+            "--cluster", "create",
+            flatten([
+              for node in range(var.replicas + 1) :
+              [
+                for id in values(local.shard_ids) :
+                "redis-${var.name}-${id}-${node}.redis-${var.name}:6379"
+              ]
+            ]),
+            "--cluster-replicas", "${var.replicas}",
+            "--cluster-yes",
+          ])
         }
       }
     }

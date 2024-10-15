@@ -2,6 +2,8 @@ variable "env" {}
 variable "namespace" {}
 variable "name" {}
 variable "ver" {}
+variable "shards" { type = number }
+variable "replicas" { type = number }
 variable "container" {
   type = object({
     profile = object({
@@ -12,10 +14,6 @@ variable "container" {
       mem = object({
         min = string
         max = string
-      })
-      num = object({
-        min = number
-        max = number
       })
     })
   })

@@ -3,6 +3,8 @@ variable "namespace" {}
 variable "name" {}
 variable "ver" {}
 variable "profile" {}
+variable "shards" {}
+variable "replicas" {}
 
 locals {
   name = "redis-${var.name}"
