@@ -84,7 +84,7 @@ func (c *directConsumer) Start(processCtx context.Context, workerContext context
 
 			defer func() {
 				if r := recover(); r != nil {
-					consumerLogger.Warnf("Direct consumer worker panic: %v; %v", r, string(debug.Stack()))
+					consumerLogger.Errorf("Direct consumer worker panic: %v; %v", r, string(debug.Stack()))
 					restart <- id
 				}
 			}()
