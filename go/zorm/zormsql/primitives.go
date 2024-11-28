@@ -45,8 +45,8 @@ func (c column) escapedAlias(d zsql.Driver) string {
 }
 
 type join struct {
-	leftTable  *table
-	rightTable *table
+	leftTable  table
+	rightTable table
 	onPairs    [][2]column
 	onWhere    zclause.Clause
 }

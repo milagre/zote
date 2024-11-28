@@ -8,6 +8,7 @@ import (
 
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zsort"
+	"github.com/milagre/zote/go/zfunc"
 	"github.com/milagre/zote/go/zsql"
 )
 
@@ -16,25 +17,63 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 		fields = mapping.allFields()
 	}
 
-	primaryTable := table{
+	innerPrimaryTable := table{
 		name:  mapping.Table,
-		alias: "_1",
+		alias: "target",
 	}
 
-	// primary key
-	primaryKeyColumns, primaryKeyTarget, err := mapping.mappedPrimaryKeyColumns(r.conn.Driver(), primaryTable, "")
+	outerTable := table{
+		alias: "inner",
+	}
+
+	outerPrimaryTable := table{
+		name:  mapping.Table,
+		alias: "outer",
+	}
+
+	// inner primary key
+	innerPrimaryKey, primaryKeyTarget, err := mapping.mappedPrimaryKeyColumns(innerPrimaryTable, "")
 	if err != nil {
 		return nil, fmt.Errorf("mapping primary key columns: %w", err)
 	}
 
+	// outer primary key
+	outerPrimaryKey := zfunc.Map(innerPrimaryKey, func(c column) column {
+		return column{
+			table: outerTable,
+			name:  c.alias,
+			alias: c.alias,
+		}
+	})
+
 	// Columns
-	columns, target, err := mapping.mapFields(r.conn.Driver(), primaryTable, "", fields)
+	columns, target, err := mapping.mapFields(outerPrimaryTable, "", fields)
 	if err != nil {
 		return nil, fmt.Errorf("mapping select columns: %w", err)
 	}
 
-	// Joins
-	joins := []string{}
+	// Inner joins
+	innerJoins := []join{}
+
+	// Outer joins
+	outerJoins := []join{
+		{
+			leftTable:  outerTable,
+			rightTable: outerPrimaryTable,
+			onPairs: zfunc.Map(innerPrimaryKey, func(c column) [2]column {
+				return [2]column{
+					{
+						table: outerTable,
+						name:  c.alias,
+					},
+					{
+						table: outerPrimaryTable,
+						name:  c.name,
+					},
+				}
+			}),
+		},
+	}
 
 	// Order
 	var order string
@@ -43,7 +82,7 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 	for _, s := range sorts {
 		sv := sortVisitor{
 			driver:  r.conn.Driver(),
-			table:   primaryTable,
+			table:   innerPrimaryTable,
 			mapping: mapping,
 		}
 
@@ -65,7 +104,7 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 	if clause != nil {
 		visitor := &whereVisitor{
 			driver:  r.conn.Driver(),
-			table:   primaryTable,
+			table:   innerPrimaryTable,
 			mapping: mapping,
 		}
 		w, v, err := visitor.Visit(clause)
@@ -79,12 +118,18 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 	}
 
 	return &selectQueryPlan{
-		table: primaryTable,
-		joins: joins,
+		innerPrimaryTable: innerPrimaryTable,
+		outerPrimaryTable: outerPrimaryTable,
+		outerTable:        outerTable,
 
-		primaryKeyColumns: primaryKeyColumns,
-		columns:           columns,
-		fields:            fields,
+		innerPrimaryKey: innerPrimaryKey,
+		outerPrimaryKey: outerPrimaryKey,
+
+		innerJoins: innerJoins,
+		outerJoins: outerJoins,
+
+		columns: columns,
+		fields:  fields,
 
 		order:       order,
 		orderValues: orderValues,
@@ -99,15 +144,24 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 }
 
 type selectQueryPlan struct {
-	table             table
-	joins             []string
-	primaryKeyColumns []column
-	columns           []column
-	fields            []string
-	order             string
-	orderValues       []interface{}
-	where             string
-	whereValues       []interface{}
+	innerPrimaryTable table
+	outerPrimaryTable table
+	outerTable        table
+
+	innerPrimaryKey []column
+	outerPrimaryKey []column
+
+	innerJoins []join
+	outerJoins []join
+
+	columns []column
+	fields  []string
+
+	order       string
+	orderValues []interface{}
+
+	where       string
+	whereValues []interface{}
 
 	limit  int
 	offset int
@@ -128,29 +182,86 @@ func (plan selectQueryPlan) scannedPrimaryKey() (string, error) {
 }
 
 func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
-	resultColumns := make([]string, 0, len(plan.primaryKeyColumns)+len(plan.columns))
-
-	for _, c := range append(plan.primaryKeyColumns, plan.columns...) {
-		resultColumns = append(resultColumns, c.escaped(driver)+" AS "+driver.EscapeColumn(c.alias))
-	}
-
 	limitClause := fmt.Sprintf("LIMIT %d OFFSET %d", plan.limit, plan.offset)
 
 	result := fmt.Sprintf(`
 		SELECT
-			%s
-		FROM
-			%s AS %s
-		/*where: */ %s 
-		/*order: */ %s
-		/*limit: */ %s
+			/*outerColumns*/ %s
+		FROM (
+			SELECT 
+				/*innerColumns*/ %s
+			FROM
+				/*target*/ %s
+				AS
+				/*targetAlias*/ %s
+			/*where*/ %s 
+			/*order*/ %s
+			/*limit*/ %s
+		) AS /*wrapper*/ %s
+		LEFT OUTER JOIN
+		/*outerJoins*/ %s
 	`,
-		strings.Join(resultColumns, ", "),
-		plan.table.escaped(driver),
-		plan.table.escapedAlias(driver),
-		plan.where,
-		plan.order,
-		limitClause,
+		/*outerColumns*/ strings.Join(
+			zfunc.Map(
+				append(plan.outerPrimaryKey, plan.columns...),
+				func(c column) string {
+					return fmt.Sprintf(
+						"%s AS %s",
+						driver.EscapeTableColumn(c.table.alias, c.name),
+						driver.EscapeColumn(c.alias),
+					)
+				},
+			),
+			", ",
+		),
+		/*innerColumns*/ strings.Join(
+			zfunc.Map(
+				plan.innerPrimaryKey,
+				func(c column) string {
+					return fmt.Sprintf(
+						"%s AS %s",
+						driver.EscapeTableColumn(c.table.alias, c.name),
+						driver.EscapeColumn(c.alias),
+					)
+				},
+			),
+			", ",
+		),
+		/*target*/ driver.EscapeTable(plan.innerPrimaryTable.name),
+		/*targetAlias*/ driver.EscapeTable(plan.innerPrimaryTable.alias),
+		/*where*/ plan.where,
+		/*order*/ plan.order,
+		/*limit*/ limitClause,
+		/*wrapper*/ driver.EscapeTable(plan.outerTable.alias),
+		/*outerJoins*/ strings.Join(
+			zfunc.Map(
+				plan.outerJoins,
+				func(j join) string {
+					return fmt.Sprintf(
+						`%s AS %s ON (%s)`,
+						driver.EscapeTable(j.rightTable.name),
+						driver.EscapeTable(j.rightTable.alias),
+						strings.Join(
+							zfunc.Map(j.onPairs, func(cols [2]column) string {
+								return fmt.Sprintf(
+									"%s=%s",
+									driver.EscapeTableColumn(
+										cols[0].table.alias,
+										cols[0].name,
+									),
+									driver.EscapeTableColumn(
+										cols[1].table.alias,
+										cols[1].name,
+									),
+								)
+							}),
+							" AND ",
+						),
+					)
+				},
+			),
+			" LEFT OUTER JOIN ",
+		),
 	)
 
 	values := append(plan.whereValues, plan.orderValues...)

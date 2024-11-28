@@ -373,7 +373,7 @@ func (r *Queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 		return fmt.Errorf("mapping primary key for delete in clause: %w", err)
 	}
 
-	primaryKeyColumns, _, err := mapping.mapFields(r.conn.Driver(), targetTable, "", primaryKeyFields)
+	primaryKeyColumns, _, err := mapping.mapFields(targetTable, "", primaryKeyFields)
 	if err != nil {
 		return fmt.Errorf("mapping primary key columns for delete: %w", err)
 	}
@@ -433,7 +433,7 @@ func (r *Queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 	}
 
 	fields := mapping.insertFields()
-	columns, _, err := mapping.mapFields(r.conn.Driver(), targetTable, "", fields)
+	columns, _, err := mapping.mapFields(targetTable, "", fields)
 	if err != nil {
 		return fmt.Errorf("mapping insert columns: %w", err)
 	}
@@ -492,13 +492,13 @@ func (r *Queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields 
 		name: mapping.Table,
 	}
 
-	primaryKeyColumns, _, err := mapping.mapFields(r.conn.Driver(), targetTable, "", primaryKeyFields)
+	primaryKeyColumns, _, err := mapping.mapFields(targetTable, "", primaryKeyFields)
 	if err != nil {
 		return fmt.Errorf("mapping primary key columns for update: %w", err)
 	}
 
 	fields := mapping.updateFields()
-	columns, _, err := mapping.mapFields(r.conn.Driver(), targetTable, "", fields)
+	columns, _, err := mapping.mapFields(targetTable, "", fields)
 	if err != nil {
 		return fmt.Errorf("mapping update columns: %w", err)
 	}

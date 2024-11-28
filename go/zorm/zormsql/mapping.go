@@ -116,7 +116,7 @@ func (m Mapping) mapField(driver zsql.Driver, table table, columnAliasPrefix str
 	return column{}, nil, fmt.Errorf("field %s is not mapped", field)
 }
 
-func (m Mapping) mapFields(driver zsql.Driver, table table, columnAliasPrefix string, fields []string) ([]column, []interface{}, error) {
+func (m Mapping) mapFields(table table, columnAliasPrefix string, fields []string) ([]column, []interface{}, error) {
 	columns := make([]column, 0, len(fields))
 	target := make([]interface{}, 0, len(fields))
 
@@ -150,7 +150,7 @@ func (m Mapping) mapFields(driver zsql.Driver, table table, columnAliasPrefix st
 	return columns, target, nil
 }
 
-func (m Mapping) mappedPrimaryKeyColumns(driver zsql.Driver, table table, columnAliasPrefix string) ([]column, []interface{}, error) {
+func (m Mapping) mappedPrimaryKeyColumns(table table, columnAliasPrefix string) ([]column, []interface{}, error) {
 	result := make([]column, 0, len(m.PrimaryKey))
 	target := make([]interface{}, 0, len(m.PrimaryKey))
 
