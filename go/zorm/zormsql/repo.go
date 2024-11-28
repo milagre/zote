@@ -166,14 +166,12 @@ func (r *Queryer) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindO
 		return fmt.Errorf("find mapping unavailable type %s", typeID)
 	}
 
-	plan, err := buildSelectQueryPlan(r, mapping, opts.Include.Fields, opts.Where, opts.Sort)
+	plan, err := buildSelectQueryPlan(r, mapping, opts.Include.Fields, opts.Where, opts.Sort, targetList.Cap(), opts.Offset)
 	if err != nil {
 		return fmt.Errorf("building query plan for find: %w", err)
 	}
 
-	limit := fmt.Sprintf("LIMIT %d OFFSET %d", targetList.Cap(), opts.Offset)
-
-	query, values := plan.query(limit)
+	query, values := plan.query(r.conn.Driver())
 
 	rows, err := r.conn.Query(ctx, query, values...)
 	if err != nil {
@@ -364,12 +362,18 @@ func (r *Queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 		return fmt.Errorf("mapping unavailable for type %s", typeID)
 	}
 
+	driver := r.conn.Driver()
+
+	targetTable := table{
+		name: mapping.Table,
+	}
+
 	primaryKeyFields, err := mapping.primaryKeyFields()
 	if err != nil {
 		return fmt.Errorf("mapping primary key for delete in clause: %w", err)
 	}
 
-	primaryKeyColumns, _, err := mapping.mapFields(r.conn.Driver(), "", "", primaryKeyFields)
+	primaryKeyColumns, _, err := mapping.mapFields(r.conn.Driver(), targetTable, "", primaryKeyFields)
 	if err != nil {
 		return fmt.Errorf("mapping primary key columns for delete: %w", err)
 	}
@@ -391,10 +395,15 @@ func (r *Queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 		values = append(values, primaryKeyValue...)
 	}
 
+	whereCols := make([]string, 0, len(primaryKeyColumns))
+	for _, col := range primaryKeyColumns {
+		whereCols = append(whereCols, col.escaped(driver))
+	}
+
 	query := fmt.Sprintf(
 		"DELETE FROM %s WHERE (%s) IN (%s)",
-		r.conn.Driver().EscapeTable(mapping.Table),
-		strings.Join(primaryKeyColumns, ","),
+		targetTable.escaped(driver),
+		strings.Join(whereCols, ","),
 		strings.Join(
 			zfunc.MakeSlice(
 				"("+strings.Join(zfunc.MakeSlice("?", len(primaryKeyFields)), ",")+")",
@@ -419,10 +428,19 @@ func (r *Queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 }
 
 func (r *Queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
+	targetTable := table{
+		name: mapping.Table,
+	}
+
 	fields := mapping.insertFields()
-	columns, _, err := mapping.mapFields(r.conn.Driver(), "", "", fields)
+	columns, _, err := mapping.mapFields(r.conn.Driver(), targetTable, "", fields)
 	if err != nil {
 		return fmt.Errorf("mapping insert columns: %w", err)
+	}
+
+	queryColumns := make([]string, 0, len(columns))
+	for _, col := range columns {
+		queryColumns = append(queryColumns, col.escaped(r.conn.Driver()))
 	}
 
 	query := fmt.Sprintf(
@@ -433,9 +451,9 @@ func (r *Queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 		VALUES
 		(%s)
 		`,
-		r.conn.Driver().EscapeTable(mapping.Table),
-		strings.Join(columns, ","),
-		strings.Join(zfunc.MakeSlice("?", len(columns)), ","),
+		targetTable.escaped(r.conn.Driver()),
+		strings.Join(queryColumns, ","),
+		strings.Join(zfunc.MakeSlice("?", len(queryColumns)), ","),
 	)
 
 	values := make([]interface{}, 0, len(fields))
@@ -469,13 +487,18 @@ func (r *Queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 }
 
 func (r *Queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
-	primaryKeyColumns, _, err := mapping.mapFields(r.conn.Driver(), "", "", primaryKeyFields)
+	driver := r.conn.Driver()
+	targetTable := table{
+		name: mapping.Table,
+	}
+
+	primaryKeyColumns, _, err := mapping.mapFields(r.conn.Driver(), targetTable, "", primaryKeyFields)
 	if err != nil {
 		return fmt.Errorf("mapping primary key columns for update: %w", err)
 	}
 
 	fields := mapping.updateFields()
-	columns, _, err := mapping.mapFields(r.conn.Driver(), "", "", fields)
+	columns, _, err := mapping.mapFields(r.conn.Driver(), targetTable, "", fields)
 	if err != nil {
 		return fmt.Errorf("mapping update columns: %w", err)
 	}
@@ -489,18 +512,18 @@ func (r *Queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields 
 		WHERE
 		%s
 		`,
-		r.conn.Driver().EscapeTable(mapping.Table),
-		strings.Join(zfunc.Map(columns, func(c string) string {
+		targetTable.escaped(driver),
+		strings.Join(zfunc.Map(columns, func(c column) string {
 			return fmt.Sprintf(
 				"%s=?",
-				c,
+				c.escaped(driver),
 			)
 		}), ", "),
-		strings.Join(zfunc.Map(primaryKeyColumns, func(c string) string {
+		strings.Join(zfunc.Map(primaryKeyColumns, func(c column) string {
 			return fmt.Sprintf(
 				"%s %s ?",
-				c,
-				r.conn.Driver().NullSafeEqualityOperator(),
+				c.escaped(driver),
+				driver.NullSafeEqualityOperator(),
 			)
 		}), " AND "),
 	)

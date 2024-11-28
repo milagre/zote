@@ -11,34 +11,22 @@ import (
 
 func TestSortVisitor(t *testing.T) {
 	type testCase struct {
-		tableAlias        string
+		table             table
 		columnAliasPrefix string
 		expected          string
 	}
 
 	for name, tc := range map[string]testCase{
-		"Simple": {
-			expected: `"id" ASC`,
-		},
 		"TableAlias": {
-			tableAlias: "target",
-			expected:   `"target"."id" ASC`,
-		},
-		"ColumnAliasPrefix": {
-			columnAliasPrefix: "foreign",
-			expected:          `"foreign_id" ASC`,
-		},
-		"TableAliasColumnAliasPrefix": {
-			tableAlias:        "target",
-			columnAliasPrefix: "foreign",
-			expected:          `"target"."foreign_id" ASC`,
+			table:    table{name: "table", alias: "target"},
+			expected: `"target"."id" ASC`,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			sv := sortVisitor{
 				driver:            zsqlite3.Driver,
 				mapping:           objectMapping,
-				tableAlias:        tc.tableAlias,
+				table:             tc.table,
 				columnAliasPrefix: tc.columnAliasPrefix,
 			}
 

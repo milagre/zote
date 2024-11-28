@@ -9,7 +9,7 @@ import (
 
 type sortVisitor struct {
 	driver            zsql.Driver
-	tableAlias        string
+	table             table
 	columnAliasPrefix string
 	mapping           Mapping
 }
@@ -17,7 +17,7 @@ type sortVisitor struct {
 func (v *sortVisitor) Visit(s zsort.Sort) (string, []interface{}, error) {
 	ev := elemVisitor{
 		driver:            v.driver,
-		tableAlias:        v.tableAlias,
+		table:             v.table,
 		columnAliasPrefix: v.columnAliasPrefix,
 		mapping:           v.mapping,
 	}

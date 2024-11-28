@@ -14,6 +14,8 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 
 	t.Run("GetAccount", func(t *testing.T) {
 		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
 			obj := &Account{
 				ID: "1",
 			}
@@ -29,6 +31,8 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 
 	t.Run("GetAccountFields", func(t *testing.T) {
 		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
 			obj := &Account{
 				ID: "1",
 			}
@@ -48,6 +52,8 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 
 	t.Run("GetUser", func(t *testing.T) {
 		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
 			obj := &User{
 				ID: "1",
 			}
@@ -65,20 +71,27 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 	/*
 		t.Run("GetUserRelation", func(t *testing.T) {
 			setup(t, func(ctx context.Context, r zorm.Repository) {
+				ctx = makeContext(ctx)
+
 				obj := &User{
 					ID: "1",
 				}
 				err := zorm.Get[User](ctx, r, []*User{obj}, zorm.GetOptions{
 					Include: zorm.Include{
 						Relations: zorm.Relations{
-							"Account": zorm.Include{},
+							"Account": zorm.Relation{},
 						},
 					},
 				})
 				require.NoError(t, err)
 
 				assert.Equal(t, "1", obj.ID)
-				assert.NotNil(t, obj.Account)
+				require.NotNil(t, obj.Account)
+
+				assert.Equal(t, "1", obj.Account.ID)
+				assert.NotNil(t, obj.Account.Created)
+				assert.NotNil(t, obj.Account.Modified)
+				assert.Equal(t, "Acme, Inc.", obj.Account.Company)
 			})
 		})
 	*/

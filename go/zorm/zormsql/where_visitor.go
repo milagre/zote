@@ -14,7 +14,7 @@ var _ zelement.Visitor = &whereVisitor{}
 
 type whereVisitor struct {
 	driver            zsql.Driver
-	tableAlias        string
+	table             table
 	columnAliasPrefix string
 	mapping           Mapping
 
@@ -176,7 +176,8 @@ func (v *whereVisitor) VisitField(e zelement.Field) error {
 }
 
 func (v *whereVisitor) visitField(e zelement.Field) (string, error) {
-	result, _, err := v.mapping.mapField(v.driver, v.tableAlias, v.columnAliasPrefix, e.Name)
+	col, _, err := v.mapping.mapField(v.driver, v.table, v.columnAliasPrefix, e.Name)
+	result := col.escapedAlias(v.driver)
 	return result, err
 }
 

@@ -37,7 +37,10 @@ func setup(t *testing.T, cb func(context.Context, zorm.Repository)) {
 	require.NoError(t, err, "opening database")
 	defer conn.Close()
 
-	repo := zormsql.NewRepository("test.db", conn)
+	repoConn := conn
+	//repoConn := zsql.LoggingTransactor{Transactor: conn}
+
+	repo := zormsql.NewRepository("test.db", repoConn)
 	repo.AddMapping(AccountMapping)
 	repo.AddMapping(UserMapping)
 

@@ -92,7 +92,7 @@ func (m Mapping) isNew(objPtr reflect.Value) {
 
 }
 
-func (m Mapping) mapField(driver zsql.Driver, tableAlias string, columnAliasPrefix string, field string) (string, interface{}, error) {
+func (m Mapping) mapField(driver zsql.Driver, table table, columnAliasPrefix string, field string) (column, interface{}, error) {
 	for _, c := range m.Columns {
 		if field == c.Field {
 			col := c.Name
@@ -102,27 +102,22 @@ func (m Mapping) mapField(driver zsql.Driver, tableAlias string, columnAliasPref
 
 			structField, ok := reflect.TypeOf(m.PtrType).Elem().FieldByName(field)
 			if !ok {
-				return "", nil, fmt.Errorf("mapping field: getting struct field %s on %T", field, m.PtrType)
+				return column{}, nil, fmt.Errorf("mapping field: getting struct field %s on %T", field, m.PtrType)
 			}
 
-			var ref string
-			if tableAlias == "" {
-				ref = driver.EscapeColumn(col)
-			} else {
-				ref = driver.EscapeTableColumn(tableAlias, col)
-			}
+			res := column{table: table, name: c.Name, alias: col}
 
 			val := reflect.New(structField.Type).Interface()
 
-			return ref, val, nil
+			return res, val, nil
 		}
 	}
 
-	return "", nil, fmt.Errorf("field %s is not mapped", field)
+	return column{}, nil, fmt.Errorf("field %s is not mapped", field)
 }
 
-func (m Mapping) mapFields(driver zsql.Driver, tableAlias string, columnAliasPrefix string, fields []string) ([]string, []interface{}, error) {
-	columns := make([]string, 0, len(fields))
+func (m Mapping) mapFields(driver zsql.Driver, table table, columnAliasPrefix string, fields []string) ([]column, []interface{}, error) {
+	columns := make([]column, 0, len(fields))
 	target := make([]interface{}, 0, len(fields))
 
 	colMap := map[string]string{}
@@ -144,22 +139,19 @@ func (m Mapping) mapFields(driver zsql.Driver, tableAlias string, columnAliasPre
 			return nil, nil, fmt.Errorf("mapping fields: getting struct field %s on %T", f, m.PtrType)
 		}
 
-		var colRef string
-		if tableAlias != "" {
-			colRef = driver.EscapeTableColumn(tableAlias, col)
-		} else {
-			colRef = driver.EscapeColumn(col)
-		}
-
-		columns = append(columns, colRef)
+		columns = append(columns, column{
+			table: table,
+			name:  col,
+			alias: col,
+		})
 		target = append(target, reflect.New(structField.Type).Interface())
 	}
 
 	return columns, target, nil
 }
 
-func (m Mapping) mappedPrimaryKeyColumns(driver zsql.Driver, tableAlias string, columnAliasPrefix string) ([]string, []interface{}, error) {
-	result := make([]string, 0, len(m.PrimaryKey))
+func (m Mapping) mappedPrimaryKeyColumns(driver zsql.Driver, table table, columnAliasPrefix string) ([]column, []interface{}, error) {
+	result := make([]column, 0, len(m.PrimaryKey))
 	target := make([]interface{}, 0, len(m.PrimaryKey))
 
 	colMap := map[string]string{}
@@ -172,6 +164,7 @@ func (m Mapping) mappedPrimaryKeyColumns(driver zsql.Driver, tableAlias string, 
 		if !ok {
 			return nil, nil, fmt.Errorf("primary key column %s is not mapped", col)
 		}
+
 		if columnAliasPrefix != "" {
 			col = columnAliasPrefix + "_" + col
 		}
@@ -181,7 +174,12 @@ func (m Mapping) mappedPrimaryKeyColumns(driver zsql.Driver, tableAlias string, 
 			return nil, nil, fmt.Errorf("mapping primary key: getting struct field %s on %T", f, m.PtrType)
 		}
 
-		result = append(result, driver.EscapeTableColumn(tableAlias, col)+" AS "+fmt.Sprintf("_%d", i))
+		res := column{
+			table: table,
+			name:  col,
+			alias: fmt.Sprintf("_%d", i),
+		}
+		result = append(result, res)
 		target = append(target, reflect.New(structField.Type).Interface())
 	}
 
