@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/joho/godotenv v1.4.0
+	github.com/lithammer/dedent v1.1.0
 	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/redis/go-redis/v9 v9.6.2
 	github.com/sirupsen/logrus v1.9.0
