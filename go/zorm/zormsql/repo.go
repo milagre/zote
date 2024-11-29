@@ -166,7 +166,7 @@ func (r *Queryer) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindO
 		return fmt.Errorf("find mapping unavailable type %s", typeID)
 	}
 
-	plan, err := buildSelectQueryPlan(r, mapping, opts.Include.Fields, opts.Where, opts.Sort, targetList.Cap(), opts.Offset)
+	plan, err := buildSelectQueryPlan(r, mapping, opts.Include.Fields, opts.Include.Relations, opts.Where, opts.Sort, targetList.Cap(), opts.Offset)
 	if err != nil {
 		return fmt.Errorf("building query plan for find: %w", err)
 	}
@@ -373,7 +373,7 @@ func (r *Queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 		return fmt.Errorf("mapping primary key for delete in clause: %w", err)
 	}
 
-	primaryKeyColumns, _, err := mapping.mapFields(targetTable, "", primaryKeyFields)
+	primaryKeyStructure, err := mapping.mapStructure(targetTable, "", primaryKeyFields, zorm.Relations{})
 	if err != nil {
 		return fmt.Errorf("mapping primary key columns for delete: %w", err)
 	}
@@ -395,8 +395,8 @@ func (r *Queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 		values = append(values, primaryKeyValue...)
 	}
 
-	whereCols := make([]string, 0, len(primaryKeyColumns))
-	for _, col := range primaryKeyColumns {
+	whereCols := make([]string, 0, len(primaryKeyStructure.columns))
+	for _, col := range primaryKeyStructure.columns {
 		whereCols = append(whereCols, col.escaped(driver))
 	}
 
@@ -433,13 +433,13 @@ func (r *Queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 	}
 
 	fields := mapping.insertFields()
-	columns, _, err := mapping.mapFields(targetTable, "", fields)
+	structure, err := mapping.mapStructure(targetTable, "", fields, zorm.Relations{})
 	if err != nil {
 		return fmt.Errorf("mapping insert columns: %w", err)
 	}
 
-	queryColumns := make([]string, 0, len(columns))
-	for _, col := range columns {
+	queryColumns := make([]string, 0, len(structure.columns))
+	for _, col := range structure.columns {
 		queryColumns = append(queryColumns, col.escaped(r.conn.Driver()))
 	}
 
@@ -492,13 +492,13 @@ func (r *Queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields 
 		name: mapping.Table,
 	}
 
-	primaryKeyColumns, _, err := mapping.mapFields(targetTable, "", primaryKeyFields)
+	primaryKeyStructure, err := mapping.mapStructure(targetTable, "", primaryKeyFields, zorm.Relations{})
 	if err != nil {
 		return fmt.Errorf("mapping primary key columns for update: %w", err)
 	}
 
 	fields := mapping.updateFields()
-	columns, _, err := mapping.mapFields(targetTable, "", fields)
+	structure, err := mapping.mapStructure(targetTable, "", fields, zorm.Relations{})
 	if err != nil {
 		return fmt.Errorf("mapping update columns: %w", err)
 	}
@@ -513,13 +513,13 @@ func (r *Queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields 
 		%s
 		`,
 		targetTable.escaped(driver),
-		strings.Join(zfunc.Map(columns, func(c column) string {
+		strings.Join(zfunc.Map(structure.columns, func(c column) string {
 			return fmt.Sprintf(
 				"%s=?",
 				c.escaped(driver),
 			)
 		}), ", "),
-		strings.Join(zfunc.Map(primaryKeyColumns, func(c column) string {
+		strings.Join(zfunc.Map(primaryKeyStructure.columns, func(c column) string {
 			return fmt.Sprintf(
 				"%s %s ?",
 				c.escaped(driver),

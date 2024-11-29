@@ -9,10 +9,11 @@ import (
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zsort"
 	"github.com/milagre/zote/go/zfunc"
+	"github.com/milagre/zote/go/zorm"
 	"github.com/milagre/zote/go/zsql"
 )
 
-func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause zclause.Clause, sorts []zsort.Sort, limit int, offset int) (*selectQueryPlan, error) {
+func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relations zorm.Relations, clause zclause.Clause, sorts []zsort.Sort, limit int, offset int) (*selectQueryPlan, error) {
 	if len(fields) == 0 {
 		fields = mapping.allFields()
 	}
@@ -32,13 +33,13 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 	}
 
 	// inner primary key
-	innerPrimaryKey, primaryKeyTarget, err := mapping.mappedPrimaryKeyColumns(innerPrimaryTable, "")
+	innerPrimaryKeyStructure, err := mapping.mappedPrimaryKeyColumns(innerPrimaryTable, "")
 	if err != nil {
 		return nil, fmt.Errorf("mapping primary key columns: %w", err)
 	}
 
 	// outer primary key
-	outerPrimaryKey := zfunc.Map(innerPrimaryKey, func(c column) column {
+	outerPrimaryKey := zfunc.Map(innerPrimaryKeyStructure.columns, func(c column) column {
 		return column{
 			table: outerTable,
 			name:  c.alias,
@@ -46,8 +47,8 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 		}
 	})
 
-	// Columns
-	columns, target, err := mapping.mapFields(outerPrimaryTable, "", fields)
+	// Structure
+	structure, err := mapping.mapStructure(outerPrimaryTable, "", fields, relations)
 	if err != nil {
 		return nil, fmt.Errorf("mapping select columns: %w", err)
 	}
@@ -60,7 +61,7 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 		{
 			leftTable:  outerTable,
 			rightTable: outerPrimaryTable,
-			onPairs: zfunc.Map(innerPrimaryKey, func(c column) [2]column {
+			onPairs: zfunc.Map(innerPrimaryKeyStructure.columns, func(c column) [2]column {
 				return [2]column{
 					{
 						table: outerTable,
@@ -122,14 +123,13 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 		outerPrimaryTable: outerPrimaryTable,
 		outerTable:        outerTable,
 
-		innerPrimaryKey: innerPrimaryKey,
+		innerPrimaryKey: innerPrimaryKeyStructure.columns,
 		outerPrimaryKey: outerPrimaryKey,
 
 		innerJoins: innerJoins,
 		outerJoins: outerJoins,
 
-		columns: columns,
-		fields:  fields,
+		structure: structure,
 
 		order:       order,
 		orderValues: orderValues,
@@ -138,9 +138,19 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, clause z
 		limit:       limit,
 		offset:      offset,
 
-		primaryKeyTarget: primaryKeyTarget,
-		target:           target,
+		primaryKeyTarget: innerPrimaryKeyStructure.target,
+		target:           structure.target,
 	}, nil
+}
+
+type structure struct {
+	columns []column
+	fields  []string
+	target  []interface{}
+
+	relations       []string
+	toOneRelations  map[string]structure
+	toManyRelations map[string]structure
 }
 
 type selectQueryPlan struct {
@@ -154,8 +164,7 @@ type selectQueryPlan struct {
 	innerJoins []join
 	outerJoins []join
 
-	columns []column
-	fields  []string
+	structure structure
 
 	order       string
 	orderValues []interface{}
@@ -170,10 +179,45 @@ type selectQueryPlan struct {
 	target           []interface{}
 }
 
-func (plan selectQueryPlan) load(v reflect.Value) {
-	for i, f := range plan.fields {
-		v.FieldByName(f).Set(reflect.ValueOf(plan.target[i]).Elem())
+func (plan selectQueryPlan) loadStructure(structure structure, offset int, v reflect.Value) int {
+	for i, f := range structure.fields {
+		v.FieldByName(f).Set(reflect.ValueOf(plan.target[i+offset]).Elem())
 	}
+
+	offset += len(structure.fields)
+
+	for _, name := range structure.relations {
+		f := v.FieldByName(name)
+
+		if rel, ok := structure.toOneRelations[name]; ok {
+			if f.IsNil() {
+				t, _ := v.Type().FieldByName(name)
+				empty := reflect.New(t.Type.Elem())
+				f.Set(empty.Addr())
+			}
+
+			offset = plan.loadStructure(rel, offset, f)
+		} else {
+			rel, ok = structure.toManyRelations[name]
+			if !ok {
+				panic("invalid relation in select query plan structure")
+			}
+
+			if f.IsNil() {
+				// TODO: this is a list
+				t, _ := v.Type().FieldByName(name)
+				empty := reflect.New(t.Type.Elem())
+				f.Set(empty.Addr())
+			}
+
+			offset = plan.loadStructure(rel, offset, f)
+		}
+	}
+
+	return offset
+}
+func (plan selectQueryPlan) load(v reflect.Value) {
+	plan.loadStructure(plan.structure, 0, v)
 }
 
 func (plan selectQueryPlan) scannedPrimaryKey() (string, error) {
@@ -203,7 +247,7 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 	`,
 		/*outerColumns*/ strings.Join(
 			zfunc.Map(
-				append(plan.outerPrimaryKey, plan.columns...),
+				append(plan.outerPrimaryKey, plan.structure.columns...),
 				func(c column) string {
 					return fmt.Sprintf(
 						"%s AS %s",

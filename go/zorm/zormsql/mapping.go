@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/milagre/zote/go/zorm"
 	"github.com/milagre/zote/go/zsql"
 )
 
@@ -116,7 +117,9 @@ func (m Mapping) mapField(driver zsql.Driver, table table, columnAliasPrefix str
 	return column{}, nil, fmt.Errorf("field %s is not mapped", field)
 }
 
-func (m Mapping) mapFields(table table, columnAliasPrefix string, fields []string) ([]column, []interface{}, error) {
+func (m Mapping) mapStructure(table table, columnAliasPrefix string, fields []string, relations zorm.Relations) (structure, error) {
+	res := structure{}
+
 	columns := make([]column, 0, len(fields))
 	target := make([]interface{}, 0, len(fields))
 
@@ -128,7 +131,7 @@ func (m Mapping) mapFields(table table, columnAliasPrefix string, fields []strin
 	for _, f := range fields {
 		col, ok := colMap[f]
 		if !ok {
-			return nil, nil, fmt.Errorf("field '%s' is not mapped", f)
+			return res, fmt.Errorf("field '%s' is not mapped", f)
 		}
 		if columnAliasPrefix != "" {
 			col = columnAliasPrefix + "_" + col
@@ -136,7 +139,7 @@ func (m Mapping) mapFields(table table, columnAliasPrefix string, fields []strin
 
 		structField, ok := reflect.TypeOf(m.PtrType).Elem().FieldByName(f)
 		if !ok {
-			return nil, nil, fmt.Errorf("mapping fields: getting struct field %s on %T", f, m.PtrType)
+			return res, fmt.Errorf("mapping fields: getting struct field %s on %T", f, m.PtrType)
 		}
 
 		columns = append(columns, column{
@@ -147,41 +150,20 @@ func (m Mapping) mapFields(table table, columnAliasPrefix string, fields []strin
 		target = append(target, reflect.New(structField.Type).Interface())
 	}
 
-	return columns, target, nil
+	return structure{
+		columns:         columns,
+		target:          target,
+		fields:          fields,
+		relations:       []string{},
+		toOneRelations:  map[string]structure{},
+		toManyRelations: map[string]structure{},
+	}, nil
 }
 
-func (m Mapping) mappedPrimaryKeyColumns(table table, columnAliasPrefix string) ([]column, []interface{}, error) {
-	result := make([]column, 0, len(m.PrimaryKey))
-	target := make([]interface{}, 0, len(m.PrimaryKey))
-
-	colMap := map[string]string{}
-	for _, c := range m.Columns {
-		colMap[c.Name] = c.Field
+func (m Mapping) mappedPrimaryKeyColumns(table table, columnAliasPrefix string) (structure, error) {
+	fields, err := m.primaryKeyFields()
+	if err != nil {
+		return structure{}, fmt.Errorf("mapping primary key fields: %w", err)
 	}
-
-	for i, col := range m.PrimaryKey {
-		f, ok := colMap[col]
-		if !ok {
-			return nil, nil, fmt.Errorf("primary key column %s is not mapped", col)
-		}
-
-		if columnAliasPrefix != "" {
-			col = columnAliasPrefix + "_" + col
-		}
-
-		structField, ok := reflect.TypeOf(m.PtrType).Elem().FieldByName(f)
-		if !ok {
-			return nil, nil, fmt.Errorf("mapping primary key: getting struct field %s on %T", f, m.PtrType)
-		}
-
-		res := column{
-			table: table,
-			name:  col,
-			alias: fmt.Sprintf("_%d", i),
-		}
-		result = append(result, res)
-		target = append(target, reflect.New(structField.Type).Interface())
-	}
-
-	return result, target, nil
+	return m.mapStructure(table, columnAliasPrefix, fields, zorm.Relations{})
 }
