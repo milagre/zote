@@ -12,7 +12,6 @@ import (
 	"github.com/milagre/zote/go/zorm"
 	"github.com/milagre/zote/go/zorm/zormsql"
 	"github.com/milagre/zote/go/zorm/zormtest"
-	"github.com/milagre/zote/go/zsql"
 	"github.com/milagre/zote/go/zsql/zsqlite3"
 )
 
@@ -38,12 +37,14 @@ func setup(t *testing.T, cb func(context.Context, zorm.Repository)) {
 	require.NoError(t, err, "opening database")
 	defer conn.Close()
 
-	//repoConn := conn
-	repoConn := zsql.LoggingTransactor{Transactor: conn}
+	repoConn := conn
+	//repoConn := zsql.LoggingTransactor{Transactor: conn}
 
 	repo := zormsql.NewRepository("test.db", repoConn)
 	repo.AddMapping(AccountMapping)
 	repo.AddMapping(UserMapping)
+	repo.AddMapping(UserAuthMapping)
+	repo.AddMapping(UserAddressMapping)
 
 	cb(context.Background(), repo)
 }
@@ -53,10 +54,10 @@ func TestORM(t *testing.T) {
 
 	zormtest.RunFindTests(t, setup)
 	zormtest.RunGetTests(t, setup)
+
+	zormtest.RunPutTests(t, setup)
 }
 
 func TestORMNew(t *testing.T) {
 	t.Helper()
-
-	zormtest.RunPutTests(t, setup)
 }

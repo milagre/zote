@@ -12,6 +12,7 @@ import (
 	"github.com/milagre/zote/go/zelement/zsort"
 	"github.com/milagre/zote/go/zfunc"
 	"github.com/milagre/zote/go/zorm"
+	"github.com/milagre/zote/go/zreflect"
 	"github.com/milagre/zote/go/zsql"
 )
 
@@ -220,10 +221,9 @@ func (plan selectQueryPlan) loadStructure(structure structure, offset int, v ref
 			}
 
 			if f.IsNil() {
-				// TODO: this is a list
 				t, _ := v.Type().FieldByName(name)
-				empty := reflect.New(t.Type.Elem())
-				f.Set(empty.Addr())
+				empty := zreflect.MakeAddressableSliceOf(t.Type.Elem(), 0, 0)
+				f.Set(empty)
 			}
 
 			offset = plan.loadStructure(rel.structure, offset, f)
