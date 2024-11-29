@@ -31,12 +31,12 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 	}
 
 	// Structure
-	str, err := mapping.mapStructure(outerPrimaryTable, "", fields, relations, true)
+	str, err := mapping.mapStructure(outerPrimaryTable, "", fields, relations)
 	if err != nil {
 		return nil, fmt.Errorf("mapping select columns: %w", err)
 	}
 
-	primaryKey := str.columns[0:len(mapping.PrimaryKey)]
+	primaryKey := str.primaryKey
 
 	outerPrimaryKey := zfunc.Map(primaryKey, func(c column) column {
 		return column{
@@ -196,11 +196,11 @@ type selectQueryPlan struct {
 }
 
 func (plan selectQueryPlan) loadStructure(structure structure, offset int, v reflect.Value) int {
-	for i, f := range structure.fields {
+	for i, f := range append(structure.primaryKeyFields, structure.fields...) {
 		v.FieldByName(f).Set(reflect.ValueOf(plan.target[i+offset]).Elem())
 	}
 
-	offset += len(structure.fields)
+	offset += len(structure.fields) + len(structure.primaryKeyFields)
 
 	for _, name := range structure.relations {
 		f := v.FieldByName(name)

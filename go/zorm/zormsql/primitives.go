@@ -52,10 +52,15 @@ type join struct {
 }
 
 type structure struct {
-	table   table
+	table table
+
 	columns []column
 	fields  []string
 	target  []interface{}
+
+	primaryKey       []column
+	primaryKeyFields []string
+	primaryKeyTarget []interface{}
 
 	relations       []string
 	toOneRelations  map[string]joinStructure
@@ -64,6 +69,7 @@ type structure struct {
 
 func (s structure) fullColumns() []column {
 	result := []column{}
+	result = append(result, s.primaryKey...)
 	result = append(result, s.columns...)
 	for _, f := range s.relations {
 		if r, ok := s.toOneRelations[f]; ok {
@@ -77,6 +83,7 @@ func (s structure) fullColumns() []column {
 
 func (s structure) fullTarget() []interface{} {
 	result := []interface{}{}
+	result = append(result, s.primaryKeyTarget...)
 	result = append(result, s.target...)
 	for _, f := range s.relations {
 		if r, ok := s.toOneRelations[f]; ok {

@@ -116,21 +116,19 @@ func (m Mapping) mapField(table table, columnAliasPrefix string, field string) (
 	return column{}, nil, fmt.Errorf("field %s is not mapped", field)
 }
 
-func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []string, relations zorm.Relations, primaryKey bool) (structure, error) {
+func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []string, relations zorm.Relations) (structure, error) {
 	ptrType := reflect.TypeOf(m.PtrType)
 
 	if len(fields) == 0 {
 		fields = m.allFields()
 	}
 
-	if primaryKey {
-		pkf, err := m.primaryKeyFields()
-		if err != nil {
-			return structure{}, fmt.Errorf("cannot locate primary key fields: %w", err)
-		}
-
-		fields = append(pkf, fields...)
+	pkf, err := m.primaryKeyFields()
+	if err != nil {
+		return structure{}, fmt.Errorf("cannot locate primary key fields: %w", err)
 	}
+	pkLength := len(pkf)
+	fields = append(pkf, fields...)
 
 	columns := make([]column, 0, len(fields))
 	target := make([]interface{}, 0, len(fields))
@@ -219,7 +217,6 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []stri
 			rightAlias,
 			rel.Include.Fields,
 			rel.Include.Relations,
-			primaryKey,
 		)
 		if err != nil {
 			return structure{}, fmt.Errorf("mapping relations: mapping structure failed for field %s on %T: %w", f, m.PtrType, err)
@@ -244,10 +241,16 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []stri
 	}
 
 	return structure{
-		table:           tbl,
-		columns:         columns,
-		target:          target,
-		fields:          fields,
+		table: tbl,
+
+		columns: columns[pkLength:],
+		fields:  fields[pkLength:],
+		target:  target[pkLength:],
+
+		primaryKey:       columns[0:pkLength],
+		primaryKeyFields: fields[0:pkLength],
+		primaryKeyTarget: target[0:pkLength],
+
 		relations:       relationList,
 		toOneRelations:  toOneRelations,
 		toManyRelations: map[string]joinStructure{},
