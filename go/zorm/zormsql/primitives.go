@@ -50,3 +50,13 @@ type join struct {
 	onPairs    [][2]column
 	onWhere    zclause.Clause
 }
+
+type structure struct {
+	columns []column
+	fields  []string
+	target  []interface{}
+
+	relations       []string
+	toOneRelations  map[string]structure
+	toManyRelations map[string]structure
+}

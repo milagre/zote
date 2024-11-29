@@ -143,16 +143,6 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 	}, nil
 }
 
-type structure struct {
-	columns []column
-	fields  []string
-	target  []interface{}
-
-	relations       []string
-	toOneRelations  map[string]structure
-	toManyRelations map[string]structure
-}
-
 type selectQueryPlan struct {
 	innerPrimaryTable table
 	outerPrimaryTable table
@@ -216,6 +206,7 @@ func (plan selectQueryPlan) loadStructure(structure structure, offset int, v ref
 
 	return offset
 }
+
 func (plan selectQueryPlan) load(v reflect.Value) {
 	plan.loadStructure(plan.structure, 0, v)
 }
@@ -226,7 +217,72 @@ func (plan selectQueryPlan) scannedPrimaryKey() (string, error) {
 }
 
 func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
-	limitClause := fmt.Sprintf("LIMIT %d OFFSET %d", plan.limit, plan.offset)
+	outerColumns := strings.Join(
+		zfunc.Map(
+			append(plan.outerPrimaryKey, plan.structure.columns...),
+			func(c column) string {
+				return fmt.Sprintf(
+					"%s AS %s",
+					driver.EscapeTableColumn(c.table.alias, c.name),
+					driver.EscapeColumn(c.alias),
+				)
+			},
+		),
+		", ",
+	)
+
+	innerColumns := strings.Join(
+		zfunc.Map(
+			plan.innerPrimaryKey,
+			func(c column) string {
+				return fmt.Sprintf(
+					"%s AS %s",
+					driver.EscapeTableColumn(c.table.alias, c.name),
+					driver.EscapeColumn(c.alias),
+				)
+			},
+		),
+		", ",
+	)
+
+	outerJoins := strings.Join(
+		zfunc.Map(
+			plan.outerJoins,
+			func(j join) string {
+				return fmt.Sprintf(
+					`%s AS %s ON (%s)`,
+					driver.EscapeTable(j.rightTable.name),
+					driver.EscapeTable(j.rightTable.alias),
+					strings.Join(
+						zfunc.Map(j.onPairs, func(cols [2]column) string {
+							return fmt.Sprintf(
+								"%s=%s",
+								driver.EscapeTableColumn(
+									cols[0].table.alias,
+									cols[0].name,
+								),
+								driver.EscapeTableColumn(
+									cols[1].table.alias,
+									cols[1].name,
+								),
+							)
+						}),
+						" AND ",
+					),
+				)
+			},
+		),
+		" LEFT OUTER JOIN ",
+	)
+
+	where := plan.where
+	order := plan.order
+
+	limit := fmt.Sprintf("LIMIT %d OFFSET %d", plan.limit, plan.offset)
+
+	target := driver.EscapeTable(plan.innerPrimaryTable.name)
+	targetAlias := driver.EscapeTable(plan.innerPrimaryTable.alias)
+	outerAlias := driver.EscapeTable(plan.outerTable.alias)
 
 	result := fmt.Sprintf(`
 		SELECT
@@ -241,71 +297,19 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 			/*where*/ %s 
 			/*order*/ %s
 			/*limit*/ %s
-		) AS /*wrapper*/ %s
+		) AS /*outerAlias*/ %s
 		LEFT OUTER JOIN
 		/*outerJoins*/ %s
 	`,
-		/*outerColumns*/ strings.Join(
-			zfunc.Map(
-				append(plan.outerPrimaryKey, plan.structure.columns...),
-				func(c column) string {
-					return fmt.Sprintf(
-						"%s AS %s",
-						driver.EscapeTableColumn(c.table.alias, c.name),
-						driver.EscapeColumn(c.alias),
-					)
-				},
-			),
-			", ",
-		),
-		/*innerColumns*/ strings.Join(
-			zfunc.Map(
-				plan.innerPrimaryKey,
-				func(c column) string {
-					return fmt.Sprintf(
-						"%s AS %s",
-						driver.EscapeTableColumn(c.table.alias, c.name),
-						driver.EscapeColumn(c.alias),
-					)
-				},
-			),
-			", ",
-		),
-		/*target*/ driver.EscapeTable(plan.innerPrimaryTable.name),
-		/*targetAlias*/ driver.EscapeTable(plan.innerPrimaryTable.alias),
-		/*where*/ plan.where,
-		/*order*/ plan.order,
-		/*limit*/ limitClause,
-		/*wrapper*/ driver.EscapeTable(plan.outerTable.alias),
-		/*outerJoins*/ strings.Join(
-			zfunc.Map(
-				plan.outerJoins,
-				func(j join) string {
-					return fmt.Sprintf(
-						`%s AS %s ON (%s)`,
-						driver.EscapeTable(j.rightTable.name),
-						driver.EscapeTable(j.rightTable.alias),
-						strings.Join(
-							zfunc.Map(j.onPairs, func(cols [2]column) string {
-								return fmt.Sprintf(
-									"%s=%s",
-									driver.EscapeTableColumn(
-										cols[0].table.alias,
-										cols[0].name,
-									),
-									driver.EscapeTableColumn(
-										cols[1].table.alias,
-										cols[1].name,
-									),
-								)
-							}),
-							" AND ",
-						),
-					)
-				},
-			),
-			" LEFT OUTER JOIN ",
-		),
+		outerColumns,
+		innerColumns,
+		target,
+		targetAlias,
+		where,
+		order,
+		limit,
+		outerAlias,
+		outerJoins,
 	)
 
 	values := append(plan.whereValues, plan.orderValues...)
