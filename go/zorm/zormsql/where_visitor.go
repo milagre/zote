@@ -176,7 +176,7 @@ func (v *whereVisitor) VisitField(e zelement.Field) error {
 }
 
 func (v *whereVisitor) visitField(e zelement.Field) (string, error) {
-	col, _, err := v.mapping.mapField(v.driver, v.table, v.columnAliasPrefix, e.Name)
+	col, _, err := v.mapping.mapField(v.table, v.columnAliasPrefix, e.Name)
 	result := col.escapedAlias(v.driver)
 	return result, err
 }

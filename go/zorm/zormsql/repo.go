@@ -62,6 +62,7 @@ func (r *Repository) AddMapping(m Mapping) {
 		panic(fmt.Sprintf("Duplicate sql mapping for type %s", key))
 	}
 
+	m.repo = r
 	r.cfg.mappings[key] = m
 }
 

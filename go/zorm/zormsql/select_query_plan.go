@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/lithammer/dedent"
+
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zsort"
 	"github.com/milagre/zote/go/zfunc"
@@ -29,11 +31,11 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 
 	outerPrimaryTable := table{
 		name:  mapping.Table,
-		alias: "outer",
+		alias: "$",
 	}
 
 	// inner primary key
-	innerPrimaryKeyStructure, err := mapping.mappedPrimaryKeyColumns(innerPrimaryTable, "")
+	innerPrimaryKeyStructure, err := mapping.mappedPrimaryKeyColumns(innerPrimaryTable, "#")
 	if err != nil {
 		return nil, fmt.Errorf("mapping primary key columns: %w", err)
 	}
@@ -48,7 +50,7 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 	})
 
 	// Structure
-	structure, err := mapping.mapStructure(outerPrimaryTable, "", fields, relations)
+	str, err := mapping.mapStructure(outerPrimaryTable, "", fields, relations)
 	if err != nil {
 		return nil, fmt.Errorf("mapping select columns: %w", err)
 	}
@@ -74,6 +76,33 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 				}
 			}),
 		},
+	}
+
+	var visit func(tbl table, s structure) error
+	visit = func(tbl table, s structure) error {
+		for _, f := range s.relations {
+			rel, ok := s.getRelation(f)
+			if !ok {
+				return fmt.Errorf("%s", f)
+			}
+
+			outerJoins = append(outerJoins, join{
+				leftTable:  tbl,
+				rightTable: rel.structure.table,
+				onPairs:    rel.onPairs,
+			})
+
+			err := visit(rel.structure.table, rel.structure)
+			if err != nil {
+				return fmt.Errorf("%s/%w", f, err)
+			}
+		}
+		return nil
+	}
+
+	err = visit(outerPrimaryTable, str)
+	if err != nil {
+		return nil, fmt.Errorf("mapping select relations: %w", err)
 	}
 
 	// Order
@@ -129,7 +158,7 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 		innerJoins: innerJoins,
 		outerJoins: outerJoins,
 
-		structure: structure,
+		structure: str,
 
 		order:       order,
 		orderValues: orderValues,
@@ -139,7 +168,7 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 		offset:      offset,
 
 		primaryKeyTarget: innerPrimaryKeyStructure.target,
-		target:           structure.target,
+		target:           str.fullTarget(),
 	}, nil
 }
 
@@ -183,10 +212,10 @@ func (plan selectQueryPlan) loadStructure(structure structure, offset int, v ref
 			if f.IsNil() {
 				t, _ := v.Type().FieldByName(name)
 				empty := reflect.New(t.Type.Elem())
-				f.Set(empty.Addr())
+				f.Set(empty)
 			}
 
-			offset = plan.loadStructure(rel, offset, f)
+			offset = plan.loadStructure(rel.structure, offset, f.Elem())
 		} else {
 			rel, ok = structure.toManyRelations[name]
 			if !ok {
@@ -200,7 +229,7 @@ func (plan selectQueryPlan) loadStructure(structure structure, offset int, v ref
 				f.Set(empty.Addr())
 			}
 
-			offset = plan.loadStructure(rel, offset, f)
+			offset = plan.loadStructure(rel.structure, offset, f)
 		}
 	}
 
@@ -219,13 +248,9 @@ func (plan selectQueryPlan) scannedPrimaryKey() (string, error) {
 func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 	outerColumns := strings.Join(
 		zfunc.Map(
-			append(plan.outerPrimaryKey, plan.structure.columns...),
+			append(plan.outerPrimaryKey, plan.structure.fullColumns()...),
 			func(c column) string {
-				return fmt.Sprintf(
-					"%s AS %s",
-					driver.EscapeTableColumn(c.table.alias, c.name),
-					driver.EscapeColumn(c.alias),
-				)
+				return driver.EscapeTableColumn(c.table.alias, c.name)
 			},
 		),
 		", ",
@@ -272,7 +297,7 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 				)
 			},
 		),
-		" LEFT OUTER JOIN ",
+		"\n\t\tLEFT OUTER JOIN\n\t\t\t",
 	)
 
 	where := plan.where
@@ -284,7 +309,7 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 	targetAlias := driver.EscapeTable(plan.innerPrimaryTable.alias)
 	outerAlias := driver.EscapeTable(plan.outerTable.alias)
 
-	result := fmt.Sprintf(`
+	result := dedent.Dedent(fmt.Sprintf(`
 		SELECT
 			/*outerColumns*/ %s
 		FROM (
@@ -310,7 +335,7 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 		limit,
 		outerAlias,
 		outerJoins,
-	)
+	))
 
 	values := append(plan.whereValues, plan.orderValues...)
 

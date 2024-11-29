@@ -39,7 +39,7 @@ func (v *elemVisitor) VisitValue(e zelement.Value) error {
 }
 
 func (v *elemVisitor) VisitField(e zelement.Field) error {
-	col, _, err := v.mapping.mapField(v.driver, v.table, v.columnAliasPrefix, e.Name)
+	col, _, err := v.mapping.mapField(v.table, v.columnAliasPrefix, e.Name)
 	if err != nil {
 		return fmt.Errorf("visiting field: %w", err)
 	}
