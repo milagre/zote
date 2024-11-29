@@ -16,10 +16,6 @@ import (
 )
 
 func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relations zorm.Relations, clause zclause.Clause, sorts []zsort.Sort, limit int, offset int) (*selectQueryPlan, error) {
-	if len(fields) == 0 {
-		fields = mapping.allFields()
-	}
-
 	innerPrimaryTable := table{
 		name:  mapping.Table,
 		alias: "target",
@@ -34,14 +30,15 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 		alias: "$",
 	}
 
-	// inner primary key
-	innerPrimaryKeyStructure, err := mapping.mappedPrimaryKeyColumns(innerPrimaryTable, "#")
+	// Structure
+	str, err := mapping.mapStructure(outerPrimaryTable, "", fields, relations, true)
 	if err != nil {
-		return nil, fmt.Errorf("mapping primary key columns: %w", err)
+		return nil, fmt.Errorf("mapping select columns: %w", err)
 	}
 
-	// outer primary key
-	outerPrimaryKey := zfunc.Map(innerPrimaryKeyStructure.columns, func(c column) column {
+	primaryKey := str.columns[0:len(mapping.PrimaryKey)]
+
+	outerPrimaryKey := zfunc.Map(primaryKey, func(c column) column {
 		return column{
 			table: outerTable,
 			name:  c.alias,
@@ -49,11 +46,13 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 		}
 	})
 
-	// Structure
-	str, err := mapping.mapStructure(outerPrimaryTable, "", fields, relations)
-	if err != nil {
-		return nil, fmt.Errorf("mapping select columns: %w", err)
-	}
+	innerPrimaryKey := zfunc.Map(outerPrimaryKey, func(c column) column {
+		return column{
+			table: innerPrimaryTable,
+			name:  c.alias,
+			alias: c.alias,
+		}
+	})
 
 	// Inner joins
 	innerJoins := []join{}
@@ -63,7 +62,7 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 		{
 			leftTable:  outerTable,
 			rightTable: outerPrimaryTable,
-			onPairs: zfunc.Map(innerPrimaryKeyStructure.columns, func(c column) [2]column {
+			onPairs: zfunc.Map(innerPrimaryKey, func(c column) [2]column {
 				return [2]column{
 					{
 						table: outerTable,
@@ -152,7 +151,7 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 		outerPrimaryTable: outerPrimaryTable,
 		outerTable:        outerTable,
 
-		innerPrimaryKey: innerPrimaryKeyStructure.columns,
+		innerPrimaryKey: innerPrimaryKey,
 		outerPrimaryKey: outerPrimaryKey,
 
 		innerJoins: innerJoins,
@@ -167,8 +166,7 @@ func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relation
 		limit:       limit,
 		offset:      offset,
 
-		primaryKeyTarget: innerPrimaryKeyStructure.target,
-		target:           str.fullTarget(),
+		target: str.fullTarget(),
 	}, nil
 }
 
@@ -194,8 +192,7 @@ type selectQueryPlan struct {
 	limit  int
 	offset int
 
-	primaryKeyTarget []interface{}
-	target           []interface{}
+	target []interface{}
 }
 
 func (plan selectQueryPlan) loadStructure(structure structure, offset int, v reflect.Value) int {
@@ -241,14 +238,14 @@ func (plan selectQueryPlan) load(v reflect.Value) {
 }
 
 func (plan selectQueryPlan) scannedPrimaryKey() (string, error) {
-	data, err := json.Marshal(plan.primaryKeyTarget)
+	data, err := json.Marshal(plan.target[0:len(plan.outerPrimaryKey)])
 	return string(data), err
 }
 
 func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 	outerColumns := strings.Join(
 		zfunc.Map(
-			append(plan.outerPrimaryKey, plan.structure.fullColumns()...),
+			plan.structure.fullColumns(),
 			func(c column) string {
 				return driver.EscapeTableColumn(c.table.alias, c.name)
 			},

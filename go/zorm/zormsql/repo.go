@@ -183,9 +183,8 @@ func (r *Queryer) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindO
 	var obj reflect.Value
 	var count int
 	var currentPrimaryKey string
-	scanTarget := append(plan.primaryKeyTarget, plan.target...)
 	for rows.Next() {
-		err := rows.Scan(scanTarget...)
+		err := rows.Scan(plan.target...)
 		if err != nil {
 			return fmt.Errorf("scanning find result row: %w", err)
 		}
@@ -374,7 +373,7 @@ func (r *Queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 		return fmt.Errorf("mapping primary key for delete in clause: %w", err)
 	}
 
-	primaryKeyStructure, err := mapping.mapStructure(targetTable, "", primaryKeyFields, zorm.Relations{})
+	primaryKeyStructure, err := mapping.mapStructure(targetTable, "", primaryKeyFields, zorm.Relations{}, false)
 	if err != nil {
 		return fmt.Errorf("mapping primary key columns for delete: %w", err)
 	}
@@ -434,7 +433,7 @@ func (r *Queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 	}
 
 	fields := mapping.insertFields()
-	structure, err := mapping.mapStructure(targetTable, "", fields, zorm.Relations{})
+	structure, err := mapping.mapStructure(targetTable, "", fields, zorm.Relations{}, false)
 	if err != nil {
 		return fmt.Errorf("mapping insert columns: %w", err)
 	}
@@ -493,13 +492,10 @@ func (r *Queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields 
 		name: mapping.Table,
 	}
 
-	primaryKeyStructure, err := mapping.mapStructure(targetTable, "", primaryKeyFields, zorm.Relations{})
-	if err != nil {
-		return fmt.Errorf("mapping primary key columns for update: %w", err)
-	}
+	pkLength := len(mapping.PrimaryKey)
 
 	fields := mapping.updateFields()
-	structure, err := mapping.mapStructure(targetTable, "", fields, zorm.Relations{})
+	structure, err := mapping.mapStructure(targetTable, "", fields, zorm.Relations{}, true)
 	if err != nil {
 		return fmt.Errorf("mapping update columns: %w", err)
 	}
@@ -514,13 +510,13 @@ func (r *Queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields 
 		%s
 		`,
 		targetTable.escaped(driver),
-		strings.Join(zfunc.Map(structure.columns, func(c column) string {
+		strings.Join(zfunc.Map(structure.columns[pkLength:], func(c column) string {
 			return fmt.Sprintf(
 				"%s=?",
 				c.escaped(driver),
 			)
 		}), ", "),
-		strings.Join(zfunc.Map(primaryKeyStructure.columns, func(c column) string {
+		strings.Join(zfunc.Map(structure.columns[0:pkLength], func(c column) string {
 			return fmt.Sprintf(
 				"%s %s ?",
 				c.escaped(driver),
