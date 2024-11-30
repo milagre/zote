@@ -1,3 +1,6 @@
+# 4d63.com/collapsewhitespace v0.0.0-20190109064012-23971e8e1f30
+## explicit
+4d63.com/collapsewhitespace
 # github.com/apapsch/go-jsonmerge/v2 v2.0.0
 ## explicit; go 1.12
 github.com/apapsch/go-jsonmerge/v2
@@ -50,9 +53,6 @@ github.com/influxdata/line-protocol
 # github.com/joho/godotenv v1.4.0
 ## explicit; go 1.12
 github.com/joho/godotenv
-# github.com/lithammer/dedent v1.1.0
-## explicit
-github.com/lithammer/dedent
 # github.com/mattn/go-colorable v0.1.13
 ## explicit; go 1.15
 github.com/mattn/go-colorable

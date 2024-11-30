@@ -33,6 +33,15 @@ type Relation struct {
 	Field   string
 }
 
+func (m Mapping) relationByField(f string) (Relation, bool) {
+	for _, r := range m.Relations {
+		if r.Field == f {
+			return r, true
+		}
+	}
+	return Relation{}, false
+}
+
 func (m Mapping) hasValues(objPtr reflect.Value, fields []string) bool {
 	for _, f := range fields {
 		if objPtr.Elem().FieldByName(f).IsZero() {
@@ -170,10 +179,10 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []stri
 			return structure{}, fmt.Errorf("mapping relations: getting struct field %s on %T", f, m.PtrType)
 		}
 
-		if structField.Type.Kind() == reflect.Slice {
-			toMany = append(toMany, f)
-		} else if structField.Type.Kind() == reflect.Ptr {
+		if structField.Type.Kind() == reflect.Ptr {
 			toOne = append(toOne, f)
+		} else if structField.Type.Kind() == reflect.Slice {
+			toMany = append(toMany, f)
 		} else {
 			return structure{}, fmt.Errorf("mapping relations: invalid struct field type %s on %T", f, m.PtrType)
 		}
@@ -183,16 +192,8 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []stri
 
 	toOneRelations := map[string]joinStructure{}
 	for _, f := range toOne {
-		found := false
-		var relMapping Relation
-		for _, r := range m.Relations {
-			if r.Field == f {
-				relMapping = r
-				found = true
-				break
-			}
-		}
-		if !found {
+		relMapping, ok := m.relationByField(f)
+		if !ok {
 			return structure{}, fmt.Errorf("mapping relations: unrecognized relation for field %s on %T", f, m.PtrType)
 		}
 

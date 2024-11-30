@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/lithammer/dedent"
+	"4d63.com/collapsewhitespace"
 
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zsort"
@@ -267,35 +267,32 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 		", ",
 	)
 
-	outerJoins := strings.Join(
-		zfunc.Map(
-			plan.outerJoins,
-			func(j join) string {
-				return fmt.Sprintf(
-					`%s AS %s ON (%s)`,
-					driver.EscapeTable(j.rightTable.name),
-					driver.EscapeTable(j.rightTable.alias),
-					strings.Join(
-						zfunc.Map(j.onPairs, func(cols [2]column) string {
-							return fmt.Sprintf(
-								"%s=%s",
-								driver.EscapeTableColumn(
-									cols[0].table.alias,
-									cols[0].name,
-								),
-								driver.EscapeTableColumn(
-									cols[1].table.alias,
-									cols[1].name,
-								),
-							)
-						}),
-						" AND ",
-					),
-				)
-			},
-		),
-		"\n\t\tLEFT OUTER JOIN\n\t\t\t",
-	)
+	outerJoins := strings.Join(zfunc.Map(
+		plan.outerJoins,
+		func(j join) string {
+			return fmt.Sprintf(
+				`LEFT OUTER JOIN %s AS %s ON (%s)`,
+				driver.EscapeTable(j.rightTable.name),
+				driver.EscapeTable(j.rightTable.alias),
+				strings.Join(
+					zfunc.Map(j.onPairs, func(cols [2]column) string {
+						return fmt.Sprintf(
+							"%s=%s",
+							driver.EscapeTableColumn(
+								cols[0].table.alias,
+								cols[0].name,
+							),
+							driver.EscapeTableColumn(
+								cols[1].table.alias,
+								cols[1].name,
+							),
+						)
+					}),
+					" AND ",
+				),
+			)
+		},
+	), " ")
 
 	where := plan.where
 	order := plan.order
@@ -306,22 +303,19 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 	targetAlias := driver.EscapeTable(plan.innerPrimaryTable.alias)
 	outerAlias := driver.EscapeTable(plan.outerTable.alias)
 
-	result := dedent.Dedent(fmt.Sprintf(`
+	result := collapsewhitespace.String(fmt.Sprintf(`
 		SELECT
-			/*outerColumns*/ %s
+			%s
 		FROM (
 			SELECT 
-				/*innerColumns*/ %s
+				%s
 			FROM
-				/*target*/ %s
-				AS
-				/*targetAlias*/ %s
+				%s AS %s
 			/*where*/ %s 
 			/*order*/ %s
 			/*limit*/ %s
-		) AS /*outerAlias*/ %s
-		LEFT OUTER JOIN
-		/*outerJoins*/ %s
+		) AS %s
+		%s
 	`,
 		outerColumns,
 		innerColumns,

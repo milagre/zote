@@ -3,12 +3,12 @@ module github.com/milagre/zote/go
 go 1.22
 
 require (
+	4d63.com/collapsewhitespace v0.0.0-20190109064012-23971e8e1f30
 	github.com/breml/rootcerts v0.2.13
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/google/uuid v1.6.0
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/joho/godotenv v1.4.0
-	github.com/lithammer/dedent v1.1.0
 	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/redis/go-redis/v9 v9.6.2
 	github.com/sirupsen/logrus v1.9.0
