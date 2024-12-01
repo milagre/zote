@@ -171,38 +171,37 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []stri
 		target = append(target, reflect.New(structField.Type).Interface())
 	}
 
-	toOne := []string{}
-	toMany := []string{}
-	for f, _ := range relations {
+	relationList := make([]string, 0, len(relations))
+	toOneRelations := map[string]joinStructure{}
+	toManyRelations := map[string]joinStructure{}
+
+	for f, rel := range relations {
 		structField, ok := ptrType.Elem().FieldByName(f)
 		if !ok {
 			return structure{}, fmt.Errorf("mapping relations: getting struct field %s on %T", f, m.PtrType)
 		}
 
+		var subject reflect.Type
+		var results map[string]joinStructure
 		if structField.Type.Kind() == reflect.Ptr {
-			toOne = append(toOne, f)
+			subject = structField.Type
+			results = toOneRelations
 		} else if structField.Type.Kind() == reflect.Slice {
-			toMany = append(toMany, f)
+			subject = structField.Type.Elem()
+			results = toManyRelations
 		} else {
 			return structure{}, fmt.Errorf("mapping relations: invalid struct field type %s on %T", f, m.PtrType)
 		}
-	}
 
-	relationList := make([]string, 0, len(relations))
+		otherMapping, ok := m.repo.cfg.mappings[zreflect.TypeID(subject)]
+		if !ok {
+			return structure{}, fmt.Errorf("no mapping available for field %s on %T", f, m.PtrType)
+		}
 
-	toOneRelations := map[string]joinStructure{}
-	for _, f := range toOne {
 		relMapping, ok := m.relationByField(f)
 		if !ok {
-			return structure{}, fmt.Errorf("mapping relations: unrecognized relation for field %s on %T", f, m.PtrType)
+			return structure{}, fmt.Errorf("unrecognized relation for field %s on %T", f, m.PtrType)
 		}
-
-		structField, _ := ptrType.Elem().FieldByName(f)
-		otherMapping, ok := m.repo.cfg.mappings[zreflect.TypeID(structField.Type)]
-		if !ok {
-			return structure{}, fmt.Errorf("mapping relations: no mapping available for field %s on %T", f, m.PtrType)
-		}
-		rel := relations[f]
 
 		rightAlias := f
 		if columnAliasPrefix != "" {
@@ -220,11 +219,10 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []stri
 			rel.Include.Relations,
 		)
 		if err != nil {
-			return structure{}, fmt.Errorf("mapping relations: mapping structure failed for field %s on %T: %w", f, m.PtrType, err)
+			return structure{}, fmt.Errorf("mapping structure failed for field %s on %T: %w", f, m.PtrType, err)
 		}
 
-		relationList = append(relationList, f)
-		toOneRelations[f] = joinStructure{
+		js := joinStructure{
 			structure: relStructure,
 			onPairs: zfunc.Map(zfunc.Pairs(relMapping.Columns), func(p zfunc.Pair[string, string]) [2]column {
 				return [2]column{
@@ -239,6 +237,9 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []stri
 				}
 			}),
 		}
+
+		relationList = append(relationList, f)
+		results[f] = js
 	}
 
 	return structure{
@@ -254,6 +255,6 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []stri
 
 		relations:       relationList,
 		toOneRelations:  toOneRelations,
-		toManyRelations: map[string]joinStructure{},
+		toManyRelations: toManyRelations,
 	}, nil
 }

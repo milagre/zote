@@ -222,11 +222,14 @@ func (plan selectQueryPlan) loadStructure(structure structure, offset int, v ref
 
 			if f.IsNil() {
 				t, _ := v.Type().FieldByName(name)
-				empty := zreflect.MakeAddressableSliceOf(t.Type.Elem(), 0, 0)
+				empty := zreflect.MakeAddressableSliceOf(t.Type.Elem(), 0, 1)
 				f.Set(empty)
 			}
 
-			offset = plan.loadStructure(rel.structure, offset, f)
+			elem := reflect.New(f.Type().Elem().Elem())
+			f.Set(reflect.Append(f, elem))
+
+			offset = plan.loadStructure(rel.structure, offset, elem.Elem())
 		}
 	}
 

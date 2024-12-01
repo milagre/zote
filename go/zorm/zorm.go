@@ -60,7 +60,6 @@ type GetOptions struct {
 type Include struct {
 	Fields    Fields
 	Relations Relations
-	Sort      []zsort.Sort
 }
 
 type Relations map[string]Relation
@@ -68,6 +67,7 @@ type Relations map[string]Relation
 type Relation struct {
 	Include Include
 	Where   zclause.Clause
+	Sort    []zsort.Sort
 }
 
 type Fields []string

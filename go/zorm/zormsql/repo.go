@@ -199,6 +199,7 @@ func (r *Queryer) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindO
 			isNew = true
 			obj = reflect.New(modelPtrType.Elem()).Elem()
 		}
+		currentPrimaryKey = newPrimaryKey
 
 		plan.load(obj)
 

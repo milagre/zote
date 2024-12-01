@@ -38,3 +38,27 @@ func assertAddress(t *testing.T, userID string, address *UserAddress) {
 		assert.Failf(t, "Unspecified address for user ID %s - no expectations defined", userID)
 	}
 }
+
+func assertUserAuth(t *testing.T, userID string, auth *UserAuth) {
+	assert.Equal(t, userID, auth.UserID)
+	assert.NotNil(t, auth.Created)
+
+	switch userID {
+	case "1":
+		switch auth.ID {
+		case "1":
+			assert.Equal(t, "password", auth.Provider)
+			assert.Equal(t, "P@ssw0rd!", auth.Data)
+
+		case "2":
+			assert.Equal(t, "oauth2", auth.Provider)
+			assert.Equal(t, "{\"token\":\"1234\"}", auth.Data)
+
+		default:
+			assert.Failf(t, "Unspecified auth ID %s for user ID %s - no expectations defined", auth.ID, userID)
+		}
+
+	default:
+		assert.Failf(t, "Unspecified auth for user ID %s - no expectations defined", userID)
+	}
+}
