@@ -10,6 +10,8 @@ type Account struct {
 	Modified *time.Time
 
 	Company string
+
+	Users []*User
 }
 
 type User struct {

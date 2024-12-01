@@ -180,34 +180,9 @@ func (r *Queryer) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindO
 	}
 	defer rows.Close()
 
-	var obj reflect.Value
-	var count int
-	var currentPrimaryKey string
-	for rows.Next() {
-		err := rows.Scan(plan.target...)
-		if err != nil {
-			return fmt.Errorf("scanning find result row: %w", err)
-		}
-
-		isNew := false
-		newPrimaryKey, err := plan.scannedPrimaryKey()
-		if err != nil {
-			return fmt.Errorf("creating find primary slug: %w", err)
-		}
-
-		if count == 0 || newPrimaryKey != currentPrimaryKey {
-			isNew = true
-			obj = reflect.New(modelPtrType.Elem()).Elem()
-		}
-		currentPrimaryKey = newPrimaryKey
-
-		plan.load(obj)
-
-		if isNew {
-			count++
-			targetList.SetLen(count)
-			targetList.Index(count - 1).Set(obj.Addr())
-		}
+	err = plan.process(targetList, rows)
+	if err != nil {
+		return fmt.Errorf("find read error: %w", err)
 	}
 
 	if err := rows.Err(); err != nil {

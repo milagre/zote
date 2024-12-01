@@ -61,6 +61,7 @@ type structure struct {
 	primaryKey       []column
 	primaryKeyFields []string
 	primaryKeyTarget []interface{}
+	prevPrimaryKey   string // Used during processing
 
 	relations       []string
 	toOneRelations  map[string]joinStructure

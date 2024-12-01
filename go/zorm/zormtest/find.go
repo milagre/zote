@@ -40,4 +40,29 @@ func RunFindTests(t *testing.T, setup SetupFunc) {
 		})
 	})
 
+	t.Run("FindAccountsDeep", func(t *testing.T) {
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			list := make([]*Account, 0, 2)
+			err := zorm.Find[Account](ctx, r, &list, zorm.FindOptions{
+				Include: zorm.Include{
+					Relations: zorm.Relations{
+						"Users": zorm.Relation{
+							Include: zorm.Include{
+								Relations: zorm.Relations{
+									"Account": zorm.Relation{},
+									"Address": zorm.Relation{},
+									"Auths":   zorm.Relation{},
+								},
+							},
+						},
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			require.Len(t, list, 2)
+		})
+	})
 }

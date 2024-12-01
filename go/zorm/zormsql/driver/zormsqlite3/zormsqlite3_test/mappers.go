@@ -35,6 +35,15 @@ var AccountMapping = zormsql.Mapping{
 			Field: "Company",
 		},
 	},
+	Relations: []zormsql.Relation{
+		{
+			Table: "users",
+			Columns: map[string]string{
+				"id": "account_id",
+			},
+			Field: "Users",
+		},
+	},
 }
 
 var UserMapping = zormsql.Mapping{

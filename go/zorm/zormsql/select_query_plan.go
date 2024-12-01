@@ -1,6 +1,7 @@
 package zormsql
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -196,7 +197,46 @@ type selectQueryPlan struct {
 	target []interface{}
 }
 
-func (plan selectQueryPlan) loadStructure(structure structure, offset int, v reflect.Value) int {
+func (plan selectQueryPlan) process(targetList reflect.Value, rows *sql.Rows) error {
+	modelPtrType := targetList.Type().Elem()
+
+	var obj reflect.Value
+	var count int
+	var currentPrimaryKey string
+
+	for rows.Next() {
+		err := rows.Scan(plan.target...)
+		if err != nil {
+			return fmt.Errorf("scanning find result row: %w", err)
+		}
+
+		isNew := false
+		newPrimaryKey, err := json.Marshal(plan.structure.primaryKeyTarget)
+		if err != nil {
+			return fmt.Errorf("creating find primary slug: %w", err)
+		}
+
+		if count == 0 || string(newPrimaryKey) != currentPrimaryKey {
+			isNew = true
+			obj = reflect.New(modelPtrType.Elem()).Elem()
+		}
+		currentPrimaryKey = string(newPrimaryKey)
+
+		plan.load(obj)
+
+		if isNew {
+			count++
+			targetList.SetLen(count)
+			targetList.Index(count - 1).Set(obj.Addr())
+		}
+	}
+
+	return nil
+}
+
+func (plan selectQueryPlan) loadStructure(structure structure, offset int, v reflect.Value) (int, error) {
+	var err error
+
 	for i, f := range append(structure.primaryKeyFields, structure.fields...) {
 		v.FieldByName(f).Set(reflect.ValueOf(plan.target[i+offset]).Elem())
 	}
@@ -213,7 +253,10 @@ func (plan selectQueryPlan) loadStructure(structure structure, offset int, v ref
 				f.Set(empty)
 			}
 
-			offset = plan.loadStructure(rel.structure, offset, f.Elem())
+			offset, err = plan.loadStructure(rel.structure, offset, f.Elem())
+			if err != nil {
+				return 0, fmt.Errorf("loading relation %s data: %w", f, err)
+			}
 		} else {
 			rel, ok = structure.toManyRelations[name]
 			if !ok {
@@ -222,27 +265,40 @@ func (plan selectQueryPlan) loadStructure(structure structure, offset int, v ref
 
 			if f.IsNil() {
 				t, _ := v.Type().FieldByName(name)
-				empty := zreflect.MakeAddressableSliceOf(t.Type.Elem(), 0, 1)
-				f.Set(empty)
+				f.Set(zreflect.MakeAddressableSliceOf(t.Type.Elem(), 0, 1))
 			}
 
-			elem := reflect.New(f.Type().Elem().Elem())
-			f.Set(reflect.Append(f, elem))
+			var elem reflect.Value
 
-			offset = plan.loadStructure(rel.structure, offset, elem.Elem())
+			newPrimaryKeyBytes, err := json.Marshal(rel.structure.primaryKeyTarget)
+			if err != nil {
+				return 0, fmt.Errorf("creating relation primary slug: %w", err)
+			}
+			newPrimaryKey := string(newPrimaryKeyBytes)
+			currentPrimaryKey := string(rel.structure.prevPrimaryKey)
+			if f.Len() == 0 || newPrimaryKey != currentPrimaryKey {
+				elem = reflect.New(f.Type().Elem().Elem())
+				f.Set(reflect.Append(f, elem))
+			} else {
+				elem = f.Index(f.Len() - 1)
+			}
+
+			offset, err = plan.loadStructure(rel.structure, offset, elem.Elem())
+			if err != nil {
+				return 0, fmt.Errorf("loading relation %s data: %w", f, err)
+			}
+
+			rel.structure.prevPrimaryKey = newPrimaryKey
+			structure.toManyRelations[name] = rel
 		}
+
 	}
 
-	return offset
+	return offset, nil
 }
 
 func (plan selectQueryPlan) load(v reflect.Value) {
 	plan.loadStructure(plan.structure, 0, v)
-}
-
-func (plan selectQueryPlan) scannedPrimaryKey() (string, error) {
-	data, err := json.Marshal(plan.target[0:len(plan.outerPrimaryKey)])
-	return string(data), err
 }
 
 func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
