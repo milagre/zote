@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/milagre/zote/go/zsql"
+	"github.com/milagre/zote/go/zfunc"
+	"github.com/milagre/zote/go/zorm"
+	"github.com/milagre/zote/go/zreflect"
 )
 
 type Mapping struct {
@@ -14,6 +16,8 @@ type Mapping struct {
 	UniqueKeys [][]string
 	Columns    []Column
 	Relations  []Relation
+
+	repo *Repository
 }
 
 type Column struct {
@@ -29,6 +33,15 @@ type Relation struct {
 	Field   string
 }
 
+func (m Mapping) relationByField(f string) (Relation, bool) {
+	for _, r := range m.Relations {
+		if r.Field == f {
+			return r, true
+		}
+	}
+	return Relation{}, false
+}
+
 func (m Mapping) hasValues(objPtr reflect.Value, fields []string) bool {
 	for _, f := range fields {
 		if objPtr.Elem().FieldByName(f).IsZero() {
@@ -36,10 +49,6 @@ func (m Mapping) hasValues(objPtr reflect.Value, fields []string) bool {
 		}
 	}
 	return true
-}
-
-func (m Mapping) escapedTable(driver zsql.Driver) string {
-	return driver.EscapeTable(m.Table)
 }
 
 func (m Mapping) allFields() []string {
@@ -92,7 +101,7 @@ func (m Mapping) isNew(objPtr reflect.Value) {
 
 }
 
-func (m Mapping) mapField(driver zsql.Driver, tableAlias string, columnAliasPrefix string, field string) (string, interface{}, error) {
+func (m Mapping) mapField(table table, columnAliasPrefix string, field string) (column, interface{}, error) {
 	for _, c := range m.Columns {
 		if field == c.Field {
 			col := c.Name
@@ -102,27 +111,35 @@ func (m Mapping) mapField(driver zsql.Driver, tableAlias string, columnAliasPref
 
 			structField, ok := reflect.TypeOf(m.PtrType).Elem().FieldByName(field)
 			if !ok {
-				return "", nil, fmt.Errorf("mapping field: getting struct field %s on %T", field, m.PtrType)
+				return column{}, nil, fmt.Errorf("mapping field: getting struct field %s on %T", field, m.PtrType)
 			}
 
-			var ref string
-			if tableAlias == "" {
-				ref = driver.EscapeColumn(col)
-			} else {
-				ref = driver.EscapeTableColumn(tableAlias, col)
-			}
+			res := column{table: table, name: c.Name, alias: col}
 
 			val := reflect.New(structField.Type).Interface()
 
-			return ref, val, nil
+			return res, val, nil
 		}
 	}
 
-	return "", nil, fmt.Errorf("field %s is not mapped", field)
+	return column{}, nil, fmt.Errorf("field %s is not mapped", field)
 }
 
-func (m Mapping) mapFields(driver zsql.Driver, tableAlias string, columnAliasPrefix string, fields []string) ([]string, []interface{}, error) {
-	columns := make([]string, 0, len(fields))
+func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []string, relations zorm.Relations) (structure, error) {
+	ptrType := reflect.TypeOf(m.PtrType)
+
+	if len(fields) == 0 {
+		fields = m.allFields()
+	}
+
+	pkf, err := m.primaryKeyFields()
+	if err != nil {
+		return structure{}, fmt.Errorf("cannot locate primary key fields: %w", err)
+	}
+	pkLength := len(pkf)
+	fields = append(pkf, fields...)
+
+	columns := make([]column, 0, len(fields))
 	target := make([]interface{}, 0, len(fields))
 
 	colMap := map[string]string{}
@@ -133,57 +150,111 @@ func (m Mapping) mapFields(driver zsql.Driver, tableAlias string, columnAliasPre
 	for _, f := range fields {
 		col, ok := colMap[f]
 		if !ok {
-			return nil, nil, fmt.Errorf("field '%s' is not mapped", f)
-		}
-		if columnAliasPrefix != "" {
-			col = columnAliasPrefix + "_" + col
+			return structure{}, fmt.Errorf("field '%s' is not mapped", f)
 		}
 
-		structField, ok := reflect.TypeOf(m.PtrType).Elem().FieldByName(f)
+		structField, ok := ptrType.Elem().FieldByName(f)
 		if !ok {
-			return nil, nil, fmt.Errorf("mapping fields: getting struct field %s on %T", f, m.PtrType)
+			return structure{}, fmt.Errorf("mapping fields: getting struct field %s on %T", f, m.PtrType)
 		}
 
-		var colRef string
-		if tableAlias != "" {
-			colRef = driver.EscapeTableColumn(tableAlias, col)
+		colAlias := col
+		if columnAliasPrefix != "" {
+			colAlias = columnAliasPrefix + "_" + col
+		}
+
+		columns = append(columns, column{
+			table: tbl,
+			name:  col,
+			alias: colAlias,
+		})
+		target = append(target, reflect.New(structField.Type).Interface())
+	}
+
+	relationList := make([]string, 0, len(relations))
+	toOneRelations := map[string]joinStructure{}
+	toManyRelations := map[string]joinStructure{}
+
+	for f, rel := range relations {
+		structField, ok := ptrType.Elem().FieldByName(f)
+		if !ok {
+			return structure{}, fmt.Errorf("mapping relations: getting struct field %s on %T", f, m.PtrType)
+		}
+
+		var subject reflect.Type
+		var results map[string]joinStructure
+		if structField.Type.Kind() == reflect.Ptr {
+			subject = structField.Type
+			results = toOneRelations
+		} else if structField.Type.Kind() == reflect.Slice {
+			subject = structField.Type.Elem()
+			results = toManyRelations
 		} else {
-			colRef = driver.EscapeColumn(col)
+			return structure{}, fmt.Errorf("mapping relations: invalid struct field type %s on %T", f, m.PtrType)
 		}
 
-		columns = append(columns, colRef)
-		target = append(target, reflect.New(structField.Type).Interface())
-	}
-
-	return columns, target, nil
-}
-
-func (m Mapping) mappedPrimaryKeyColumns(driver zsql.Driver, tableAlias string, columnAliasPrefix string) ([]string, []interface{}, error) {
-	result := make([]string, 0, len(m.PrimaryKey))
-	target := make([]interface{}, 0, len(m.PrimaryKey))
-
-	colMap := map[string]string{}
-	for _, c := range m.Columns {
-		colMap[c.Name] = c.Field
-	}
-
-	for i, col := range m.PrimaryKey {
-		f, ok := colMap[col]
+		otherMapping, ok := m.repo.cfg.mappings[zreflect.TypeID(subject)]
 		if !ok {
-			return nil, nil, fmt.Errorf("primary key column %s is not mapped", col)
+			return structure{}, fmt.Errorf("no mapping available for field %s on %T", f, m.PtrType)
 		}
+
+		relMapping, ok := m.relationByField(f)
+		if !ok {
+			return structure{}, fmt.Errorf("unrecognized relation for field %s on %T", f, m.PtrType)
+		}
+
+		rightAlias := f
 		if columnAliasPrefix != "" {
-			col = columnAliasPrefix + "_" + col
+			rightAlias = columnAliasPrefix + "_" + rightAlias
+		}
+		rightTbl := table{
+			name:  otherMapping.Table,
+			alias: f,
 		}
 
-		structField, ok := reflect.TypeOf(m.PtrType).Elem().FieldByName(f)
-		if !ok {
-			return nil, nil, fmt.Errorf("mapping primary key: getting struct field %s on %T", f, m.PtrType)
+		relStructure, err := otherMapping.mapStructure(
+			rightTbl,
+			rightAlias,
+			rel.Include.Fields,
+			rel.Include.Relations,
+		)
+		if err != nil {
+			return structure{}, fmt.Errorf("mapping structure failed for field %s on %T: %w", f, m.PtrType, err)
 		}
 
-		result = append(result, driver.EscapeTableColumn(tableAlias, col)+" AS "+fmt.Sprintf("_%d", i))
-		target = append(target, reflect.New(structField.Type).Interface())
+		js := joinStructure{
+			structure: relStructure,
+			onPairs: zfunc.Map(zfunc.Pairs(relMapping.Columns), func(p zfunc.Pair[string, string]) [2]column {
+				return [2]column{
+					{
+						table: tbl,
+						name:  p.Key,
+					},
+					{
+						table: rightTbl,
+						name:  p.Value,
+					},
+				}
+			}),
+		}
+
+		relationList = append(relationList, f)
+		results[f] = js
 	}
 
-	return result, target, nil
+	return structure{
+		table: tbl,
+
+		columns: columns[pkLength:],
+		fields:  fields[pkLength:],
+		target:  target[pkLength:],
+
+		primaryKey:       columns[0:pkLength],
+		primaryKeyFields: fields[0:pkLength],
+		primaryKeyTarget: target[0:pkLength],
+
+		relations:       relationList,
+		toOneRelations:  toOneRelations,
+		toManyRelations: toManyRelations,
+	}, nil
 }

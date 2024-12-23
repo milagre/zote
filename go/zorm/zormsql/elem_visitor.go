@@ -11,7 +11,7 @@ var _ zelement.Visitor = &elemVisitor{}
 
 type elemVisitor struct {
 	driver            zsql.Driver
-	tableAlias        string
+	table             table
 	columnAliasPrefix string
 	mapping           Mapping
 
@@ -39,12 +39,12 @@ func (v *elemVisitor) VisitValue(e zelement.Value) error {
 }
 
 func (v *elemVisitor) VisitField(e zelement.Field) error {
-	result, _, err := v.mapping.mapField(v.driver, v.tableAlias, v.columnAliasPrefix, e.Name)
+	col, _, err := v.mapping.mapField(v.table, v.columnAliasPrefix, e.Name)
 	if err != nil {
 		return fmt.Errorf("visiting field: %w", err)
 	}
 
-	v.result += result
+	v.result += col.escaped(v.driver)
 
 	return nil
 }

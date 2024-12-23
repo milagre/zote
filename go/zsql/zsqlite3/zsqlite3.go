@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mattn/go-sqlite3"
-	_ "github.com/mattn/go-sqlite3"
+	"modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 
 	"github.com/milagre/zote/go/zsql"
 )
@@ -48,8 +48,8 @@ func (d driver) PrepareMethod(m string) *string {
 }
 
 func (d driver) IsConflictError(err error) bool {
-	var sqliteErr *sqlite3.Error
-	return errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique
+	var sqliteErr *sqlite.Error
+	return errors.As(err, &sqliteErr) && sqliteErr.Code() == sqlite3.SQLITE_CONSTRAINT
 }
 
 func DefaultOptions() zsql.Options {
@@ -81,7 +81,7 @@ func connectionString(path string, opts zsql.Options) string {
 }
 
 func Open(dsn string, poolSize int) (zsql.Connection, error) {
-	pool, err := sql.Open("sqlite3", dsn)
+	pool, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return zsql.Connection{}, fmt.Errorf("opening sqlite3 connection: %w", err)
 	}

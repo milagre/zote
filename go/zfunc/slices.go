@@ -1,5 +1,21 @@
 package zfunc
 
+type Pair[K comparable, V any] struct {
+	Key   K
+	Value V
+}
+
+func Pairs[K comparable, V any](m map[K]V) []Pair[K, V] {
+	result := make([]Pair[K, V], 0, len(m))
+	for k, v := range m {
+		result = append(result, Pair[K, V]{
+			Key:   k,
+			Value: v,
+		})
+	}
+	return result
+}
+
 func Map[T, V any](ts []T, fn func(T) V) []V {
 	result := make([]V, len(ts))
 	for i, t := range ts {

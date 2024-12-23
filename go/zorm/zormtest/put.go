@@ -14,6 +14,8 @@ func RunPutTests(t *testing.T, setup SetupFunc) {
 
 	t.Run("PutAccountNew", func(t *testing.T) {
 		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
 			obj := &Account{
 				Company: "NewCo",
 			}
@@ -29,6 +31,8 @@ func RunPutTests(t *testing.T, setup SetupFunc) {
 
 	t.Run("PutAccountUpdate", func(t *testing.T) {
 		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
 			obj := &Account{
 				ID:      "1",
 				Company: "Acme, Incorporated",
