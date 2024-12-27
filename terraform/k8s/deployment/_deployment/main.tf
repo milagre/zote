@@ -69,7 +69,7 @@ resource "kubernetes_deployment" "deploy" {
 
           image = "${var.image}:${var.tag}"
 
-          image_pull_policy = var.env.is_local && length(split("/", var.image)) != 1 ? "Never" : "IfNotPresent"
+          image_pull_policy = "IfNotPresent"
 
           command = var.cmd
           args    = var.args
