@@ -362,12 +362,12 @@ func write(s *server, logger zlog.Logger, rw http.ResponseWriter, resp ResponseB
 		body, err = io.ReadAll(raw)
 		if err != nil {
 			if !truncateOnFail {
-				logger.Warnf("Overriding response with Internal Server Error due to error reading response body: %v", err)
+				logger.Errorf("Overriding response with Internal Server Error due to error reading response body: %v", err)
 				resp = s.defaults.internalServerError()
 				return write(s, logger, rw, resp, true)
 			}
 
-			logger.Warnf("Truncating response due to error while reading response body: %v", err)
+			logger.Errorf("Truncating response due to error while reading response body: %v", err)
 			body = []byte{}
 		}
 	}
@@ -381,11 +381,18 @@ func write(s *server, logger zlog.Logger, rw http.ResponseWriter, resp ResponseB
 		}
 	}
 
-	rw.WriteHeader(resp.Status())
+	status := resp.Status()
+	rw.WriteHeader(status)
+
+	if status == http.StatusNoContent {
+		return 0
+	}
+
 	_, err := rw.Write(body)
 	if err != nil {
-		logger.Warnf("Truncating response body due to error while reading overriden Internal Server Error response body, truncating body: %v", err)
+		logger.Warnf("Error writing response body for request: %v", err)
 	}
 
 	return len(body)
+
 }
