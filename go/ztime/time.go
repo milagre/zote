@@ -49,12 +49,12 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 	var s string
 	err := json.Unmarshal(data, &s)
 	if err != nil {
-		return fmt.Errorf("unmarshalling time: parsing json string: %w", err)
+		return fmt.Errorf("unmarshalling ztime.Time: parsing json string: %w", err)
 	}
 
 	val, err := parseTime(s)
 	if err != nil {
-		return fmt.Errorf("unmarshalling time: parsing: %w", err)
+		return fmt.Errorf("unmarshalling ztime.Time: parsing: %w", err)
 	}
 
 	*t = val
@@ -67,17 +67,24 @@ func (t Time) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Time) Scan(data any) error {
-	switch input := data.(type) {
+	target := data
+
+	// Convert []uint8/[]byte into string explicitly, it weirdly doesnt match in
+	// the type switch below on mysql Time columns
+	if b, ok := data.([]byte); ok {
+		target = string(b)
+	}
+
+	switch input := target.(type) {
 	case int64:
 	case float64:
 	case bool:
-		return fmt.Errorf("scanning time: invalid input type: %+T", data)
+		return fmt.Errorf("scanning ztime.Time: invalid input type: %+T", target)
 
-	case []byte:
 	case string:
 		val, err := parseTime(string(input))
 		if err != nil {
-			return fmt.Errorf("scanning time: parsing: %w", err)
+			return fmt.Errorf("scanning ztime.Time: parsing: %w", err)
 		}
 		*t = val
 		return nil
@@ -90,7 +97,7 @@ func (t *Time) Scan(data any) error {
 		return nil
 	}
 
-	return fmt.Errorf("scanning time: unrecognized type: %+T", data)
+	return fmt.Errorf("scanning ztime.Time: unrecognized type: %+T", target)
 }
 
 func (t Time) Value() (driver.Value, error) {
@@ -121,7 +128,7 @@ func parseTime(s string) (Time, error) {
 
 	val, err := time.Parse(timeFormats[res], s)
 	if err != nil {
-		return Time{}, fmt.Errorf("parsing date: %w", err)
+		return Time{}, fmt.Errorf("parsing ztime.Time: %w", err)
 	}
 
 	return Time{Time: val, res: res}, nil

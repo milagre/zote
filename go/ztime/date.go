@@ -36,12 +36,12 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 	var s string
 	err := json.Unmarshal(data, &s)
 	if err != nil {
-		return fmt.Errorf("unmarshalling date: parsing json string: %w", err)
+		return fmt.Errorf("unmarshalling ztime.Date: parsing json string: %w", err)
 	}
 
 	val, err := parseDate(s)
 	if err != nil {
-		return fmt.Errorf("unmarshalling date: parsing: %w", err)
+		return fmt.Errorf("unmarshalling ztime.Date: parsing: %w", err)
 	}
 
 	*d = val
@@ -58,13 +58,13 @@ func (d *Date) Scan(data any) error {
 	case int64:
 	case float64:
 	case bool:
-		return fmt.Errorf("scanning date: invalid input type: %+T", data)
+		return fmt.Errorf("scanning ztime.Date: invalid input type: %+T", data)
 
 	case []byte:
 	case string:
 		val, err := time.Parse(time.DateOnly, string(input))
 		if err != nil {
-			return fmt.Errorf("scanning date: parsing date: %w", err)
+			return fmt.Errorf("scanning ztime.Date: parsing date: %w", err)
 		}
 		*d = Date{val}
 		return nil
@@ -78,7 +78,7 @@ func (d *Date) Scan(data any) error {
 
 	}
 
-	return fmt.Errorf("scanning date: unrecognized type: %+T", data)
+	return fmt.Errorf("scanning ztime.Date: unrecognized type: %+T", data)
 }
 
 func (d Date) Value() (driver.Value, error) {
@@ -101,7 +101,7 @@ func (d *Date) At(t Time, tz Timezone) time.Time {
 func parseDate(s string) (Date, error) {
 	val, err := time.Parse(time.DateOnly, s)
 	if err != nil {
-		return Date{}, fmt.Errorf("unmarshalling date: parsing date: %w", err)
+		return Date{}, fmt.Errorf("unmarshalling ztime.Date: parsing date: %w", err)
 	}
 
 	return Date{val}, nil
