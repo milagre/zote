@@ -62,6 +62,14 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (t Time) Resolution() Resolution {
+	return t.res
+}
+
+func (t *Time) SetResolution(res Resolution) {
+	t.res = res
+}
+
 func (t Time) MarshalJSON() ([]byte, error) {
 	return json.Marshal(t.String())
 }

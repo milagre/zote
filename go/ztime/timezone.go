@@ -50,14 +50,21 @@ func (tz Timezone) MarshalJSON() ([]byte, error) {
 }
 
 func (tz *Timezone) Scan(data any) error {
-	switch input := data.(type) {
+	target := data
+
+	// Convert []uint8/[]byte into string explicitly, it weirdly doesnt match in
+	// the type switch below on mysql Time columns
+	if b, ok := data.([]byte); ok {
+		target = string(b)
+	}
+
+	switch input := target.(type) {
 	case int64:
 	case float64:
 	case bool:
 	case time.Time:
 		return fmt.Errorf("scanning timezone: invalid input type: %+T", data)
 
-	case []byte:
 	case string:
 		val, err := time.LoadLocation(string(input))
 		if err != nil {

@@ -54,13 +54,20 @@ func (d Date) MarshalJSON() ([]byte, error) {
 }
 
 func (d *Date) Scan(data any) error {
-	switch input := data.(type) {
+	target := data
+
+	// Convert []uint8/[]byte into string explicitly, it weirdly doesnt match in
+	// the type switch below on mysql Time columns
+	if b, ok := data.([]byte); ok {
+		target = string(b)
+	}
+
+	switch input := target.(type) {
 	case int64:
 	case float64:
 	case bool:
 		return fmt.Errorf("scanning ztime.Date: invalid input type: %+T", data)
 
-	case []byte:
 	case string:
 		val, err := time.Parse(time.DateOnly, string(input))
 		if err != nil {
@@ -75,7 +82,6 @@ func (d *Date) Scan(data any) error {
 
 	case nil:
 		return nil
-
 	}
 
 	return fmt.Errorf("scanning ztime.Date: unrecognized type: %+T", data)
