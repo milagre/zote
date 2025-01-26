@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/stoewer/go-strcase"
+	"github.com/urfave/cli/v2"
 
 	"github.com/milagre/zote/go/zbuild"
 	"github.com/milagre/zote/go/zlog"
-	"github.com/urfave/cli/v2"
 )
 
 type App struct {

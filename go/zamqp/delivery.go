@@ -10,8 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/milagre/zote/go/zlog"
 	"github.com/rabbitmq/amqp091-go"
+
+	"github.com/milagre/zote/go/zlog"
 )
 
 type Delivery interface {

@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	// Loads mozilla root CAs if a system cert store is not found
 	_ "github.com/breml/rootcerts"
 )
 

@@ -3,10 +3,11 @@ package zormsql
 import (
 	"testing"
 
-	"github.com/milagre/zote/go/zelement/zelem"
-	"github.com/milagre/zote/go/zsql/zsqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/milagre/zote/go/zelement/zelem"
+	"github.com/milagre/zote/go/zsql/zsqlite3"
 )
 
 func TestSortVisitor(t *testing.T) {

@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/milagre/zote/go/ztime"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/milagre/zote/go/ztime"
 )
 
 func TestNewUnix(t *testing.T) {
