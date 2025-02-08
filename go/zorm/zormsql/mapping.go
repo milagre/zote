@@ -59,14 +59,21 @@ func (m Mapping) allFields() []string {
 	return result
 }
 
-func (m Mapping) insertFields() []string {
-	result := make([]string, 0, len(m.Columns))
+func (m Mapping) insertFields() ([]string, []column) {
+	fields := make([]string, 0, len(m.Columns))
+	columns := make([]column, 0, len(m.Columns))
 	for _, c := range m.Columns {
 		if !c.NoInsert {
-			result = append(result, c.Field)
+			fields = append(fields, c.Field)
+			columns = append(columns, column{
+				table: table{
+					name: m.Table,
+				},
+				name: c.Name,
+			})
 		}
 	}
-	return result
+	return fields, columns
 }
 
 func (m Mapping) updateFields() []string {

@@ -408,14 +408,9 @@ func (r *Queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 		name: mapping.Table,
 	}
 
-	fields := mapping.insertFields()
-	structure, err := mapping.mapStructure(targetTable, "", fields, zorm.Relations{})
-	if err != nil {
-		return fmt.Errorf("mapping insert columns: %w", err)
-	}
-
-	queryColumns := make([]string, 0, len(structure.columns))
-	for _, col := range structure.columns {
+	fields, columns := mapping.insertFields()
+	queryColumns := make([]string, 0, len(columns))
+	for _, col := range columns {
 		queryColumns = append(queryColumns, col.escaped(r.conn.Driver()))
 	}
 
