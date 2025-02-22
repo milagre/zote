@@ -27,6 +27,7 @@ func (a Aspect) Apply(c zcmd.Configurable) {
 	c.AddString(a.pass())
 	c.AddString(a.database()).Default("mysql")
 	c.AddInt(a.port()).Default(3306)
+	c.AddBool(a.debug())
 }
 
 func (a Aspect) Connection(env zcmd.Env, options zsql.Options) (zsql.Connection, error) {
@@ -41,10 +42,15 @@ func (a Aspect) Connection(env zcmd.Env, options zsql.Options) (zsql.Connection,
 
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return zsql.Connection{}, fmt.Errorf("opening mysql connection: %w", err)
+		return nil, fmt.Errorf("opening mysql connection: %w", err)
 	}
 
-	return zsql.NewConnection(db, Driver), nil
+	conn := zsql.NewConnection(db, Driver)
+
+	if env.Bool(a.debug()) {
+		conn = zsql.NewLoggingConnection(conn)
+	}
+	return conn, nil
 }
 
 // Option constructors
@@ -67,4 +73,8 @@ func (a Aspect) pass() string {
 
 func (a Aspect) database() string {
 	return zaspect.Format("mysql-%s-database", a.name)
+}
+
+func (a Aspect) debug() string {
+	return zaspect.Format("mysql-%s-debug", a.name)
 }

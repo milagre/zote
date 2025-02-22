@@ -15,8 +15,7 @@ import (
 
 var Driver zsql.Driver = driver{}
 
-type driver struct {
-}
+type driver struct{}
 
 func (d driver) Name() string {
 	return "mysql"
@@ -89,7 +88,7 @@ func TCPConnectionString(user string, pass string, host string, port int, db str
 func Open(dsn string, poolSize int) (zsql.Connection, error) {
 	pool, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return zsql.Connection{}, fmt.Errorf("opening mysql connection: %w", err)
+		return nil, fmt.Errorf("opening mysql connection: %w", err)
 	}
 
 	pool.SetConnMaxIdleTime(5 * time.Minute)

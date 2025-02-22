@@ -16,8 +16,7 @@ import (
 
 var Driver zsql.Driver = driver{}
 
-type driver struct {
-}
+type driver struct{}
 
 func (d driver) Name() string {
 	return "sqlite3"
@@ -83,7 +82,7 @@ func connectionString(path string, opts zsql.Options) string {
 func Open(dsn string, poolSize int) (zsql.Connection, error) {
 	pool, err := sql.Open("sqlite", dsn)
 	if err != nil {
-		return zsql.Connection{}, fmt.Errorf("opening sqlite3 connection: %w", err)
+		return nil, fmt.Errorf("opening sqlite3 connection: %w", err)
 	}
 
 	pool.SetConnMaxIdleTime(5 * time.Minute)

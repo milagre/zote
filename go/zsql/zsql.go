@@ -60,27 +60,29 @@ type Queryable interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
-type Connection struct {
+type Connection interface {
+	Transactor
+	Close() error
+	Driver() Driver
+}
+
+type connection struct {
 	db     *sql.DB
 	driver Driver
 }
 
-var _ interface {
-	Transactor
-} = Connection{}
-
 func NewConnection(db *sql.DB, driver Driver) Connection {
-	return Connection{
+	return connection{
 		db:     db,
 		driver: driver,
 	}
 }
 
-func (c Connection) Driver() Driver {
+func (c connection) Driver() Driver {
 	return c.driver
 }
 
-func (c Connection) Begin(ctx context.Context, opts *sql.TxOptions) (Transaction, error) {
+func (c connection) Begin(ctx context.Context, opts *sql.TxOptions) (Transaction, error) {
 	tx, err := c.db.BeginTx(ctx, opts)
 	return transaction{
 		source: c,
@@ -88,25 +90,25 @@ func (c Connection) Begin(ctx context.Context, opts *sql.TxOptions) (Transaction
 	}, err
 }
 
-func (c Connection) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+func (c connection) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
 	return c.db.QueryContext(ctx, query, args...)
 }
 
-func (c Connection) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+func (c connection) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	return c.db.ExecContext(ctx, query, args...)
 }
 
-func (c Connection) Close() error {
+func (c connection) Close() error {
 	return c.db.Close()
 }
 
 type transaction struct {
-	source Connection
+	source connection
 	tx     *sql.Tx
 }
 
 func (t transaction) Driver() Driver {
-	return t.source.driver
+	return t.source.Driver()
 }
 
 func (t transaction) Commit() error {
@@ -170,8 +172,10 @@ func Begin(ctx context.Context, db Transactor, cb func(context.Context, Transact
 	return nil
 }
 
-type ScanFunc func(dest ...any) error
-type QueryCallback func(ScanFunc) error
+type (
+	ScanFunc      func(dest ...any) error
+	QueryCallback func(ScanFunc) error
+)
 
 func Query(ctx context.Context, db Selector, cb QueryCallback, query string, args []any) (bool, error) {
 	rows, err := db.Query(ctx, query, args...)
