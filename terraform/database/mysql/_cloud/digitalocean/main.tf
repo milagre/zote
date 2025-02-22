@@ -40,6 +40,22 @@ resource "digitalocean_database_firewall" "vpc_fw" {
   }
 }
 
+resource "digitalocean_database_mysql_config" "cfg" {
+  cluster_id = digitalocean_database_cluster.cluster.id
+
+  sql_mode = join(",", [
+    "ANSI_QUOTES",
+    "ERROR_FOR_DIVISION_BY_ZERO",
+    "IGNORE_SPACE",
+    "NO_ENGINE_SUBSTITUTION",
+    "NO_ZERO_DATE",
+    "NO_ZERO_IN_DATE",
+    "ONLY_FULL_GROUP_BY",
+    "PIPES_AS_CONCAT",
+    "REAL_AS_FLOAT",
+  ])
+}
+
 resource "digitalocean_database_db" "db" {
   cluster_id = digitalocean_database_cluster.cluster.id
   name       = var.database
