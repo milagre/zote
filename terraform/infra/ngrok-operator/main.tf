@@ -6,7 +6,7 @@ variable "domain" {}
 
 resource "kubernetes_secret" "ngrok" {
   metadata {
-    name      = "ingress-ngrok-kubernetes-ingress-controller-credentials"
+    name      = "ngrok-operator-credentials"
     namespace = var.namespace
   }
   data = {
@@ -16,11 +16,11 @@ resource "kubernetes_secret" "ngrok" {
 }
 
 resource "helm_release" "ngrok" {
-  chart      = "kubernetes-ingress-controller"
-  name       = "ingress-ngrok"
+  chart      = "ngrok-operator"
+  name       = "ngrok-operator"
   namespace  = var.namespace
-  repository = "https://ngrok.github.io/kubernetes-ingress-controller"
-  version    = "0.11.0"
+  repository = "https://ngrok.github.io/ngrok-operator"
+  version    = "0.18.0"
 
   set {
     name  = "podSecurityPolicy.enabled"
