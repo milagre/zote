@@ -41,6 +41,12 @@ resource "helm_release" "influxdb2" {
           cpu    = module.profile.cpu_cores.min
         }
       }
+      extraEnvVars = [
+        {
+          name  = "INFLUXD_STORAGE_CACHE_MAX_MEMORY_SIZE"
+          value = "${floor(module.profile.mem_mb.max * 0.6 * 1024 * 1024)}"
+        }
+      ]
       livenessProbe = {
         path                = "/health"
         scheme              = "HTTP"
