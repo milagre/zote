@@ -7,8 +7,10 @@ import (
 	"time"
 )
 
-var _ json.Marshaler = Unix{}
-var _ json.Unmarshaler = &Unix{}
+var (
+	_ json.Marshaler   = Unix{}
+	_ json.Unmarshaler = &Unix{}
+)
 
 type Unix struct {
 	time time.Time

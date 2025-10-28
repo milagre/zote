@@ -5,6 +5,10 @@ import (
 	"io"
 )
 
+type Encoder interface {
+	io.Reader
+}
+
 type Decoder interface {
 	io.WriteCloser
 	Encoding() string

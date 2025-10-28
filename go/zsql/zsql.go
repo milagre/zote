@@ -19,15 +19,31 @@ type Driver interface {
 	IsConflictError(error) bool
 }
 
-type Transactor interface {
-	Queryer
-	TransactionBeginner
-
+type HasDriver interface {
 	Driver() Driver
 }
 
-type Transaction interface {
+type Queryer interface {
+	Query(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+type Executor interface {
+	Exec(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+type QueryExecutor interface {
 	Queryer
+	Executor
+	Driver() Driver
+}
+
+type Transactor interface {
+	QueryExecutor
+	TransactionBeginner
+}
+
+type Transaction interface {
+	QueryExecutor
 	TransactionEnder
 }
 
@@ -40,30 +56,9 @@ type TransactionEnder interface {
 	Commit() error
 }
 
-type Queryer interface {
-	Selector
-	Executor
-
-	Driver() Driver
-}
-
-type Selector interface {
-	Query(ctx context.Context, query string, args ...any) (*sql.Rows, error)
-}
-
-type Executor interface {
-	Exec(ctx context.Context, query string, args ...any) (sql.Result, error)
-}
-
-// Deprecated: Use selector
-type Queryable interface {
-	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
-}
-
 type Connection interface {
 	Transactor
 	Close() error
-	Driver() Driver
 }
 
 type connection struct {
@@ -177,7 +172,7 @@ type (
 	QueryCallback func(ScanFunc) error
 )
 
-func Query(ctx context.Context, db Selector, cb QueryCallback, query string, args []any) (bool, error) {
+func Query(ctx context.Context, db Queryer, cb QueryCallback, query string, args []any) (bool, error) {
 	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return false, fmt.Errorf("executing query: %w", err)

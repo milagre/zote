@@ -13,8 +13,11 @@ type Cache interface {
 	Get(ctx context.Context, namespace string, key string) (<-chan []byte, error)
 }
 
-type Loader func(ctx context.Context) ([]byte, error)
-type Parser[T any] func(data []byte) (T, error)
+type (
+	Loader[T any]       func(ctx context.Context) (T, error)
+	Marshaller[T any]   func(T) ([]byte, error)
+	Unmarshaller[T any] func(data []byte) (T, error)
+)
 
 func ReadThrough[T any](
 	ctx context.Context,
@@ -22,8 +25,9 @@ func ReadThrough[T any](
 	namespace string,
 	key string,
 	expiration time.Duration,
-	loader Loader,
-	parser Parser[T],
+	loader Loader[T],
+	marshal Marshaller[T],
+	unmarshal Unmarshaller[T],
 ) (T, zwarn.Warning, error) {
 	var warnings zwarn.Warnings
 	var err error
@@ -36,33 +40,27 @@ func ReadThrough[T any](
 		warnings = append(warnings, zwarn.Warnf("loading read-through cached data: %v", err))
 	} else {
 		if data, ok := <-ch; ok {
-			var found T
-			found, err = parser(data)
+			result, err = unmarshal(data)
 			if err != nil {
 				warnings = append(warnings, zwarn.Warnf("parsing read-through cached data: %v", err))
 			} else {
 				loaded = true
-				result = found
 			}
 		}
 	}
 
 	// If not found in cache, load from source
 	if !loaded {
-		content, err := loader(ctx)
+		result, err = loader(ctx)
 		if err != nil {
 			return result, warnings, fmt.Errorf("fetching read-through from source: %w", err)
 		}
 
-		var found T
-		found, err = parser(content)
+		data, err := marshal(result)
 		if err != nil {
-			return result, warnings, fmt.Errorf("parsing read-through from source: %w", err)
+			warnings = append(warnings, zwarn.Warnf("caching read-through data from source: %v", err))
 		} else {
-			loaded = true
-			result = found
-
-			err := cache.Set(ctx, namespace, key, expiration, content)
+			err = cache.Set(ctx, namespace, key, expiration, data)
 			if err != nil {
 				warnings = append(warnings, zwarn.Warnf("caching read-through data from source: %v", err))
 			}
@@ -74,5 +72,4 @@ func ReadThrough[T any](
 	}
 
 	return result, nil, nil
-
 }

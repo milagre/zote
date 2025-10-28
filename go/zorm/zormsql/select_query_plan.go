@@ -17,7 +17,7 @@ import (
 	"github.com/milagre/zote/go/zsql"
 )
 
-func buildSelectQueryPlan(r *Queryer, mapping Mapping, fields []string, relations zorm.Relations, clause zclause.Clause, sorts []zsort.Sort, limit int, offset int) (*selectQueryPlan, error) {
+func buildSelectQueryPlan(r *queryer, mapping Mapping, fields []string, relations zorm.Relations, clause zclause.Clause, sorts []zsort.Sort, limit int, offset int) (*selectQueryPlan, error) {
 	innerPrimaryTable := table{
 		name:  mapping.Table,
 		alias: "target",

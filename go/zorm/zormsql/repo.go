@@ -24,18 +24,18 @@ type Config struct {
 
 // Repository
 type Repository struct {
-	*Queryer
+	*queryer
 	ts zsql.Transactor
 }
 
 type Transaction struct {
-	*Queryer
+	*queryer
 	tx zsql.Transaction
 }
 
-type Queryer struct {
+type queryer struct {
 	cfg  *Config
-	conn zsql.Queryer
+	conn zsql.QueryExecutor
 }
 
 func NewRepository(name string, conn zsql.Transactor) *Repository {
@@ -44,7 +44,7 @@ func NewRepository(name string, conn zsql.Transactor) *Repository {
 		mappings: map[string]Mapping{},
 	}
 	return &Repository{
-		Queryer: &Queryer{
+		queryer: &queryer{
 			cfg:  cfg,
 			conn: conn,
 		},
@@ -73,7 +73,7 @@ func (r *Repository) Begin(ctx context.Context) (zorm.Transaction, error) {
 	}
 
 	return &Transaction{
-		Queryer: &Queryer{
+		queryer: &queryer{
 			cfg:  r.cfg,
 			conn: tx,
 		},
@@ -99,7 +99,7 @@ func (t *Transaction) Rollback() error {
 	return nil
 }
 
-func (r *Queryer) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) (err error) {
+func (r *queryer) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
@@ -113,7 +113,7 @@ func (r *Queryer) Find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindO
 	return r.find(ctx, ptrToListOfPtrs, opts)
 }
 
-func (r *Queryer) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions) (err error) {
+func (r *queryer) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
@@ -127,7 +127,7 @@ func (r *Queryer) Get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions)
 	return r.get(ctx, listOfPtrs, opts)
 }
 
-func (r *Queryer) Put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) (err error) {
+func (r *queryer) Put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
@@ -141,7 +141,7 @@ func (r *Queryer) Put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions)
 	return r.put(ctx, listOfPtrs, opts)
 }
 
-func (r *Queryer) Delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) (err error) {
+func (r *queryer) Delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {
@@ -155,7 +155,7 @@ func (r *Queryer) Delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 	return r.delete(ctx, listOfPtrs, opts)
 }
 
-func (r *Queryer) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) error {
+func (r *queryer) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindOptions) error {
 	targetList, modelPtrType, err := validatePtrToListOfPtr(ptrToListOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to find: %w", err)
@@ -192,7 +192,7 @@ func (r *Queryer) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindO
 	return nil
 }
 
-func (r *Queryer) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions) error {
+func (r *queryer) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions) error {
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to get: %w", err)
@@ -274,7 +274,7 @@ func (r *Queryer) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions)
 	return nil
 }
 
-func (r *Queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) error {
+func (r *queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) error {
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to get: %w", err)
@@ -322,7 +322,7 @@ func (r *Queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions)
 	return nil
 }
 
-func (r *Queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) error {
+func (r *queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) error {
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to delete: %w", err)
@@ -403,7 +403,7 @@ func (r *Queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 	return nil
 }
 
-func (r *Queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
+func (r *queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
 	targetTable := table{
 		name: mapping.Table,
 	}
@@ -457,7 +457,7 @@ func (r *Queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 	return nil
 }
 
-func (r *Queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
+func (r *queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
 	driver := r.conn.Driver()
 	targetTable := table{
 		name: mapping.Table,
