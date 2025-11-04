@@ -185,4 +185,10 @@ resource "kubernetes_deployment" "deploy" {
       }
     }
   }
+
+  lifecycle {
+    ignore_changes = [
+      spec[0].template[0].metadata[0].annotations["kubectl.kubernetes.io/restartedAt"]
+    ]
+  }
 }
