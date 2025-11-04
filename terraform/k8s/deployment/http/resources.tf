@@ -145,19 +145,19 @@ resource "kubernetes_ingress_v1" "public_nginx" {
   }
 }
 
-resource "kubernetes_ingress_v1" "ngrok" {
+resource "kubernetes_ingress_v1" "tunnel" {
   count = var.env.is_local && var.internal.public_hostname != null ? 1 : 0
 
   metadata {
-    name      = "${var.name}-ngrok"
+    name      = "${var.name}-tunnel"
     namespace = var.namespace
     annotations = {
-      "kubernetes.io/ingress.class" = "ngrok"
+      "kubernetes.io/ingress.class" = "cloudflare-tunnel"
     }
   }
 
   spec {
-    ingress_class_name = "ngrok"
+    ingress_class_name = "cloudflare-tunnel"
 
     rule {
       host = var.internal.public_hostname
