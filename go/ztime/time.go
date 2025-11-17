@@ -38,6 +38,10 @@ func NewTime(t time.Time, res Resolution) Time {
 	}
 }
 
+func NewTimeFromValues(hour, minute, second int, res Resolution) Time {
+	return NewTime(time.Date(2005, time.January, 1, hour, minute, second, 0, time.UTC), res)
+}
+
 func (t Time) String() string {
 	return t.Format(timeFormats[t.res])
 }
