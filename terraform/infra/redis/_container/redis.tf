@@ -1,10 +1,3 @@
-locals {
-  shard_ids = {
-    for idx in range(var.shards) :
-    idx => substr("abcdefghijklmnopqrstuvwxyz", idx, 1)
-  }
-}
-
 resource "kubernetes_service" "redis" {
   metadata {
     name      = "redis-${var.name}"
@@ -26,10 +19,8 @@ resource "kubernetes_service" "redis" {
 }
 
 resource "kubernetes_config_map" "redis_conf" {
-  count = var.shards
-
   metadata {
-    name      = "cfg-redis-${var.name}-${local.shard_ids[count.index]}"
+    name      = "cfg-redis-${var.name}"
     namespace = var.namespace
     labels = {
       app = "redis-${var.name}"
@@ -56,15 +47,13 @@ resource "kubernetes_config_map" "redis_scripts" {
 }
 
 resource "kubernetes_stateful_set" "redis" {
-  count = var.shards
-
   metadata {
-    name      = "redis-${var.name}-${local.shard_ids[count.index]}"
+    name      = "redis-${var.name}"
     namespace = var.namespace
   }
 
   spec {
-    replicas = var.replicas + 1
+    replicas = (var.replicas + 1) * var.shards
 
     selector {
       match_labels = {
@@ -139,7 +128,7 @@ resource "kubernetes_stateful_set" "redis" {
         volume {
           name = "config"
           config_map {
-            name = kubernetes_config_map.redis_conf[count.index].metadata[0].name
+            name = kubernetes_config_map.redis_conf.metadata[0].name
           }
         }
 
@@ -199,10 +188,9 @@ resource "kubernetes_job" "cluster" {
             "-p", "6379",
             "--cluster", "create",
             flatten([
-              for node in range(var.replicas + 1) :
+              for node in range((var.replicas + 1) * var.shards) :
               [
-                for id in values(local.shard_ids) :
-                "redis-${var.name}-${id}-${node}.redis-${var.name}:6379"
+                "redis-${var.name}-${node}.redis-${var.name}:6379"
               ]
             ]),
             "--cluster-replicas", "${var.replicas}",
