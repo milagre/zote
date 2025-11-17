@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
-var _ json.Marshaler = Time{}
-var _ json.Unmarshaler = &Time{}
-var _ sql.Scanner = &Time{}
-var _ driver.Valuer = &Time{}
+var (
+	_ json.Marshaler   = Time{}
+	_ json.Unmarshaler = &Time{}
+	_ sql.Scanner      = &Time{}
+	_ driver.Valuer    = &Time{}
+)
 
 var timeFormats map[Resolution]string
 
@@ -112,7 +114,7 @@ func (t Time) Value() (driver.Value, error) {
 	return t.Time, nil
 }
 
-func (t *Time) On(d Date, tz Timezone) time.Time {
+func (t Time) On(d Date, tz Timezone) time.Time {
 	return time.Date(
 		d.Year(),
 		d.Month(),

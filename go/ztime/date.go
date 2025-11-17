@@ -8,10 +8,12 @@ import (
 	"time"
 )
 
-var _ json.Marshaler = Date{}
-var _ json.Unmarshaler = &Date{}
-var _ sql.Scanner = &Date{}
-var _ driver.Valuer = Date{}
+var (
+	_ json.Marshaler   = Date{}
+	_ json.Unmarshaler = &Date{}
+	_ sql.Scanner      = &Date{}
+	_ driver.Valuer    = Date{}
+)
 
 type Date struct {
 	time.Time
@@ -91,7 +93,7 @@ func (d Date) Value() (driver.Value, error) {
 	return d.Time, nil
 }
 
-func (d *Date) At(t Time, tz Timezone) time.Time {
+func (d Date) At(t Time, tz Timezone) time.Time {
 	return time.Date(
 		d.Year(),
 		d.Month(),
