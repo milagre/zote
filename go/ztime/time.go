@@ -131,6 +131,11 @@ func (t Time) On(d Date, tz Timezone) time.Time {
 	)
 }
 
+// Ptr returns a pointer to a copy of the Time. Useful when you simply need a pointer value instead of a value after construction.
+func (t Time) Ptr() *Time {
+	return &t
+}
+
 func parseTime(s string) (Time, error) {
 	var res Resolution
 	for r, f := range timeFormats {

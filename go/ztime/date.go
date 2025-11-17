@@ -110,6 +110,11 @@ func (d Date) At(t Time, tz Timezone) time.Time {
 	)
 }
 
+// Ptr returns a pointer to a copy of the Date. Useful when you simply need a pointer value instead of a value after construction.
+func (d Date) Ptr() *Date {
+	return &d
+}
+
 func parseDate(s string) (Date, error) {
 	val, err := time.Parse(time.DateOnly, s)
 	if err != nil {
