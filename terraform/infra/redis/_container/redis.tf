@@ -170,6 +170,8 @@ resource "kubernetes_job" "cluster" {
     namespace = var.namespace
   }
 
+  wait_for_completion = false
+
   spec {
     template {
       metadata {
@@ -200,4 +202,6 @@ resource "kubernetes_job" "cluster" {
       }
     }
   }
+
+  depends_on = [kubernetes_stateful_set.redis]
 }
