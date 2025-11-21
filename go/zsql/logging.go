@@ -69,6 +69,18 @@ func (q LoggingTransaction) Rollback() error {
 	return logRollback(q.logger, q.Transaction)
 }
 
+type LoggingQueryExecutor struct {
+	QueryExecutor
+}
+
+func (q LoggingQueryExecutor) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	return logQuery(ctx, query, args, q.QueryExecutor)
+}
+
+func (q LoggingQueryExecutor) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	return logExec(ctx, query, args, q.QueryExecutor)
+}
+
 // Implementations
 
 func logBegin(ctx context.Context, opts *sql.TxOptions, t TransactionBeginner) (Transaction, error) {
