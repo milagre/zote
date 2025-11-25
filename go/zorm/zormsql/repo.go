@@ -299,12 +299,12 @@ func (r *queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions)
 		val := targetVal.Index(i)
 		doUpdate := mapping.hasValues(val, primaryKeyFields)
 		if doUpdate {
-			err := r.update(ctx, mapping, primaryKeyFields, val)
+			err := r.update(ctx, mapping, primaryKeyFields, val, opts.Include.Fields)
 			if err != nil {
 				return fmt.Errorf("performing update: %w", err)
 			}
 		} else {
-			err := r.insert(ctx, mapping, primaryKeyFields, val)
+			err := r.insert(ctx, mapping, primaryKeyFields, val, opts.Include.Fields)
 			if err != nil {
 				if r.conn.Driver().IsConflictError(err) {
 					err = zorm.ErrConflict
@@ -403,12 +403,12 @@ func (r *queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 	return nil
 }
 
-func (r *queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
+func (r *queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value, fields zorm.Fields) error {
 	targetTable := table{
 		name: mapping.Table,
 	}
 
-	fields, columns := mapping.insertFields()
+	fields, columns := mapping.insertFields(fields)
 	queryColumns := make([]string, 0, len(columns))
 	for _, col := range columns {
 		queryColumns = append(queryColumns, col.escaped(r.conn.Driver()))
@@ -457,13 +457,13 @@ func (r *queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 	return nil
 }
 
-func (r *queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value) error {
+func (r *queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value, fields zorm.Fields) error {
 	driver := r.conn.Driver()
 	targetTable := table{
 		name: mapping.Table,
 	}
 
-	fields := mapping.updateFields()
+	fields = mapping.updateFields(fields)
 	structure, err := mapping.mapStructure(targetTable, "", fields, zorm.Relations{})
 	if err != nil {
 		return fmt.Errorf("mapping update columns: %w", err)

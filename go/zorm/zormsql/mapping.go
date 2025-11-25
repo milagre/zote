@@ -59,30 +59,61 @@ func (m Mapping) allFields() []string {
 	return result
 }
 
-func (m Mapping) insertFields() ([]string, []column) {
+func (m Mapping) insertFields(requestedFields zorm.Fields) ([]string, []column) {
 	fields := make([]string, 0, len(m.Columns))
 	columns := make([]column, 0, len(m.Columns))
-	for _, c := range m.Columns {
-		if !c.NoInsert {
-			fields = append(fields, c.Field)
-			columns = append(columns, column{
-				table: table{
-					name: m.Table,
-				},
-				name: c.Name,
-			})
+
+	if len(requestedFields) == 0 {
+		for _, c := range m.Columns {
+			if !c.NoInsert {
+				fields = append(fields, c.Field)
+				columns = append(columns, column{
+					table: table{
+						name: m.Table,
+					},
+					name: c.Name,
+				})
+			}
+		}
+	} else {
+		for _, f := range requestedFields {
+			for _, c := range m.Columns {
+				if f == c.Field && !c.NoInsert {
+					fields = append(fields, c.Field)
+					columns = append(columns, column{
+						table: table{
+							name: m.Table,
+						},
+						name: c.Name,
+					})
+				}
+			}
 		}
 	}
+
 	return fields, columns
 }
 
-func (m Mapping) updateFields() []string {
+func (m Mapping) updateFields(fields zorm.Fields) []string {
 	result := make([]string, 0, len(m.Columns))
-	for _, c := range m.Columns {
-		if !c.NoUpdate {
-			result = append(result, c.Field)
+
+	if len(fields) == 0 {
+		for _, c := range m.Columns {
+			if !c.NoUpdate {
+				result = append(result, c.Field)
+			}
+		}
+		return result
+	} else {
+		for _, f := range fields {
+			for _, c := range m.Columns {
+				if f == c.Field && !c.NoUpdate {
+					result = append(result, c.Field)
+				}
+			}
 		}
 	}
+
 	return result
 }
 
@@ -105,7 +136,6 @@ func (m Mapping) primaryKeyFields() ([]string, error) {
 }
 
 func (m Mapping) isNew(objPtr reflect.Value) {
-
 }
 
 func (m Mapping) mapField(table table, columnAliasPrefix string, field string) (column, interface{}, error) {

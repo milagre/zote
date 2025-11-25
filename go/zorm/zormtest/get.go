@@ -3,6 +3,7 @@ package zormtest
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/milagre/zote/go/zelement/zelem"
 	"github.com/milagre/zote/go/zorm"
@@ -42,6 +43,7 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 			require.NoError(t, err)
 
 			assertAccount(t, "1", obj)
+			assert.Equal(t, time.Time{}, obj.Created)
 		})
 	})
 
@@ -176,5 +178,4 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 			}
 		})
 	})
-
 }
