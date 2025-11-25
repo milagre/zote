@@ -29,6 +29,10 @@ resource "digitalocean_database_cluster" "cluster" {
   node_count           = 1
   private_network_uuid = data.digitalocean_vpc.vpc.id
   project_id           = data.digitalocean_project.project.id
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "digitalocean_database_firewall" "vpc_fw" {
