@@ -16,14 +16,19 @@ func assertAccount(t *testing.T, accountID string, account *Account) {
 
 	case "2":
 		assert.Equal(t, "Dunder Mifflin", account.Company)
+
+	case "3":
+		assert.Equal(t, "Explorers, LLC", account.Company)
+
+	default:
+		assert.Failf(t, "Unspecified account for account ID %s - no expectations defined", accountID)
 	}
 }
 
-func assertAddress(t *testing.T, userID string, address *UserAddress) {
-	assert.Equal(t, userID, address.UserID)
+func assertAddress(t *testing.T, address *UserAddress) {
 	assert.NotNil(t, address.Created)
 
-	switch userID {
+	switch address.ID {
 	case "1":
 		assert.Equal(t, "123 Loony Lane", address.Street)
 		assert.Equal(t, "Acmeton", address.City)
@@ -35,7 +40,7 @@ func assertAddress(t *testing.T, userID string, address *UserAddress) {
 		assert.Equal(t, "PA", address.State)
 
 	default:
-		assert.Failf(t, "Unspecified address for user ID %s - no expectations defined", userID)
+		assert.Failf(t, "Unspecified address for address ID %s - no expectations defined", address.ID)
 	}
 }
 

@@ -234,11 +234,165 @@ func (plan selectQueryPlan) process(targetList reflect.Value, rows *sql.Rows) er
 	return nil
 }
 
+// convertNullableValue converts a nullable scan value (sql.NullString, etc.) to its actual value
+// Returns the value and whether it's valid (not NULL)
+func convertNullableValue(nullableVal interface{}, targetType reflect.Type) (reflect.Value, bool) {
+	val := reflect.ValueOf(nullableVal)
+	if !val.IsValid() || val.IsNil() {
+		return reflect.Zero(targetType), false
+	}
+
+	// Handle pointer to nullable type
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	// Check if it's a sql.Null* type and if it's valid
+	switch v := val.Interface().(type) {
+	case sql.NullString:
+		if !v.Valid {
+			return reflect.Zero(targetType), false
+		}
+		strVal := reflect.ValueOf(v.String)
+		if targetType.Kind() == reflect.Ptr {
+			ptrVal := reflect.New(targetType.Elem())
+			ptrVal.Elem().Set(strVal)
+			return ptrVal, true
+		}
+		return strVal, true
+	case sql.NullInt64:
+		if !v.Valid {
+			return reflect.Zero(targetType), false
+		}
+		// Convert to the target type
+		elemType := targetType
+		isPtr := false
+		if targetType.Kind() == reflect.Ptr {
+			elemType = targetType.Elem()
+			isPtr = true
+		}
+		var intVal reflect.Value
+		switch elemType.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			intVal = reflect.ValueOf(v.Int64).Convert(elemType)
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			intVal = reflect.ValueOf(uint64(v.Int64)).Convert(elemType)
+		default:
+			intVal = reflect.ValueOf(v.Int64).Convert(elemType)
+		}
+		if isPtr {
+			ptrVal := reflect.New(elemType)
+			ptrVal.Elem().Set(intVal)
+			return ptrVal, true
+		}
+		return intVal, true
+	case sql.NullFloat64:
+		if !v.Valid {
+			return reflect.Zero(targetType), false
+		}
+		elemType := targetType
+		if targetType.Kind() == reflect.Ptr {
+			elemType = targetType.Elem()
+			floatVal := reflect.ValueOf(v.Float64).Convert(elemType)
+			ptrVal := reflect.New(elemType)
+			ptrVal.Elem().Set(floatVal)
+			return ptrVal, true
+		}
+		return reflect.ValueOf(v.Float64).Convert(elemType), true
+	case sql.NullBool:
+		if !v.Valid {
+			return reflect.Zero(targetType), false
+		}
+		elemType := targetType
+		if targetType.Kind() == reflect.Ptr {
+			elemType = targetType.Elem()
+			boolVal := reflect.ValueOf(v.Bool).Convert(elemType)
+			ptrVal := reflect.New(elemType)
+			ptrVal.Elem().Set(boolVal)
+			return ptrVal, true
+		}
+		return reflect.ValueOf(v.Bool).Convert(elemType), true
+	case sql.NullTime:
+		if !v.Valid {
+			return reflect.Zero(targetType), false
+		}
+		elemType := targetType
+		if targetType.Kind() == reflect.Ptr {
+			elemType = targetType.Elem()
+			timeVal := reflect.ValueOf(v.Time).Convert(elemType)
+			ptrVal := reflect.New(elemType)
+			ptrVal.Elem().Set(timeVal)
+			return ptrVal, true
+		}
+		return reflect.ValueOf(v.Time).Convert(elemType), true
+	default:
+		if targetType.Kind() == reflect.Ptr {
+			if val.Kind() == reflect.Ptr {
+				return val, true
+			}
+			return val.Addr(), true
+		}
+		if val.Kind() == reflect.Ptr {
+			return val.Elem(), true
+		}
+		return val, true
+	}
+}
+
+// isNullableValueValid checks if a nullable scan value (sql.NullString, etc.) is valid (not NULL)
+func isNullableValueValid(nullableVal interface{}) bool {
+	val := reflect.ValueOf(nullableVal)
+	if !val.IsValid() || val.IsNil() {
+		return false
+	}
+
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+
+	switch v := val.Interface().(type) {
+	case sql.NullString:
+		return v.Valid
+	case sql.NullInt64:
+		return v.Valid
+	case sql.NullFloat64:
+		return v.Valid
+	case sql.NullBool:
+		return v.Valid
+	case sql.NullTime:
+		return v.Valid
+	default:
+		// Not a nullable type, assume it's valid (regular pointer from primary table)
+		return true
+	}
+}
+
+// isPrimaryKeyNull checks if all primary key values in the target slice are NULL
+func isPrimaryKeyNull(primaryKeyTarget []interface{}) bool {
+	for _, pkVal := range primaryKeyTarget {
+		if isNullableValueValid(pkVal) {
+			return false
+		}
+	}
+	return true
+}
+
 func (plan selectQueryPlan) loadStructure(structure structure, offset int, v reflect.Value) (int, error) {
 	var err error
 
 	for i, f := range append(structure.primaryKeyFields, structure.fields...) {
-		v.FieldByName(f).Set(reflect.ValueOf(plan.target[i+offset]).Elem())
+		field := v.FieldByName(f)
+		targetVal := plan.target[i+offset]
+		fieldType := field.Type()
+
+		// Try to convert from nullable type
+		convertedVal, valid := convertNullableValue(targetVal, fieldType)
+		if valid {
+			field.Set(convertedVal)
+		} else {
+			// NULL value - set to zero value (nil for pointers)
+			field.Set(reflect.Zero(fieldType))
+		}
 	}
 
 	offset += len(structure.fields) + len(structure.primaryKeyFields)
@@ -247,6 +401,15 @@ func (plan selectQueryPlan) loadStructure(structure structure, offset int, v ref
 		f := v.FieldByName(name)
 
 		if rel, ok := structure.toOneRelations[name]; ok {
+			relPrimaryKeyOffset := offset
+			relPrimaryKeyTarget := plan.target[relPrimaryKeyOffset : relPrimaryKeyOffset+len(rel.structure.primaryKeyTarget)]
+
+			if isPrimaryKeyNull(relPrimaryKeyTarget) {
+				// Skip loading null relation and advance offset past all relation columns (including nested relations)
+				offset += len(rel.structure.fullTarget())
+				continue
+			}
+
 			if f.IsNil() {
 				t, _ := v.Type().FieldByName(name)
 				empty := reflect.New(t.Type.Elem())

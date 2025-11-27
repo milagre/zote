@@ -46,6 +46,47 @@ var AccountMapping = zormsql.Mapping{
 	},
 }
 
+var UserAddressMapping = zormsql.Mapping{
+	PtrType: &zormtest.UserAddress{},
+	Table:   "user_addresses",
+	PrimaryKey: []string{
+		"id",
+	},
+	Columns: []zormsql.Column{
+		{
+			Name:     "id",
+			Field:    "ID",
+			NoInsert: true,
+			NoUpdate: true,
+		},
+		{
+			Name:     "created",
+			Field:    "Created",
+			NoInsert: true,
+			NoUpdate: true,
+		},
+		{
+			Name:     "modified",
+			Field:    "Modified",
+			NoInsert: true,
+			NoUpdate: true,
+		},
+		{
+			Name:  "street",
+			Field: "Street",
+		},
+		{
+			Name:  "city",
+			Field: "City",
+		},
+		{
+			Name:  "state",
+			Field: "State",
+		},
+	},
+	Relations: []zormsql.Relation{},
+}
+
 var UserMapping = zormsql.Mapping{
 	PtrType: &zormtest.User{},
 	Table:   "users",
@@ -76,6 +117,10 @@ var UserMapping = zormsql.Mapping{
 			Field: "AccountID",
 		},
 		{
+			Name:  "user_address_id",
+			Field: "AddressID",
+		},
+		{
 			Name:  "first_name",
 			Field: "FirstName",
 		},
@@ -98,7 +143,7 @@ var UserMapping = zormsql.Mapping{
 		{
 			Table: "user_addresses",
 			Columns: map[string]string{
-				"id": "user_id",
+				"user_address_id": "id",
 			},
 			Field: "Address",
 		},
@@ -141,53 +186,6 @@ var UserAuthMapping = zormsql.Mapping{
 		{
 			Name:  "data",
 			Field: "Data",
-		},
-	},
-	Relations: []zormsql.Relation{
-		{
-			Table: "users",
-			Columns: map[string]string{
-				"user_id": "id",
-			},
-			Field: "User",
-		},
-	},
-}
-
-var UserAddressMapping = zormsql.Mapping{
-	PtrType: &zormtest.UserAddress{},
-	Table:   "user_addresses",
-	PrimaryKey: []string{
-		"user_id",
-	},
-	Columns: []zormsql.Column{
-		{
-			Name:     "created",
-			Field:    "Created",
-			NoInsert: true,
-			NoUpdate: true,
-		},
-		{
-			Name:     "modified",
-			Field:    "Modified",
-			NoInsert: true,
-			NoUpdate: true,
-		},
-		{
-			Name:  "user_id",
-			Field: "UserID",
-		},
-		{
-			Name:  "street",
-			Field: "Street",
-		},
-		{
-			Name:  "city",
-			Field: "City",
-		},
-		{
-			Name:  "state",
-			Field: "State",
 		},
 	},
 	Relations: []zormsql.Relation{

@@ -113,7 +113,7 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 			}
 
 			if assert.NotNil(t, obj.Address) {
-				assertAddress(t, obj.ID, obj.Address)
+				assertAddress(t, obj.Address)
 			}
 		})
 	})
@@ -169,7 +169,7 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 			}
 
 			if assert.NotNil(t, obj.Address) {
-				assertAddress(t, obj.ID, obj.Address)
+				assertAddress(t, obj.Address)
 			}
 
 			if assert.NotNil(t, obj.Auths) && assert.Equal(t, 2, len(obj.Auths)) {

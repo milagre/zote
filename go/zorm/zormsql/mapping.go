@@ -1,8 +1,10 @@
 package zormsql
 
 import (
+	"database/sql"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/milagre/zote/go/zfunc"
 	"github.com/milagre/zote/go/zorm"
@@ -135,7 +137,35 @@ func (m Mapping) primaryKeyFields() ([]string, error) {
 	return result, nil
 }
 
-func (m Mapping) isNew(objPtr reflect.Value) {
+// createNullableScanTarget creates a nullable scan target (sql.NullString, sql.NullInt64, etc.)
+// for a given field type. This is used for relation columns that might be NULL.
+func createNullableScanTarget(fieldType reflect.Type) interface{} {
+	// Handle pointer types - get the underlying type
+	elemType := fieldType
+	if fieldType.Kind() == reflect.Ptr {
+		elemType = fieldType.Elem()
+	}
+
+	switch elemType.Kind() {
+	case reflect.String:
+		return &sql.NullString{}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return &sql.NullInt64{}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		// Use NullInt64 for unsigned integers (may lose precision for very large uint64)
+		return &sql.NullInt64{}
+	case reflect.Float32, reflect.Float64:
+		return &sql.NullFloat64{}
+	case reflect.Bool:
+		return &sql.NullBool{}
+	default:
+		// For time.Time and other types, try to use the pointer type
+		if elemType == reflect.TypeOf(time.Time{}) {
+			return &sql.NullTime{}
+		}
+		// For unknown types, fall back to pointer (may fail on NULL, but that's the current behavior)
+		return reflect.New(fieldType).Interface()
+	}
 }
 
 func (m Mapping) mapField(table table, columnAliasPrefix string, field string) (column, interface{}, error) {
@@ -205,7 +235,18 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []stri
 			name:  col,
 			alias: colAlias,
 		})
-		target = append(target, reflect.New(structField.Type).Interface())
+
+		// TODO: This is inference on prefix is inaccurate, but currently correct.
+		// Use nullable scan types for relation columns (when columnAliasPrefix is not empty)
+		// because LEFT OUTER JOINs can return NULL for ALL columns from the joined table
+		// when the foreign key is NULL. Primary table columns (empty prefix) come from
+		// a direct SELECT and don't have this issue - individual nullable columns are
+		// handled by pointer types.
+		if columnAliasPrefix != "" {
+			target = append(target, createNullableScanTarget(structField.Type))
+		} else {
+			target = append(target, reflect.New(structField.Type).Interface())
+		}
 	}
 
 	relationList := make([]string, 0, len(relations))

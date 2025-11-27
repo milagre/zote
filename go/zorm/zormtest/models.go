@@ -22,7 +22,8 @@ type User struct {
 	AccountID string
 	Account   *Account
 
-	Address *UserAddress
+	AddressID *string
+	Address   *UserAddress
 
 	Auths []*UserAuth
 
@@ -42,10 +43,9 @@ type UserAuth struct {
 }
 
 type UserAddress struct {
+	ID       string
 	Created  time.Time
 	Modified *time.Time
-
-	UserID string
 
 	Street string
 	City   string
