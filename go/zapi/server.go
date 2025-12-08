@@ -163,11 +163,17 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 		len := write(h.server, logger, rw, resp, false)
 
-		access.WithFields(zlog.Fields{
+		respLog := access.WithFields(zlog.Fields{
 			"status":   resp.Status(),
 			"duration": time.Since(start),
 			"length":   len,
-		}).Info("Complete")
+		})
+
+		logFunc := respLog.Info
+		if resp.Status()/100 == 5 {
+			logFunc = respLog.Error
+		}
+		logFunc("Complete")
 	}()
 
 	// If a route is found, this will call it
@@ -191,7 +197,6 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			} else {
 				handler = h.server.defaults.methodNotAllowed
 			}
-
 		} else {
 			handler = method.Handler
 
@@ -394,5 +399,4 @@ func write(s *server, logger zlog.Logger, rw http.ResponseWriter, resp ResponseB
 	}
 
 	return len(body)
-
 }
