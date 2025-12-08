@@ -14,16 +14,17 @@ type mockVisitor struct {
 	returnErr error
 }
 
-func (m *mockVisitor) VisitEq(eq zclause.Eq) error    { return m.returnErr }
-func (m *mockVisitor) VisitNeq(neq zclause.Neq) error { return m.returnErr }
-func (m *mockVisitor) VisitGt(gt zclause.Gt) error    { return m.returnErr }
-func (m *mockVisitor) VisitGte(gte zclause.Gte) error { return m.returnErr }
-func (m *mockVisitor) VisitLt(lt zclause.Lt) error    { return m.returnErr }
-func (m *mockVisitor) VisitLte(lte zclause.Lte) error { return m.returnErr }
-func (m *mockVisitor) VisitNot(not zclause.Not) error { return m.returnErr }
-func (m *mockVisitor) VisitAnd(and zclause.And) error { return m.returnErr }
-func (m *mockVisitor) VisitOr(or zclause.Or) error    { return m.returnErr }
-func (m *mockVisitor) VisitIn(in zclause.In) error    { return m.returnErr }
+func (m *mockVisitor) VisitEq(eq zclause.Eq) error        { return m.returnErr }
+func (m *mockVisitor) VisitNeq(neq zclause.Neq) error     { return m.returnErr }
+func (m *mockVisitor) VisitGt(gt zclause.Gt) error        { return m.returnErr }
+func (m *mockVisitor) VisitGte(gte zclause.Gte) error     { return m.returnErr }
+func (m *mockVisitor) VisitLt(lt zclause.Lt) error        { return m.returnErr }
+func (m *mockVisitor) VisitLte(lte zclause.Lte) error     { return m.returnErr }
+func (m *mockVisitor) VisitNot(not zclause.Not) error     { return m.returnErr }
+func (m *mockVisitor) VisitAnd(and zclause.And) error     { return m.returnErr }
+func (m *mockVisitor) VisitOr(or zclause.Or) error        { return m.returnErr }
+func (m *mockVisitor) VisitIn(in zclause.In) error        { return m.returnErr }
+func (m *mockVisitor) VisitTruthy(t zclause.Truthy) error { return m.returnErr }
 
 func TestClauseAccept(t *testing.T) {
 	expectedErr := errors.New("test error")
@@ -46,6 +47,7 @@ func TestClauseAccept(t *testing.T) {
 			Left:  []zelement.Element{zelement.Value{Value: 1}},
 			Right: [][]zelement.Element{{zelement.Value{Value: 1}}},
 		}},
+		{"Truthy", zclause.Truthy{Elem: zelement.Value{Value: true}}},
 	}
 
 	for _, tt := range tests {

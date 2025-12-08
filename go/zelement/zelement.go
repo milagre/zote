@@ -11,7 +11,7 @@ type Element interface {
 }
 
 type Value struct {
-	Value interface{}
+	Value any
 }
 
 func (e Value) Accept(v Visitor) error {

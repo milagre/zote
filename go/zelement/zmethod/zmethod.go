@@ -13,8 +13,10 @@ type methodValidator interface {
 type Method string
 
 var validators = map[Method]methodValidator{
-	Now:   nowValidator{},
-	Match: matchValidator{},
+	Now:           nowValidator{},
+	Match:         matchValidator{},
+	Contains:      containsValidator{},
+	RegexpReplace: regexpReplaceValidator{},
 }
 
 func ValidateParams(m zelement.Method) error {

@@ -75,6 +75,14 @@ func (c Or) Accept(v Visitor) error {
 	return v.VisitOr(c)
 }
 
+type Truthy struct {
+	Elem zelement.Element
+}
+
+func (c Truthy) Accept(v Visitor) error {
+	return v.VisitTruthy(c)
+}
+
 type In struct {
 	Left  []zelement.Element
 	Right [][]zelement.Element
@@ -100,4 +108,6 @@ type Visitor interface {
 	VisitOr(or Or) error
 
 	VisitIn(in In) error
+
+	VisitTruthy(t Truthy) error
 }

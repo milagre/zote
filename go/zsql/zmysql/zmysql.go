@@ -48,6 +48,9 @@ func (d driver) PrepareMethod(m string) *string {
 	case zmethod.Match:
 		v := "MATCH(%s) AGAINST(? IN BOOLEAN MODE)"
 		result = &v
+	case zmethod.Contains:
+		v := "INSTR(%s, %s) > 0"
+		result = &v
 	}
 
 	return result

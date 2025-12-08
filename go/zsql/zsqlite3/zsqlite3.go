@@ -11,6 +11,7 @@ import (
 	"modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 
+	"github.com/milagre/zote/go/zelement/zmethod"
 	"github.com/milagre/zote/go/zsql"
 )
 
@@ -43,7 +44,15 @@ func (d driver) EscapeFulltextSearch(search string) string {
 }
 
 func (d driver) PrepareMethod(m string) *string {
-	return nil
+	var result *string
+
+	switch zmethod.Method(m) {
+	case zmethod.Contains:
+		v := "INSTR(%s, %s) > 0"
+		result = &v
+	}
+
+	return result
 }
 
 func (d driver) IsConflictError(err error) bool {

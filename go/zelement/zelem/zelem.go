@@ -23,6 +23,14 @@ func Or(clauses ...zclause.Clause) zclause.Or {
 	return zclause.Or{Clauses: clauses}
 }
 
+func Truthy(e zelement.Element) zclause.Truthy {
+	return zclause.Truthy{Elem: e}
+}
+
+func False(e zelement.Element) zclause.Not {
+	return zclause.Not{Clause: zclause.Truthy{Elem: e}}
+}
+
 func Eq(left zelement.Element, right zelement.Element) zclause.Eq {
 	return zclause.Eq{Left: left, Right: right}
 }
@@ -62,18 +70,9 @@ func Empty() zclause.Clause {
 }
 
 func MethodNow() zelement.Method {
-	return zelement.Method{
-		Name:   string(zmethod.Now),
-		Params: []zelement.Element{},
-	}
+	return zmethod.NewNow()
 }
 
 func MethodMatch(field string, search string) zelement.Method {
-	return zelement.Method{
-		Name: string(zmethod.Match),
-		Params: []zelement.Element{
-			Field(field),
-			Value(search),
-		},
-	}
+	return zmethod.NewMatch(field, search)
 }

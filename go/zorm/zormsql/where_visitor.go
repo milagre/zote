@@ -9,8 +9,10 @@ import (
 	"github.com/milagre/zote/go/zsql"
 )
 
-var _ zclause.Visitor = &whereVisitor{}
-var _ zelement.Visitor = &whereVisitor{}
+var (
+	_ zclause.Visitor  = &whereVisitor{}
+	_ zelement.Visitor = &whereVisitor{}
+)
 
 type whereVisitor struct {
 	driver            zsql.Driver
@@ -37,7 +39,7 @@ func (v *whereVisitor) Visit(c zclause.Clause) (string, []interface{}, error) {
 	v.result = ""
 	v.values = []interface{}{}
 
-	return result, values, nil
+	return strings.TrimSpace(result), values, nil
 }
 
 func (v *whereVisitor) visitBinaryLeaf(operator string, c zclause.BinaryLeaf) error {
@@ -53,8 +55,6 @@ func (v *whereVisitor) visitBinaryLeaf(operator string, c zclause.BinaryLeaf) er
 		return fmt.Errorf("visiting binary leaf right side: %w", err)
 	}
 
-	v.result += " "
-
 	return nil
 }
 
@@ -64,10 +64,7 @@ func (v *whereVisitor) VisitEq(c zclause.Eq) error {
 
 func (v *whereVisitor) VisitNeq(c zclause.Neq) error {
 	return v.VisitNot(zclause.Not{
-		Clause: zclause.Eq{
-			Left:  c.Left,
-			Right: c.Right,
-		},
+		Clause: zclause.Eq(c),
 	})
 }
 
@@ -95,7 +92,7 @@ func (v *whereVisitor) VisitNot(c zclause.Not) error {
 		return fmt.Errorf("visiting not clause: %w", err)
 	}
 
-	v.result += ") "
+	v.result += ")"
 
 	return nil
 }
@@ -110,7 +107,7 @@ func (v *whereVisitor) VisitOr(c zclause.Or) error {
 
 func (v *whereVisitor) VisitIn(c zclause.In) error {
 	if len(c.Right) == 0 {
-		// An empty value list cannot produce results, but ins't an invalid query
+		// An empty value list cannot produce results, but isn't an invalid query
 		v.result += "FALSE /* empty IN clause */"
 		return nil
 	}
@@ -153,9 +150,13 @@ func (v *whereVisitor) VisitIn(c zclause.In) error {
 		}
 	}
 
-	v.result += ") "
+	v.result += ")"
 
 	return nil
+}
+
+func (v *whereVisitor) VisitTruthy(c zclause.Truthy) error {
+	return c.Elem.Accept(v)
 }
 
 func (v *whereVisitor) VisitValue(e zelement.Value) error {
@@ -186,23 +187,35 @@ func (v *whereVisitor) VisitMethod(e zelement.Method) error {
 
 	if strp != nil {
 		clause := *strp
-		for i, c := range e.Params {
-			if f, ok := c.(zelement.Field); ok {
-				fs, err := v.visitField(f)
-				if err != nil {
-					return fmt.Errorf("visiting field in method '%s' at param %d: %w", e.Name, i, err)
-				}
 
-				if strings.Contains(clause, "%s") {
-					clause = fmt.Sprintf(clause, fs)
-				} else {
-					return fmt.Errorf("visiting field in method '%s' at param %d - no placeholder in method template", e.Name, i)
-				}
+		for i, c := range e.Params {
+			subVisitor := whereVisitor{
+				driver:            v.driver,
+				mapping:           v.mapping,
+				table:             v.table,
+				columnAliasPrefix: v.columnAliasPrefix,
+			}
+			var err error
+			if f, ok := c.(zelement.Field); ok {
+				err = subVisitor.VisitField(f)
 			} else if val, ok := c.(zelement.Value); ok {
-				value := v.driver.EscapeFulltextSearch(fmt.Sprintf("%s", val.Value))
-				v.values = append(v.values, value)
-			} else if _, ok := c.(zelement.Method); ok {
-				return fmt.Errorf("visiting nested method in method '%s' at param %d - unsupported", e.Name, i)
+				err = subVisitor.VisitValue(val)
+			} else if m, ok := c.(zelement.Method); ok {
+				err = subVisitor.VisitMethod(m)
+			} else {
+				return fmt.Errorf("visiting unrecognized element in method '%s' at param %d: %T", e.Name, i, c)
+			}
+
+			if err != nil {
+				return fmt.Errorf("visiting element in method '%s' at param %d: %w", e.Name, i, err)
+			}
+
+			if strings.Contains(clause, "%s") {
+				clause = strings.Replace(clause, "%s", subVisitor.result, 1)
+				v.values = append(v.values, subVisitor.values...)
+			} else {
+				clause += subVisitor.result
+				v.values = append(v.values, subVisitor.values...)
 			}
 		}
 
@@ -214,6 +227,9 @@ func (v *whereVisitor) VisitMethod(e zelement.Method) error {
 			err := p.Accept(v)
 			if err != nil {
 				return fmt.Errorf("visiting element in method '%s' at param %d: %w", e.Name, i, err)
+			}
+			if i < len(e.Params)-1 {
+				v.result += ", "
 			}
 		}
 		v.result += ")"
@@ -239,7 +255,7 @@ func (v *whereVisitor) visitNode(joiner string, c zclause.Node) error {
 		}
 	}
 
-	v.result += ") "
+	v.result += ")"
 
 	return nil
 }
