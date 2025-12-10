@@ -69,7 +69,7 @@ resource "kubernetes_cron_job_v1" "job" {
               // Attach global stats variables
               env {
                 name  = "${var.env.prefix}_STATS_PREFIX"
-                value = "${var.namespace}.${var.name}"
+                value = "${var.env.prefix}.${var.namespace}.${var.name}"
               }
               env {
                 name = "${var.env.prefix}_STATS_TAGS"
