@@ -14,6 +14,24 @@ const (
 	LevelTrace
 )
 
+func (l Level) String() string {
+	switch l {
+	case LevelFatal:
+		return "fatal"
+	case LevelError:
+		return "error"
+	case LevelWarn:
+		return "warn"
+	case LevelInfo:
+		return "info"
+	case LevelDebug:
+		return "debug"
+	case LevelTrace:
+		return "trace"
+	}
+	return "unknown"
+}
+
 type Logger interface {
 	AddDestination(d Destination)
 
