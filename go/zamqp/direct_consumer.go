@@ -52,7 +52,7 @@ func (c *directConsumer) Start(baseCtx context.Context, workerContext context.Co
 
 	logger := zlog.FromContext(processCtx)
 	stats := zstats.FromContext(processCtx)
-	stats.AddPrefix("amqp.consumer").AddTag("queue", c.queueName)
+	stats.AddPrefix("zamqp").AddPrefix("consumer").AddTag("queue", c.queueName)
 
 	consumeChannel, err := makeConsumeChannel(c.conn, c.concurrency)
 	if err != nil {

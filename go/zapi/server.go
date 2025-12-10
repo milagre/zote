@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/milagre/zote/go/zlog"
+	"github.com/milagre/zote/go/zstats"
 )
 
 type Server interface {
@@ -20,10 +21,10 @@ type Server interface {
 }
 
 type server struct {
-	handler    *handlerTree
-	logger     zlog.Logger
-	middleware []Middleware
-	defaults   struct {
+	rootContext context.Context
+	handler     *handlerTree
+	middleware  []Middleware
+	defaults    struct {
 		optionsRequest      HandleFunc
 		methodNotAllowed    HandleFunc
 		notFound            func() ResponseBuilder
@@ -47,14 +48,14 @@ func ServerOptionDefaultOptionsRequest(f HandleFunc) Option {
 	}
 }
 
-func NewServer(logger zlog.Logger, routes []Route, options ...Option) (*server, error) {
+func NewServer(ctx context.Context, routes []Route, options ...Option) (*server, error) {
 	server := &server{
-		logger:     logger,
-		handler:    &handlerTree{},
-		shutdown:   make(chan struct{}),
-		routes:     map[string]Route{},
-		parents:    map[string]Route{},
-		middleware: []Middleware{},
+		rootContext: ctx,
+		handler:     &handlerTree{},
+		shutdown:    make(chan struct{}),
+		routes:      map[string]Route{},
+		parents:     map[string]Route{},
+		middleware:  []Middleware{},
 	}
 	server.handler.server = server
 
@@ -141,8 +142,18 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	start := time.Now()
 	requestID := uuid.New().String()
-	logger := h.server.logger.WithField("request", requestID)
-	r = r.WithContext(zlog.Context(r.Context(), logger))
+
+	requestContext := r.Context()
+
+	logger := zlog.FromContext(h.server.rootContext)
+	logger = logger.WithField("request", requestID)
+	requestContext = zlog.Context(requestContext, logger)
+
+	stats := zstats.FromContext(h.server.rootContext)
+	stats = stats.WithPrefix("zapi")
+	requestContext = zstats.Context(requestContext, stats)
+
+	r = r.WithContext(requestContext)
 
 	access := logger.WithFields(zlog.Fields{
 		"component": "access",
@@ -168,6 +179,9 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			"duration": time.Since(start),
 			"length":   len,
 		})
+		stats.WithTags(zstats.Tags{
+			"status": fmt.Sprintf("%d", resp.Status()),
+		}).Count("responses", 1)
 
 		logFunc := respLog.Info
 		if resp.Status()/100 == 5 {
@@ -182,6 +196,11 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			"route": targetRoute.Name(),
 		})
 		access.Info("Starting")
+		stats = stats.WithTags(zstats.Tags{
+			"method": r.Method,
+			"route":  targetRoute.Name(),
+			"path":   targetRoute.Path(),
+		})
 
 		req := &request{
 			request: r,
@@ -198,7 +217,14 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				handler = h.server.defaults.methodNotAllowed
 			}
 		} else {
-			handler = method.Handler
+			stats.Count("requests", 1)
+
+			handler = func(Request) (res ResponseBuilder) {
+				stats.Timer("handler", func() {
+					res = method.Handler(req)
+				})
+				return res
+			}
 
 			// We only authorize calls that hit a handler,
 			// calls that hit a default can execute alone
@@ -330,7 +356,7 @@ func (h *handlerTree) add(route Route) error {
 		return fmt.Errorf("root route not yet mounted, mount the root route first, then children after")
 	}
 
-	h.server.logger.Infof("Mounted %s", path)
+	zlog.FromContext(h.server.rootContext).Infof("Mounted %s", path)
 	return nil
 }
 

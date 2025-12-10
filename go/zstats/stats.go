@@ -1,5 +1,7 @@
 package zstats
 
+import "maps"
+
 type stats struct {
 	adapter Adapter
 	prefix  string
@@ -18,14 +20,17 @@ func (s *stats) WithTag(key string, value string) Stats {
 	return s.WithTags(Tags{key: value})
 }
 
-func (s *stats) WithTags(Tags Tags) Stats {
-	result := NewStats(s.adapter)
-	for k, v := range s.tags {
+func (s *stats) WithTags(tags Tags) Stats {
+	result := &stats{
+		adapter: s.adapter,
+		prefix:  s.prefix,
+		tags:    maps.Clone(s.tags),
+	}
+
+	for k, v := range tags {
 		result.tags[k] = v
 	}
-	for k, v := range Tags {
-		result.tags[k] = v
-	}
+
 	return result
 }
 
@@ -51,7 +56,12 @@ func (s *stats) AddPrefix(prefix string) Stats {
 }
 
 func (s *stats) WithPrefix(prefix string) Stats {
-	result := NewStats(s.adapter)
+	result := &stats{
+		adapter: s.adapter,
+		prefix:  s.prefix,
+		tags:    maps.Clone(s.tags),
+	}
+
 	result.AddPrefix(prefix)
 	return result
 }
