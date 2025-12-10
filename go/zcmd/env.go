@@ -11,6 +11,10 @@ type Env struct {
 	context *cli.Context
 }
 
+func (e Env) CommandName() string {
+	return e.context.Command.Name
+}
+
 func (e Env) Bool(name string) bool {
 	f := e.flag(name)
 

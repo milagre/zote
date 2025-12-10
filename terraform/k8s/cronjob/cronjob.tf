@@ -66,6 +66,19 @@ resource "kubernetes_cron_job_v1" "job" {
                 }
               }
 
+              // Attach global stats variables
+              env {
+                name  = "${var.env.prefix}_STATS_PREFIX"
+                value = "${var.namespace}.${var.name}"
+              }
+              env {
+                name = "${var.env.prefix}_STATS_TAGS"
+                value = jsonencode({
+                  namespace = var.namespace
+                  service   = var.name
+                })
+              }
+
               // Attach configmaps to environment
               dynamic "env_from" {
                 for_each = coalesce(var.conf.configmaps, [])

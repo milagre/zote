@@ -23,6 +23,14 @@ variable "http_liveness_probe" {
   })
   default = null
 }
+variable "ports" {
+  type = list(object({
+    name           = string
+    container_port = number
+    protocol       = string
+  }))
+  default = []
+}
 
 
 locals {
@@ -74,6 +82,15 @@ resource "kubernetes_deployment" "deploy" {
           command = var.cmd
           args    = var.args
 
+          dynamic "port" {
+            for_each = var.ports
+            content {
+              name           = port.value.name
+              container_port = port.value.container_port
+              protocol       = port.value.protocol
+            }
+          }
+
           resources {
             limits = {
               cpu    = var.profile.cpu_cores.max
@@ -96,6 +113,19 @@ resource "kubernetes_deployment" "deploy" {
               initial_delay_seconds = 5
               period_seconds        = coalesce(liveness_probe.value.freq, 15)
             }
+          }
+
+          // Attach global stats variables
+          env {
+            name  = "${var.env.prefix}_STATS_PREFIX"
+            value = "${var.namespace}.${var.name}"
+          }
+          env {
+            name = "${var.env.prefix}_STATS_TAGS"
+            value = jsonencode({
+              namespace = var.namespace
+              service   = var.name
+            })
           }
 
           // Attach configmaps to environment

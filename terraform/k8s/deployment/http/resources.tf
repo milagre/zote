@@ -21,6 +21,19 @@ module "deployment" {
     port = var.setup.port
     freq = var.setup.freq
   }
+
+  ports = flatten([
+    {
+      name           = "http"
+      container_port = var.setup.port
+      protocol       = "TCP"
+    },
+    var.prometheus_monitored ? [{
+      name           = "metrics"
+      container_port = 9090
+      protocol       = "TCP"
+    }] : []
+  ])
 }
 
 resource "kubernetes_service" "service" {

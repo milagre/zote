@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
 
 	"github.com/milagre/zote/go/zlog"
+	"github.com/milagre/zote/go/zstats"
 )
 
 type directConsumer struct {
@@ -19,6 +21,7 @@ type directConsumer struct {
 	process      ConsumeFunc
 	declarations Declarations
 	started      bool
+	busyCounter  *atomic.Int64
 }
 
 func NewDirectConsumer(conn Connection, declarations Declarations, queueName string, concurrency int, process ConsumeFunc) Consumer {
@@ -29,23 +32,27 @@ func NewDirectConsumer(conn Connection, declarations Declarations, queueName str
 		concurrency:  concurrency,
 		process:      process,
 		started:      false,
+		busyCounter:  &atomic.Int64{},
 	}
 }
 
-func (c *directConsumer) Start(processCtx context.Context, workerContext context.Context) error {
+func (c *directConsumer) Start(baseCtx context.Context, workerContext context.Context) error {
 	if c.started {
 		return errConsumerAlreadyStarted
 	}
 	c.started = true
 	defer func() { c.started = false }()
 
-	processCtx, cancel := context.WithCancel(processCtx)
+	processCtx, cancel := context.WithCancel(baseCtx)
 	defer cancel()
 
 	workerID := 0
-	logger := zlog.FromContext(processCtx)
 	wait := sync.WaitGroup{}
 	restart := make(chan int)
+
+	logger := zlog.FromContext(processCtx)
+	stats := zstats.FromContext(processCtx)
+	stats.AddPrefix("amqp.consumer").AddTag("queue", c.queueName)
 
 	consumeChannel, err := makeConsumeChannel(c.conn, c.concurrency)
 	if err != nil {
@@ -72,11 +79,32 @@ func (c *directConsumer) Start(processCtx context.Context, workerContext context
 
 	messages := make(chan Delivery, c.concurrency)
 
-	launch := func(id int) {
-		wait.Add(1)
-		go func(id int) {
-			defer wait.Done()
+	// Stats goroutine
+	go (func() {
+		interval := 1 * time.Second
 
+		now := time.Now()
+		lastInterval := now.Truncate(interval)
+		nextInterval := lastInterval.Add(interval)
+		initialDelay := nextInterval.Sub(now)
+
+		// Wait for the first tick using time.After
+		<-time.After(initialDelay)
+
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				stats.Gauge("utilization", 100*(float64(c.busyCounter.Load())/float64(c.concurrency)))
+			case <-processCtx.Done():
+				return
+			}
+		}
+	})()
+
+	workerFunc := func(id int) func() {
+		return func() {
 			consumerLogger := logger.WithField("worker", id)
 			consumerContext := zlog.Context(workerContext, consumerLogger)
 
@@ -91,7 +119,7 @@ func (c *directConsumer) Start(processCtx context.Context, workerContext context
 			}()
 
 			c.consume(consumerContext, publisher, messages)
-		}(id)
+		}
 	}
 
 	logger.Infof("Starting consume")
@@ -100,9 +128,7 @@ func (c *directConsumer) Start(processCtx context.Context, workerContext context
 		return fmt.Errorf("starting channel consume: %w", err)
 	}
 
-	wait.Add(1)
-	go func() {
-		defer wait.Done()
+	wait.Go(func() {
 		defer logger.Info("Dispatcher shut down")
 		logger.Info("Dispatcher started")
 
@@ -111,22 +137,22 @@ func (c *directConsumer) Start(processCtx context.Context, workerContext context
 		}
 
 		close(messages)
-	}()
+	})
 
-	go func() {
+	wait.Go(func() {
 		defer logger.Info("Monitor shut down")
 		logger.Info("Monitor started")
 
 		for id := range restart {
 			logger.Infof("Restarting worker %d", id)
-			launch(id)
+			wait.Go(workerFunc(id))
 		}
-	}()
+	})
 
 	logger.Infof("Spawning %d workers", c.concurrency)
 	for i := 0; i < c.concurrency; i++ {
 		workerID = workerID + 1
-		launch(workerID)
+		wait.Go(workerFunc(workerID))
 	}
 
 	logger.Infof("Running")
@@ -134,10 +160,9 @@ func (c *directConsumer) Start(processCtx context.Context, workerContext context
 	<-processCtx.Done()
 
 	logger.Info("Shutdown initiated, waiting for work to finish")
+	close(restart)
 
 	wait.Wait()
-
-	close(restart)
 
 	logger.Info("Shutting down")
 
@@ -159,6 +184,7 @@ func makeConsumeChannel(conn Connection, concurrency int) (Channel, error) {
 }
 
 func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliveries chan Delivery) {
+	stats := zstats.FromContext(ctx).WithPrefix("amqp.consumer").WithTag("queue", c.queueName)
 	logger := zlog.FromContext(ctx)
 	for {
 		select {
@@ -170,6 +196,9 @@ func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliv
 				logger.Debugf("Channel closed, ending consume loop")
 				return
 			}
+
+			c.busyCounter.Add(1)
+			stats.Count("received", 1)
 
 			msgLogger := logger.WithFields(zlog.Fields{
 				"attempt": del.Attempt(),
@@ -188,6 +217,9 @@ func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliv
 						panic(r)
 					}
 				}()
+
+				defer stats.Count("completed", 1)
+				defer c.busyCounter.Add(-1)
 
 				c.process(msgCtx, publisher, del)
 			}()

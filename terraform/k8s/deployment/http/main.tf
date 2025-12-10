@@ -34,7 +34,7 @@ variable "files" {
     configmaps = {},
   }
 }
-variable "ngrok" {
+variable "prometheus_monitored" {
   type    = bool
   default = false
 }

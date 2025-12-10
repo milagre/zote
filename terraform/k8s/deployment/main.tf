@@ -45,6 +45,10 @@ variable "http" {
   })
   default = null
 }
+variable "prometheus_monitored" {
+  type    = bool
+  default = false
+}
 variable "socket" {
   default = null
 }
@@ -83,6 +87,8 @@ module "http" {
   files = var.files
 
   setup = var.http
+
+  prometheus_monitored = var.prometheus_monitored
 
   internal = {
     public_hostname  = local.public_hostname
