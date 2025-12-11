@@ -17,6 +17,84 @@ import (
 	"github.com/milagre/zote/go/zsql"
 )
 
+// buildInnerJoinsForFieldPaths builds the joins needed in the inner query for WHERE clause field paths
+func buildInnerJoinsForFieldPaths(r *queryer, mapping Mapping, startTable table, fieldPaths []string) ([]join, error) {
+	joins := []join{}
+	seenJoins := map[string]bool{} // Track which joins we've already added (leftTable.alias -> rightTable.alias)
+
+	for _, path := range fieldPaths {
+		if isSimpleField(path) {
+			continue
+		}
+
+		err := navigateRelationPath(r.cfg, mapping, startTable, path, func(step relationStep) error {
+			// Check if we've already added this join
+			joinKey := fmt.Sprintf("%s->%s", step.leftTable.alias, step.rightTable.alias)
+			if !seenJoins[joinKey] {
+				seenJoins[joinKey] = true
+
+				onPairs := zfunc.Map(zfunc.Pairs(step.relMapping.Columns), func(p zfunc.Pair[string, string]) [2]column {
+					return [2]column{
+						{
+							table: step.leftTable,
+							name:  p.Key,
+						},
+						{
+							table: step.rightTable,
+							name:  p.Value,
+						},
+					}
+				})
+
+				joins = append(joins, join{
+					leftTable:  step.leftTable,
+					rightTable: step.rightTable,
+					onPairs:    onPairs,
+				})
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return joins, nil
+}
+
+// ensureRelationsForFieldPaths ensures that all relations needed for dot-delimited field paths are included
+func ensureRelationsForFieldPaths(r *queryer, mapping Mapping, relations zorm.Relations, fieldPaths []string) (zorm.Relations, error) {
+	if relations == nil {
+		relations = zorm.Relations{}
+	}
+
+	for _, path := range fieldPaths {
+		if isSimpleField(path) {
+			continue
+		}
+
+		currentRelations := relations
+		err := navigateRelationPath(r.cfg, mapping, table{}, path, func(step relationStep) error {
+			if _, exists := currentRelations[step.relationName]; !exists {
+				currentRelations[step.relationName] = zorm.Relation{}
+			}
+
+			rel := currentRelations[step.relationName]
+			if rel.Include.Relations == nil {
+				rel.Include.Relations = zorm.Relations{}
+			}
+			currentRelations[step.relationName] = rel
+			currentRelations = rel.Include.Relations
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("field path %s: %w", path, err)
+		}
+	}
+
+	return relations, nil
+}
+
 func buildSelectQueryPlan(r *queryer, mapping Mapping, fields []string, relations zorm.Relations, clause zclause.Clause, sorts []zsort.Sort, limit int, offset int) (*selectQueryPlan, error) {
 	innerPrimaryTable := table{
 		name:  mapping.Table,
@@ -30,6 +108,22 @@ func buildSelectQueryPlan(r *queryer, mapping Mapping, fields []string, relation
 	outerPrimaryTable := table{
 		name:  mapping.Table,
 		alias: "$",
+	}
+
+	// Extract field paths from where clause and sort clauses, ensure necessary relations are included
+	var fieldPaths []string
+	if clause != nil {
+		fieldPaths = append(fieldPaths, extractFieldPaths(clause)...)
+	}
+	if len(sorts) > 0 {
+		fieldPaths = append(fieldPaths, extractFieldPathsFromSorts(sorts)...)
+	}
+	if len(fieldPaths) > 0 {
+		var err error
+		relations, err = ensureRelationsForFieldPaths(r, mapping, relations, fieldPaths)
+		if err != nil {
+			return nil, fmt.Errorf("ensuring relations for field paths: %w", err)
+		}
 	}
 
 	// Structure
@@ -56,8 +150,14 @@ func buildSelectQueryPlan(r *queryer, mapping Mapping, fields []string, relation
 		}
 	})
 
-	// Inner joins
+	// Inner joins - needed for WHERE clause and sort clauses that reference relations
 	innerJoins := []join{}
+	if len(fieldPaths) > 0 {
+		innerJoins, err = buildInnerJoinsForFieldPaths(r, mapping, innerPrimaryTable, fieldPaths)
+		if err != nil {
+			return nil, fmt.Errorf("building inner joins for where/sort clauses: %w", err)
+		}
+	}
 
 	// Outer joins
 	outerJoins := []join{
@@ -115,6 +215,7 @@ func buildSelectQueryPlan(r *queryer, mapping Mapping, fields []string, relation
 			driver:  r.conn.Driver(),
 			table:   innerPrimaryTable,
 			mapping: mapping,
+			cfg:     r.cfg,
 		}
 
 		order, vals, err := sv.Visit(s)
@@ -137,6 +238,7 @@ func buildSelectQueryPlan(r *queryer, mapping Mapping, fields []string, relation
 			driver:  r.conn.Driver(),
 			table:   innerPrimaryTable,
 			mapping: mapping,
+			cfg:     r.cfg,
 		}
 		w, v, err := visitor.Visit(clause)
 		if err != nil {
@@ -489,6 +591,33 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 		", ",
 	)
 
+	innerJoinsStr := strings.Join(zfunc.Map(
+		plan.innerJoins,
+		func(j join) string {
+			return fmt.Sprintf(
+				`LEFT OUTER JOIN %s AS %s ON (%s)`,
+				driver.EscapeTable(j.rightTable.name),
+				driver.EscapeTable(j.rightTable.alias),
+				strings.Join(
+					zfunc.Map(j.onPairs, func(cols [2]column) string {
+						return fmt.Sprintf(
+							"%s=%s",
+							driver.EscapeTableColumn(
+								cols[0].table.alias,
+								cols[0].name,
+							),
+							driver.EscapeTableColumn(
+								cols[1].table.alias,
+								cols[1].name,
+							),
+						)
+					}),
+					" AND ",
+				),
+			)
+		},
+	), " ")
+
 	outerJoins := strings.Join(zfunc.Map(
 		plan.outerJoins,
 		func(j join) string {
@@ -533,6 +662,7 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 				%s
 			FROM
 				%s AS %s
+			%s
 			/*where*/ %s 
 			/*order*/ %s
 			/*limit*/ %s
@@ -543,6 +673,7 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 		innerColumns,
 		target,
 		targetAlias,
+		innerJoinsStr,
 		where,
 		order,
 		limit,

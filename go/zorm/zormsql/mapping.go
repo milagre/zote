@@ -287,7 +287,7 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []stri
 		}
 		rightTbl := table{
 			name:  otherMapping.Table,
-			alias: f,
+			alias: rightAlias,
 		}
 
 		relStructure, err := otherMapping.mapStructure(

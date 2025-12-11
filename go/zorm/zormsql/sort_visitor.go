@@ -12,6 +12,7 @@ type sortVisitor struct {
 	table             table
 	columnAliasPrefix string
 	mapping           Mapping
+	cfg               *Config // For accessing relation mappings
 }
 
 func (v *sortVisitor) Visit(s zsort.Sort) (string, []interface{}, error) {
@@ -20,6 +21,7 @@ func (v *sortVisitor) Visit(s zsort.Sort) (string, []interface{}, error) {
 		table:             v.table,
 		columnAliasPrefix: v.columnAliasPrefix,
 		mapping:           v.mapping,
+		cfg:               v.cfg,
 	}
 
 	result := ""

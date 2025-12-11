@@ -19,6 +19,7 @@ type whereVisitor struct {
 	table             table
 	columnAliasPrefix string
 	mapping           Mapping
+	cfg               *Config
 
 	// used during visits
 	result string
@@ -177,9 +178,21 @@ func (v *whereVisitor) VisitField(e zelement.Field) error {
 }
 
 func (v *whereVisitor) visitField(e zelement.Field) (string, error) {
+	if strings.Contains(e.Name, ".") {
+		return v.visitDotDelimitedField(e.Name)
+	}
+
 	col, _, err := v.mapping.mapField(v.table, v.columnAliasPrefix, e.Name)
 	result := col.escapedAlias(v.driver)
 	return result, err
+}
+
+func (v *whereVisitor) visitDotDelimitedField(path string) (string, error) {
+	col, err := resolveDotDelimitedField(v.cfg, v.mapping, v.table, path)
+	if err != nil {
+		return "", err
+	}
+	return col.escaped(v.driver), nil
 }
 
 func (v *whereVisitor) VisitMethod(e zelement.Method) error {
@@ -194,6 +207,7 @@ func (v *whereVisitor) VisitMethod(e zelement.Method) error {
 				mapping:           v.mapping,
 				table:             v.table,
 				columnAliasPrefix: v.columnAliasPrefix,
+				cfg:               v.cfg,
 			}
 			var err error
 			if f, ok := c.(zelement.Field); ok {

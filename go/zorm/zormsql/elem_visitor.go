@@ -2,6 +2,7 @@ package zormsql
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/milagre/zote/go/zelement"
 	"github.com/milagre/zote/go/zsql"
@@ -14,6 +15,7 @@ type elemVisitor struct {
 	table             table
 	columnAliasPrefix string
 	mapping           Mapping
+	cfg               *Config // For accessing relation mappings
 
 	// used during visits
 	result string
@@ -39,14 +41,34 @@ func (v *elemVisitor) VisitValue(e zelement.Value) error {
 }
 
 func (v *elemVisitor) VisitField(e zelement.Field) error {
-	col, _, err := v.mapping.mapField(v.table, v.columnAliasPrefix, e.Name)
+	result, err := v.visitField(e)
 	if err != nil {
 		return fmt.Errorf("visiting field: %w", err)
 	}
 
-	v.result += col.escaped(v.driver)
-
+	v.result += result
 	return nil
+}
+
+func (v *elemVisitor) visitField(e zelement.Field) (string, error) {
+	if strings.Contains(e.Name, ".") {
+		return v.visitDotDelimitedField(e.Name)
+	}
+
+	col, _, err := v.mapping.mapField(v.table, v.columnAliasPrefix, e.Name)
+	if err != nil {
+		return "", fmt.Errorf("visiting field: %w", err)
+	}
+
+	return col.escaped(v.driver), nil
+}
+
+func (v *elemVisitor) visitDotDelimitedField(path string) (string, error) {
+	col, err := resolveDotDelimitedField(v.cfg, v.mapping, v.table, path)
+	if err != nil {
+		return "", err
+	}
+	return col.escaped(v.driver), nil
 }
 
 func (v *elemVisitor) VisitMethod(e zelement.Method) error {
