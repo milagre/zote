@@ -34,8 +34,11 @@ func ReadThrough[T any](
 	var result T
 	var loaded bool
 
+	getCtx, getCancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer getCancel()
+
 	// Load data from cache first
-	ch, err := cache.Get(ctx, namespace, key)
+	ch, err := cache.Get(getCtx, namespace, key)
 	if err != nil {
 		warnings = append(warnings, zwarn.Warnf("loading read-through cached data: %v", err))
 	} else {
@@ -60,7 +63,10 @@ func ReadThrough[T any](
 		if err != nil {
 			warnings = append(warnings, zwarn.Warnf("caching read-through data from source: %v", err))
 		} else {
-			err = cache.Set(ctx, namespace, key, expiration, data)
+			setCtx, setCancel := context.WithTimeout(ctx, 500*time.Millisecond)
+			defer setCancel()
+
+			err = cache.Set(setCtx, namespace, key, expiration, data)
 			if err != nil {
 				warnings = append(warnings, zwarn.Warnf("caching read-through data from source: %v", err))
 			}
