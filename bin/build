@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -e
+
+DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJ=$( cd -- "${DIR}/.." &> /dev/null && pwd )
+
+pushd $PROJ/terraform
+# TODO
+popd
+
+pushd $PROJ/go
+go mod tidy && go mod vendor
+go test ./...
+popd

@@ -23,6 +23,10 @@ func Or(clauses ...zclause.Clause) zclause.Or {
 	return zclause.Or{Clauses: clauses}
 }
 
+func Not(clause zclause.Clause) zclause.Not {
+	return zclause.Not{Clause: clause}
+}
+
 func Truthy(e zelement.Element) zclause.Truthy {
 	return zclause.Truthy{Elem: e}
 }
@@ -33,6 +37,10 @@ func False(e zelement.Element) zclause.Not {
 
 func Eq(left zelement.Element, right zelement.Element) zclause.Eq {
 	return zclause.Eq{Left: left, Right: right}
+}
+
+func Neq(left zelement.Element, right zelement.Element) zclause.Neq {
+	return zclause.Neq{Left: left, Right: right}
 }
 
 func In(left []zelement.Element, right [][]zelement.Element) zclause.In {
