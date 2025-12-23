@@ -16,7 +16,9 @@ resource "helm_release" "prometheus" {
       prometheus = {
         prometheusSpec = {
           podMonitorNamespaceSelector = {}
-          podMonitorSelector          = {}
+          podMonitorSelector = {
+            matchLabels = {}
+          }
         }
       }
     })
