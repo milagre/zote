@@ -27,6 +27,10 @@ variable "files" {
     configmaps = {},
   }
 }
+variable "prometheus_monitored" {
+  type    = bool
+  default = false
+}
 
 locals {
 }

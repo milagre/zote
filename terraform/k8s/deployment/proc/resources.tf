@@ -13,6 +13,14 @@ module "deployment" {
   cmd  = var.cmd
   args = var.args
 
+  ports = flatten([
+    var.prometheus_monitored ? [{
+      name           = "metrics"
+      container_port = 9090
+      protocol       = "TCP"
+    }] : []
+  ])
+
   conf  = var.conf
   files = var.files
 }

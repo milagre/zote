@@ -88,13 +88,13 @@ module "http" {
 
   setup = var.http
 
-  prometheus_monitored = var.prometheus_monitored
-
   internal = {
     public_hostname  = local.public_hostname
     private_hostname = local.private_hostname
     veneer_hostnames = var.veneers
   }
+
+  prometheus_monitored = var.prometheus_monitored
 }
 
 module "proc" {
@@ -114,6 +114,8 @@ module "proc" {
 
   conf  = var.conf
   files = var.files
+
+  prometheus_monitored = var.prometheus_monitored
 }
 
 locals {

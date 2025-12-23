@@ -32,43 +32,38 @@ variable "ports" {
   default = []
 }
 
-
 locals {
   timestamptag = replace(timestamp(), "/[-:TZ]/", "")
 
   configmap_files_dependencies = sort([
     for key, value in coalesce(var.files.configmaps, {}) : split("/", value)[0]
   ])
+
+  labels = {
+    app    = var.name
+    deploy = var.type
+  }
 }
 
 resource "kubernetes_deployment" "deploy" {
   metadata {
     name      = var.name
     namespace = var.namespace
-    labels = {
-      app    = var.name
-      deploy = var.type
-    }
+    labels    = local.labels
   }
 
   spec {
     replicas = var.profile.num.min
 
     selector {
-      match_labels = {
-        app    = var.name
-        deploy = var.type
-      }
+      match_labels = local.labels
     }
 
     template {
       metadata {
         name      = var.name
         namespace = var.namespace
-        labels = {
-          app    = var.name
-          deploy = var.type
-        }
+        labels    = local.labels
       }
 
       spec {
