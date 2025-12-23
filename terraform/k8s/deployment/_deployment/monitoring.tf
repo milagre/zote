@@ -12,8 +12,7 @@ resource "kubernetes_manifest" "podmonitor" {
       name      = var.name
       namespace = var.namespace
       labels = {
-        release = "prometheus"
-        app     = var.name
+        app = var.name
       }
     }
     spec = {
