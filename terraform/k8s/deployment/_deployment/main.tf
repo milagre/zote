@@ -122,6 +122,14 @@ resource "kubernetes_deployment" "deploy" {
               service   = var.name
             })
           }
+          env {
+            name = "${var.env.prefix}_HOST"
+            value_from {
+              field_ref {
+                field_path = "status.hostIP"
+              }
+            }
+          }
 
           // Attach configmaps to environment
           dynamic "env_from" {
@@ -164,6 +172,7 @@ resource "kubernetes_deployment" "deploy" {
               name       = volume_mount.value
             }
           }
+
           // - single file
           dynamic "volume_mount" {
             for_each = {
