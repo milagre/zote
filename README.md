@@ -72,15 +72,3 @@ The `terraform/` directory provides reusable infrastructure modules for kubernet
 
 - `database/mysql` - MySQL deployment supporting both containerized (Kubernetes) and cloud (DigitalOcean) modes
   - Outputs ConfigMap and Secret for client configuration
-  - Environment variable naming: `${PREFIX}_MYSQL_${NAME}_HOST`, etc.
-
-**Infrastructure Modules:**
-
-- `infra/timescaledb` - TimescaleDB (PostgreSQL extension)
-- `infra/redis` - Redis caching
-- `infra/rabbitmq` - RabbitMQ messaging
-- `infra/influxdb` - InfluxDB time-series database
-- `infra/nginx-ingress-controller` - Ingress controller
-- `infra/cert-manager` - TLS certificate management
-- `infra/ngrok-operator` - Ngrok tunnel operator
-- `infra/metrics-server` - Kubernetes metrics
