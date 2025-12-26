@@ -1,5 +1,5 @@
 
-variable "env" {}
+variable "env" {} # tflint-ignore: terraform_unused_declarations
 variable "acme_email" {}
 variable "namespace" {}
 

@@ -19,11 +19,11 @@ variable "container" {
   })
   default = null
 }
-variable "cloud" {
-  type = object({
-  })
-  default = null
-}
+//variable "cloud" {
+//  type = object({
+//  })
+//  default = null
+//}
 
 locals {
   name = "redis-${var.name}"
@@ -31,6 +31,7 @@ locals {
 
   targetmodule = coalesce(
     try(module.container[0], null),
+    //try(module.digitalocean[0], null),
   )
 }
 

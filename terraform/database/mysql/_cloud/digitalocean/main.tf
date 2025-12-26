@@ -1,6 +1,6 @@
-variable "env" {}
+variable "env" {} # tflint-ignore: terraform_unused_declarations
 variable "name" {}
-variable "namespace" {}
+variable "namespace" {} # tflint-ignore: terraform_unused_declarations
 variable "database" {}
 variable "vpc_id" {}
 variable "project_id" {}

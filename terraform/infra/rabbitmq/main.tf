@@ -21,11 +21,6 @@ variable "container" {
   })
   default = null
 }
-variable "cloud" {
-  type = object({
-  })
-  default = null
-}
 variable "setup" {
   type = object({
     vhosts = list(object({
@@ -38,15 +33,16 @@ variable "setup" {
     }))
   })
 }
+//variable "cloud" {
+//  type = object({
+//  })
+//  default = null
+//}
 
 locals {
-  name = "rabbitmq-${var.name}"
+  name_amqp = "amqp-${var.name}"
 
-  name_amqp  = "amqp-${var.name}"
-  name_admin = "rabbitmq-${var.name}"
-
-  cfg_amqp  = "${var.env.prefix}_AMQP_${upper(var.name)}"
-  cfg_admin = "${var.env.prefix}_RABBITMQ_${upper(var.name)}"
+  cfg_amqp = "${var.env.prefix}_AMQP_${upper(var.name)}"
 
   targetmodule = coalesce(
     try(module.container[0], null),
@@ -97,7 +93,7 @@ output "k8s" {
     configmap = kubernetes_config_map.common.metadata[0].name
     users = {
       for user in var.setup.users :
-      "${user.name}" => {
+      user.name => {
         configmap = kubernetes_config_map.users[user.name].metadata[0].name
         secret    = kubernetes_secret.passwords[user.name].metadata[0].name
       }

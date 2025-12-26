@@ -1,15 +1,12 @@
+terraform {
+  required_version = ">= 1.12"
+}
+
 variable "type" {}
 variable "tier" {}
 variable "name" {}
 variable "root" {}
 variable "prefix" {}
-variable "dev_types" {
-  type = list(string)
-  default = [
-    "dev",
-    "local",
-  ]
-}
 
 locals {
   is_dev   = var.tier == "dev"

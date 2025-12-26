@@ -29,11 +29,11 @@ variable "database" {
   type    = string
   default = "timescaledb"
 }
-variable "cloud" {
-  type = object({
-  })
-  default = null
-}
+//variable "cloud" {
+//  type = object({
+//  })
+//  default = null
+//}
 
 locals {
   name = "timescaledb-${var.name}"

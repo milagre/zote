@@ -1,4 +1,4 @@
-variable "env" {}
+variable "env" {} # tflint-ignore: terraform_unused_declarations
 variable "namespace" {}
 
 resource "helm_release" "metrics-server" {

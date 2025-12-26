@@ -1,4 +1,4 @@
-variable "env" {}
+variable "env" {} # tflint-ignore: terraform_unused_declarations
 variable "name" {}
 variable "namespace" {}
 variable "ver" {}

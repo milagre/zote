@@ -46,10 +46,6 @@ variable "internal" {
   })
 }
 
-locals {
-  timestamptag = replace(timestamp(), "/[-:TZ]/", "")
-  tag          = var.tag == "latest" ? "latest-${local.timestamptag}" : var.tag
-}
 
 module "cloudconstants" {
   source = "../../../cloud/constants"

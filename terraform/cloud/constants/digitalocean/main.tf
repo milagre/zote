@@ -1,4 +1,8 @@
-variable "env" {}
+terraform {
+  required_version = ">= 1.12"
+}
+
+variable "env" {} # tflint-ignore: terraform_unused_declarations
 
 output "public_load_balancer_annotations" {
   value = {

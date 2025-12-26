@@ -33,8 +33,6 @@ variable "ports" {
 }
 
 locals {
-  timestamptag = replace(timestamp(), "/[-:TZ]/", "")
-
   configmap_files_dependencies = sort([
     for key, value in coalesce(var.files.configmaps, {}) : split("/", value)[0]
   ])

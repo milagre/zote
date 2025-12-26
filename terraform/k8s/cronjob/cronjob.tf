@@ -1,21 +1,13 @@
-
-locals {
-  timestamptag = replace(timestamp(), "/[-:TZ]/", "")
-  tag          = var.tag == "latest" ? "latest-${local.timestamptag}" : var.tag
-}
-
 resource "kubernetes_cron_job_v1" "job" {
   metadata {
     name      = var.name
     namespace = var.namespace
     labels = {
-      // app     = var.name
-      // version = local.tag
+      app = var.name
     }
   }
 
   spec {
-
     concurrency_policy            = "Replace"
     failed_jobs_history_limit     = 5
     schedule                      = var.schedule
@@ -26,8 +18,7 @@ resource "kubernetes_cron_job_v1" "job" {
       metadata {
         name = var.name
         labels = {
-          // app     = var.name
-          // version = local.tag
+          app = var.name
         }
       }
 
@@ -39,8 +30,7 @@ resource "kubernetes_cron_job_v1" "job" {
           metadata {
             name = var.name
             labels = {
-              // app     = var.name
-              // version = local.tag
+              app = var.name
             }
           }
 

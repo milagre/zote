@@ -42,7 +42,7 @@ resource "kubernetes_config_map" "redis_scripts" {
   }
 
   data = {
-    "update-nodes.sh" = "${file("${path.module}/update-nodes.sh")}"
+    "update-nodes.sh" = file("${path.module}/update-nodes.sh")
   }
 }
 
@@ -195,7 +195,7 @@ resource "kubernetes_job" "cluster" {
                 "redis-${var.name}-${node}.redis-${var.name}:6379"
               ]
             ]),
-            "--cluster-replicas", "${var.replicas}",
+            "--cluster-replicas", var.replicas,
             "--cluster-yes",
           ])
         }

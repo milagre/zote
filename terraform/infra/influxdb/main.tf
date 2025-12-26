@@ -21,11 +21,11 @@ variable "container" {
   })
   default = null
 }
-variable "cloud" {
-  type = object({
-  })
-  default = null
-}
+//variable "cloud" {
+//  type = object({
+//  })
+//  default = null
+//}
 
 locals {
   name = "influxdb-${var.name}"
