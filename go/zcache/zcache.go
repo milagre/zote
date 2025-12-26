@@ -1,3 +1,31 @@
+// Package zcache provides a cache abstraction with read-through cache support.
+//
+// # Read-Through Pattern
+//
+// ReadThrough handles cache lookup, source fetching, and caching automatically:
+//
+//	user, warnings, err := zcache.ReadThrough(
+//		ctx, cache,
+//		"users",                        // namespace
+//		fmt.Sprintf("user:%d", userID), // key
+//		time.Hour,                      // expiration
+//		func(ctx context.Context) (UserData, error) {
+//			return database.FetchUser(ctx, userID)
+//		},
+//		json.Marshal,
+//		func(data []byte) (UserData, error) {
+//			var u UserData
+//			return u, json.Unmarshal(data, &u)
+//		},
+//	)
+//
+// # Warning Handling
+//
+// ReadThrough returns (result, warning, error). Cache failures are non-fatal,
+// returning warnings while still serving data from the source. Only source
+// failures are fatal errors.
+//
+// See zcacheredis for the Redis-based Cache implementation.
 package zcache
 
 import (

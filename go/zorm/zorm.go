@@ -1,3 +1,39 @@
+// Package zorm provides an ORM framework with a repository interface.
+//
+// zorm defines interfaces for CRUD operations (Find, Get, Put, Delete) with
+// relation loading. The main SQL implementation is in the zormsql subpackage.
+//
+// # Basic Usage
+//
+// Operations use generic helper functions that work with any Repository or
+// Transaction:
+//
+//	// Find multiple records
+//	var users []*User
+//	zorm.Find(ctx, repo, &users, zorm.FindOptions{
+//		Where: zclause.Eq("active", true),
+//		Sort:  []zsort.Sort{{Field: "Created", Desc: true}},
+//	})
+//
+//	// Get by primary key
+//	user := &User{ID: 123}
+//	zorm.Get(ctx, repo, []*User{user}, zorm.GetOptions{})
+//
+//	// Insert or update (Put with empty ID inserts, with ID updates)
+//	zorm.Put(ctx, repo, []*User{user}, zorm.PutOptions{})
+//
+//	// Delete
+//	zorm.Delete(ctx, repo, []*User{user}, zorm.DeleteOptions{})
+//
+// # Transactions
+//
+// Repositories provide transaction support:
+//
+//	tx, _ := repo.Begin(ctx)
+//	zorm.Put(ctx, tx, []*User{{Name: "Bob"}}, zorm.PutOptions{})
+//	tx.Commit() // or tx.Rollback()
+//
+// See zormsql for the SQL-based implementation with mapping configuration.
 package zorm
 
 import (

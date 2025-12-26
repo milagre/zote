@@ -1,3 +1,77 @@
+// Package zsql provides a SQL database abstraction layer with composable
+// interfaces for database operations.
+//
+// zsql wraps database/sql with driver-specific functionality for MySQL,
+// PostgreSQL, and SQLite3, providing connection pooling, transaction
+// management, and a unified query/exec interface.
+//
+// # Interface Hierarchy
+//
+// zsql adds interfaces that database/sql is missing:
+//
+//   - Connection implements Transactor, QueryExecutor, Queryer, Executor
+//   - Transaction implements QueryExecutor, Queryer, Executor
+//
+// This enables helper functions like Query and Exec to work uniformly
+// with either connections or transactions.
+//
+// # Creating a Connection
+//
+//	import (
+//		"database/sql"
+//
+//		"github.com/milagre/zote/go/zsql"
+//		"github.com/milagre/zote/go/zsql/zmysql"
+//	)
+//
+//	db, err := sql.Open("mysql", connectionString)
+//	if err != nil {
+//		return err
+//	}
+//
+//	conn := zsql.NewConnection(db, zmysql.Driver{})
+//
+// # Transactions
+//
+// The Begin helper manages transaction lifecycle, committing on success
+// and rolling back on error:
+//
+//	err := zsql.Begin(ctx, db, func(ctx context.Context, tx zsql.Transaction) error {
+//		_, _, err := zsql.Exec(ctx, tx, "INSERT INTO users (name) VALUES (?)", []any{"Alice"})
+//		if err != nil {
+//			return err // automatic rollback
+//		}
+//		return nil // automatic commit
+//	})
+//
+// # Querying
+//
+// Query handles result iteration and error checking, calling the callback
+// for each row:
+//
+//	found, err := zsql.Query(ctx, db, func(scan zsql.ScanFunc) error {
+//		var id int64
+//		var name string
+//		if err := scan(&id, &name); err != nil {
+//			return err
+//		}
+//		// process row
+//		return nil
+//	}, "SELECT id, name FROM users WHERE active = ?", []any{true})
+//
+// # Executing
+//
+// Exec returns affected row count and last insert ID:
+//
+//	rowsAffected, lastInsertID, err := zsql.Exec(ctx, db,
+//		"UPDATE users SET active = ? WHERE id = ?", []any{false, 123})
+//
+// # Drivers
+//
+// Use database-specific drivers for proper escaping and dialect handling. See zorm
+//
+//   - zmysql.Driver - MySQL with backtick escaping
+//   - zsqlite3.Driver - SQLite3 with double-quote escaping
 package zsql
 
 import (

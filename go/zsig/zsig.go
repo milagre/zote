@@ -1,3 +1,14 @@
+// Package zsig provides a simple way to listen for signals and perform actions when they are received.
+// It can be used to reload configuration, shutdown the application, or perform other arbitrary actions.
+// It automates the setup of process termination by connecting SIGTERM and SIGINT to the context cancellation.
+//
+// Example:
+//
+//	ctx, cancel := zsig.Listen(ctx, zsig.Callbacks{
+//		Reload: func() {
+//			fmt.Println("Reloading configuration")
+//		},
+//	})
 package zsig
 
 import (
