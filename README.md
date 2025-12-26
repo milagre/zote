@@ -18,12 +18,12 @@ The framework consists of ~20 independent modules, each providing specific funct
 
 **Utilities:**
 
-- **zhttpclient** - HTTP client helpers with more intelligent defaults
-- **zlog** - Interface-based logging adaptable to other log providers.
-- **zsig** - Unix signal helpers
-- **zencodeio** - Reader and Writer adapter for Marshallers (e.g. json)
+- **[zhttpclient](go/zhttpclient)** - HTTP client helpers with more intelligent defaults
+- **[zlog](go/zlog)** - Interface-based logging adaptable to other log providers.
+- **[zsig](go/zsig)** - Unix signal helpers
+- **[zencodeio](go/zencodeio)** - Reader and Writer adapter for Marshallers (e.g. json)
 - **[ztime](go/ztime)** - Enhanced date and time types with JSON/SQL support
-- **zwarn** - Warning system parallel to errors (non-fatal errors)
+- **[zwarn](go/zwarn)** - Warning system parallel to errors (non-fatal errors)
 
 **Database & ORM:**
 
@@ -32,11 +32,11 @@ The framework consists of ~20 independent modules, each providing specific funct
 
 **API Framework:**
 
-- **zapi** - HTTP API server framework
+- **[zapi](go/zapi)** - HTTP API server framework
 
 **Messaging:**
 
-- **zamqp** - RabbitMQ/AMQP integration and process framework
+- **[zamqp](go/zamqp)** - RabbitMQ/AMQP integration and process framework
 
 **Caching:**
 
@@ -44,14 +44,14 @@ The framework consists of ~20 independent modules, each providing specific funct
 
 **Time-Series Data:**
 
-- **zts** - Time-series database abstractions
+- **[zts](go/zts)** - Time-series database abstractions
   - **ztimescaledb** - TimescaleDB integration for PostgreSQL
   - **zinfluxdb** - InfluxDB client wrapper
 
 **Helpers:**
 
-- **zfunc** - Functional programming constructs missing from the std library (maps, slices)
-- **zreflect** - Reflection helpers
+- **[zfunc](go/zfunc)** - Functional programming constructs missing from the std library (maps, slices)
+- **[zreflect](go/zreflect)** - Reflection helpers
 
 ## Terraform Library
 
