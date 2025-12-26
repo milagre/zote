@@ -66,10 +66,10 @@ resource "kubernetes_cron_job_v1" "job" {
                 }
               }
 
-              // Attach global stats variables
+              // Attach global variables
               env {
                 name  = "${var.env.prefix}_STATS_PREFIX"
-                value = "${var.env.prefix}.${var.namespace}.${var.name}"
+                value = "${lower(var.env.prefix)}.${var.namespace}.${var.name}"
               }
               env {
                 name = "${var.env.prefix}_STATS_TAGS"
@@ -77,6 +77,14 @@ resource "kubernetes_cron_job_v1" "job" {
                   namespace = var.namespace
                   service   = var.name
                 })
+              }
+              env {
+                name = "${var.env.prefix}_HOST"
+                value_from {
+                  field_ref {
+                    field_path = "status.hostIP"
+                  }
+                }
               }
 
               // Attach configmaps to environment

@@ -110,10 +110,10 @@ resource "kubernetes_deployment" "deploy" {
             }
           }
 
-          // Attach global stats variables
+          // Attach global variables
           env {
             name  = "${var.env.prefix}_STATS_PREFIX"
-            value = "${var.env.prefix}.${var.namespace}.${var.name}"
+            value = "${lower(var.env.prefix)}.${var.namespace}.${var.name}"
           }
           env {
             name = "${var.env.prefix}_STATS_TAGS"
