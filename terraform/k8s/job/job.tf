@@ -53,6 +53,7 @@ resource "kubernetes_job" "job" {
           env {
             name = "${var.env.prefix}_STATS_TAGS"
             value = jsonencode({
+              env       = var.env.id
               namespace = var.namespace
               service   = var.name
             })

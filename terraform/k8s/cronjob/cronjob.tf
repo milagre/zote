@@ -64,6 +64,7 @@ resource "kubernetes_cron_job_v1" "job" {
               env {
                 name = "${var.env.prefix}_STATS_TAGS"
                 value = jsonencode({
+                  env       = var.env.id
                   namespace = var.namespace
                   service   = var.name
                 })
