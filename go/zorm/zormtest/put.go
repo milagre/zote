@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/milagre/zote/go/zorm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/milagre/zote/go/zorm"
 )
 
 func RunPutTests(t *testing.T, setup SetupFunc) {

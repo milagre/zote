@@ -6,9 +6,10 @@ import (
 	"io"
 	"testing"
 
-	"github.com/milagre/zote/go/zencodeio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/milagre/zote/go/zencodeio"
 )
 
 // Test types for JSON encoding/decoding

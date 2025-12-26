@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/milagre/zote/go/zlog"
-	"github.com/milagre/zote/go/zstats"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
+
+	"github.com/milagre/zote/go/zlog"
+	"github.com/milagre/zote/go/zstats"
 )
 
 var _ zstats.Adapter = &Adapter{}

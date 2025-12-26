@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/milagre/zote/go/zcache"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/milagre/zote/go/zcache"
 )
 
 type testData struct {

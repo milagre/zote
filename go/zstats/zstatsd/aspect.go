@@ -3,8 +3,9 @@ package zstatsd
 import (
 	"fmt"
 
-	"github.com/milagre/zote/go/zcmd"
 	"github.com/smira/go-statsd"
+
+	"github.com/milagre/zote/go/zcmd"
 )
 
 var _ zcmd.Aspect = Aspect{}

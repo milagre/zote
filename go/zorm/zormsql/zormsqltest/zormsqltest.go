@@ -3,8 +3,9 @@ package zormsqltest
 import (
 	"testing"
 
-	"github.com/milagre/zote/go/zorm/zormsql"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/milagre/zote/go/zorm/zormsql"
 )
 
 func ValidateMapping(t *testing.T, m zormsql.Mapping) {
