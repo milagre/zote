@@ -1,7 +1,6 @@
 variable "env" {}
 variable "namespace" {}
 variable "name" {}
-variable "ver" {}
 variable "container" {
   type = object({
     profile = object({

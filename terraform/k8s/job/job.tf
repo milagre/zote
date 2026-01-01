@@ -1,7 +1,5 @@
 
 locals {
-  timestamptag = replace(timestamp(), "/[-:TZ]/", "")
-  tag          = var.tag == "latest" ? "latest-${local.timestamptag}" : var.tag
 }
 
 resource "kubernetes_job_v1" "job" {
