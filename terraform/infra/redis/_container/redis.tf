@@ -52,6 +52,8 @@ resource "kubernetes_stateful_set_v1" "redis" {
     namespace = var.namespace
   }
 
+  wait_for_rollout = false
+
   spec {
     replicas = (var.replicas + 1) * var.shards
 

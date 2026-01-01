@@ -11,6 +11,8 @@ resource "kubernetes_job_v1" "job" {
     }
   }
 
+  wait_for_completion = false
+
   spec {
     selector {
       match_labels = {}

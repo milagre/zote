@@ -50,6 +50,8 @@ resource "kubernetes_deployment_v1" "deploy" {
     labels    = local.labels
   }
 
+  wait_for_rollout = false
+
   spec {
     replicas = var.profile.num.min
 

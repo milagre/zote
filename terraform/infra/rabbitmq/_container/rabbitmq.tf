@@ -151,6 +151,8 @@ resource "kubernetes_stateful_set_v1" "rabbitmq" {
     namespace = var.namespace
   }
 
+  wait_for_rollout = false
+
   spec {
     replicas = module.profile.num.min
 

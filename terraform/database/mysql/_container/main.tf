@@ -108,6 +108,8 @@ resource "kubernetes_stateful_set_v1" "sts" {
     namespace = var.namespace
   }
 
+  wait_for_rollout = false
+
   spec {
     service_name = var.name
     replicas     = 1

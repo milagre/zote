@@ -55,6 +55,8 @@ resource "kubernetes_stateful_set_v1" "timescaledb" {
     }
   }
 
+  wait_for_rollout = false
+
   spec {
     service_name = local.name
     replicas     = 1
