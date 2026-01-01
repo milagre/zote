@@ -50,7 +50,7 @@ locals {
   )
 }
 
-resource "kubernetes_config_map" "common" {
+resource "kubernetes_config_map_v1" "common" {
   metadata {
     name      = local.name_amqp
     namespace = var.namespace
@@ -62,7 +62,7 @@ resource "kubernetes_config_map" "common" {
   }
 }
 
-resource "kubernetes_config_map" "users" {
+resource "kubernetes_config_map_v1" "users" {
   for_each = toset([for user in var.setup.users : user.name])
 
   metadata {
@@ -75,7 +75,7 @@ resource "kubernetes_config_map" "users" {
   }
 }
 
-resource "kubernetes_secret" "passwords" {
+resource "kubernetes_secret_v1" "passwords" {
   for_each = toset([for user in var.setup.users : user.name])
 
   metadata {
@@ -90,12 +90,12 @@ resource "kubernetes_secret" "passwords" {
 
 output "k8s" {
   value = {
-    configmap = kubernetes_config_map.common.metadata[0].name
+    configmap = kubernetes_config_map_v1.common.metadata[0].name
     users = {
       for user in var.setup.users :
       user.name => {
-        configmap = kubernetes_config_map.users[user.name].metadata[0].name
-        secret    = kubernetes_secret.passwords[user.name].metadata[0].name
+        configmap = kubernetes_config_map_v1.users[user.name].metadata[0].name
+        secret    = kubernetes_secret_v1.passwords[user.name].metadata[0].name
       }
     }
   }

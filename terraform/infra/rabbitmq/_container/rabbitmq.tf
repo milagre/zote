@@ -88,7 +88,7 @@ resource "random_password" "erlang_cookie" {
   special = false
 }
 
-resource "kubernetes_config_map" "config" {
+resource "kubernetes_config_map_v1" "config" {
   metadata {
     name      = "cfg-${local.name}"
     namespace = var.namespace
@@ -133,7 +133,7 @@ resource "kubernetes_config_map" "config" {
   }
 }
 
-resource "kubernetes_secret" "config" {
+resource "kubernetes_secret_v1" "config" {
   metadata {
     name      = "cfg-${local.name}"
     namespace = var.namespace
@@ -145,7 +145,7 @@ resource "kubernetes_secret" "config" {
   }
 }
 
-resource "kubernetes_stateful_set" "rabbitmq" {
+resource "kubernetes_stateful_set_v1" "rabbitmq" {
   metadata {
     name      = local.name
     namespace = var.namespace
@@ -227,7 +227,7 @@ resource "kubernetes_stateful_set" "rabbitmq" {
 
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.config.metadata[0].name
+                name = kubernetes_secret_v1.config.metadata[0].name
                 key  = "password"
               }
             }
@@ -238,7 +238,7 @@ resource "kubernetes_stateful_set" "rabbitmq" {
 
             value_from {
               config_map_key_ref {
-                name = kubernetes_config_map.config.metadata[0].name
+                name = kubernetes_config_map_v1.config.metadata[0].name
                 key  = "username"
               }
             }
@@ -249,7 +249,7 @@ resource "kubernetes_stateful_set" "rabbitmq" {
 
             value_from {
               secret_key_ref {
-                name = kubernetes_secret.config.metadata[0].name
+                name = kubernetes_secret_v1.config.metadata[0].name
                 key  = "erlang_cookie"
               }
             }
@@ -301,7 +301,7 @@ resource "kubernetes_stateful_set" "rabbitmq" {
           name = "config"
 
           config_map {
-            name = kubernetes_config_map.config.metadata[0].name
+            name = kubernetes_config_map_v1.config.metadata[0].name
 
             items {
               key  = "enabled_plugins"
@@ -340,7 +340,7 @@ resource "kubernetes_stateful_set" "rabbitmq" {
           fs_group     = 999
         }
 
-        service_account_name = kubernetes_service_account.rabbitmq.metadata[0].name
+        service_account_name = kubernetes_service_account_v1.rabbitmq.metadata[0].name
       }
     }
 
@@ -367,7 +367,7 @@ resource "kubernetes_stateful_set" "rabbitmq" {
   }
 }
 
-resource "kubernetes_service" "client" {
+resource "kubernetes_service_v1" "client" {
   metadata {
     name      = local.name
     namespace = var.namespace
@@ -410,7 +410,7 @@ resource "kubernetes_service" "client" {
   }
 }
 
-resource "kubernetes_service" "headless" {
+resource "kubernetes_service_v1" "headless" {
   metadata {
     name      = "${local.name}-headless"
     namespace = var.namespace

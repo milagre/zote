@@ -4,7 +4,7 @@ variable "namespace" {
 }
 
 
-resource "kubernetes_secret" "grafana" {
+resource "kubernetes_secret_v1" "grafana" {
   metadata {
     name      = "grafana"
     namespace = var.namespace

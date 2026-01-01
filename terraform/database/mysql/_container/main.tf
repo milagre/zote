@@ -42,7 +42,7 @@ locals {
   password = random_password.password.result
 }
 
-resource "kubernetes_config_map" "config" {
+resource "kubernetes_config_map_v1" "config" {
   metadata {
     name      = "cfg-${var.name}"
     namespace = var.namespace
@@ -65,7 +65,7 @@ resource "kubernetes_config_map" "config" {
   }
 }
 
-resource "kubernetes_secret" "password" {
+resource "kubernetes_secret_v1" "password" {
   metadata {
     name      = "cfg-${var.name}"
     namespace = var.namespace
@@ -80,7 +80,7 @@ resource "kubernetes_secret" "password" {
   }
 }
 
-resource "kubernetes_service" "svc" {
+resource "kubernetes_service_v1" "svc" {
   metadata {
     name      = var.name
     namespace = var.namespace
@@ -102,7 +102,7 @@ resource "kubernetes_service" "svc" {
   }
 }
 
-resource "kubernetes_stateful_set" "sts" {
+resource "kubernetes_stateful_set_v1" "sts" {
   metadata {
     name      = var.name
     namespace = var.namespace
@@ -135,7 +135,7 @@ resource "kubernetes_stateful_set" "sts" {
           name = "config-map"
 
           config_map {
-            name = kubernetes_config_map.config.metadata[0].name
+            name = kubernetes_config_map_v1.config.metadata[0].name
           }
         }
 
@@ -200,7 +200,7 @@ resource "kubernetes_stateful_set" "sts" {
 
           env_from {
             secret_ref {
-              name = kubernetes_secret.password.metadata[0].name
+              name = kubernetes_secret_v1.password.metadata[0].name
             }
           }
 

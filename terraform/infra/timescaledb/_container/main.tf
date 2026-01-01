@@ -30,7 +30,7 @@ resource "random_password" "password" {
   min_upper   = 8
 }
 
-resource "kubernetes_persistent_volume_claim" "timescale_pvc" {
+resource "kubernetes_persistent_volume_claim_v1" "timescale_pvc" {
   metadata {
     name      = "${local.name}-pvc"
     namespace = var.namespace
@@ -46,7 +46,7 @@ resource "kubernetes_persistent_volume_claim" "timescale_pvc" {
   }
 }
 
-resource "kubernetes_stateful_set" "timescaledb" {
+resource "kubernetes_stateful_set_v1" "timescaledb" {
   metadata {
     name      = local.name
     namespace = var.namespace
@@ -129,7 +129,7 @@ resource "kubernetes_stateful_set" "timescaledb" {
   }
 }
 
-resource "kubernetes_service" "timescaledb" {
+resource "kubernetes_service_v1" "timescaledb" {
   metadata {
     name      = local.name
     namespace = var.namespace
@@ -153,7 +153,7 @@ resource "kubernetes_service" "timescaledb" {
   }
 }
 
-resource "kubernetes_secret" "timescale_secret" {
+resource "kubernetes_secret_v1" "timescale_secret" {
   metadata {
     name      = "${local.name}-secret"
     namespace = var.namespace

@@ -35,7 +35,7 @@ locals {
   )
 }
 
-resource "kubernetes_config_map" "cfg" {
+resource "kubernetes_config_map_v1" "cfg" {
   metadata {
     name      = local.name
     namespace = var.namespace
@@ -49,6 +49,6 @@ resource "kubernetes_config_map" "cfg" {
 
 output "k8s" {
   value = {
-    configmap = kubernetes_config_map.cfg.metadata[0].name
+    configmap = kubernetes_config_map_v1.cfg.metadata[0].name
   }
 }

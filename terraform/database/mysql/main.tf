@@ -64,7 +64,7 @@ locals {
   )
 }
 
-resource "kubernetes_config_map" "client" {
+resource "kubernetes_config_map_v1" "client" {
   metadata {
     name      = local.name
     namespace = var.namespace
@@ -82,7 +82,7 @@ resource "kubernetes_config_map" "client" {
   }
 }
 
-resource "kubernetes_secret" "client" {
+resource "kubernetes_secret_v1" "client" {
   metadata {
     name      = local.name
     namespace = var.namespace
@@ -99,7 +99,7 @@ resource "kubernetes_secret" "client" {
 
 output "k8s" {
   value = {
-    configmap = kubernetes_config_map.client.metadata[0].name
-    secret    = kubernetes_secret.client.metadata[0].name
+    configmap = kubernetes_config_map_v1.client.metadata[0].name
+    secret    = kubernetes_secret_v1.client.metadata[0].name
   }
 }

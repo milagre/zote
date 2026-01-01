@@ -25,7 +25,7 @@ module "deployment" {
   files = var.files
 }
 
-resource "kubernetes_service" "service" {
+resource "kubernetes_service_v1" "service" {
   metadata {
     name      = var.name
     namespace = var.namespace

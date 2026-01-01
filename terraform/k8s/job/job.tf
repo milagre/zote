@@ -4,13 +4,12 @@ locals {
   tag          = var.tag == "latest" ? "latest-${local.timestamptag}" : var.tag
 }
 
-resource "kubernetes_job" "job" {
+resource "kubernetes_job_v1" "job" {
   metadata {
     name      = var.name
     namespace = var.namespace
     labels = {
-      app     = var.name
-      version = local.tag
+      app = var.name
     }
   }
 
@@ -19,8 +18,7 @@ resource "kubernetes_job" "job" {
       metadata {
         name = var.name
         labels = {
-          app     = var.name
-          version = local.tag
+          app = var.name
         }
       }
       spec {

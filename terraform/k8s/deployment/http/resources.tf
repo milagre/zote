@@ -36,7 +36,7 @@ module "deployment" {
   ])
 }
 
-resource "kubernetes_service" "service" {
+resource "kubernetes_service_v1" "service" {
   metadata {
     name      = var.name
     namespace = var.namespace
@@ -85,7 +85,7 @@ resource "kubernetes_ingress_v1" "private_nginx" {
 
           backend {
             service {
-              name = kubernetes_service.service.metadata[0].name
+              name = kubernetes_service_v1.service.metadata[0].name
               port {
                 number = 80
               }
@@ -136,7 +136,7 @@ resource "kubernetes_ingress_v1" "public_nginx" {
 
             backend {
               service {
-                name = kubernetes_service.service.metadata[0].name
+                name = kubernetes_service_v1.service.metadata[0].name
                 port {
                   number = 80
                 }
@@ -182,7 +182,7 @@ resource "kubernetes_ingress_v1" "tunnel" {
 
           backend {
             service {
-              name = kubernetes_service.service.metadata[0].name
+              name = kubernetes_service_v1.service.metadata[0].name
               port {
                 number = 80
               }

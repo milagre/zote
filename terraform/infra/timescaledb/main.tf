@@ -45,7 +45,7 @@ locals {
   )
 }
 
-resource "kubernetes_config_map" "client" {
+resource "kubernetes_config_map_v1" "client" {
   metadata {
     name      = local.name
     namespace = var.namespace
@@ -64,7 +64,7 @@ resource "kubernetes_config_map" "client" {
   }
 }
 
-resource "kubernetes_secret" "client" {
+resource "kubernetes_secret_v1" "client" {
   metadata {
     name      = local.name
     namespace = var.namespace

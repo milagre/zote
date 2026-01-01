@@ -1,4 +1,4 @@
-resource "kubernetes_service" "redis" {
+resource "kubernetes_service_v1" "redis" {
   metadata {
     name      = "redis-${var.name}"
     namespace = var.namespace
@@ -18,7 +18,7 @@ resource "kubernetes_service" "redis" {
   }
 }
 
-resource "kubernetes_config_map" "redis_conf" {
+resource "kubernetes_config_map_v1" "redis_conf" {
   metadata {
     name      = "cfg-redis-${var.name}"
     namespace = var.namespace
@@ -32,7 +32,7 @@ resource "kubernetes_config_map" "redis_conf" {
   }
 }
 
-resource "kubernetes_config_map" "redis_scripts" {
+resource "kubernetes_config_map_v1" "redis_scripts" {
   metadata {
     name      = "cfg-redis-${var.name}-scripts"
     namespace = var.namespace
@@ -46,7 +46,7 @@ resource "kubernetes_config_map" "redis_scripts" {
   }
 }
 
-resource "kubernetes_stateful_set" "redis" {
+resource "kubernetes_stateful_set_v1" "redis" {
   metadata {
     name      = "redis-${var.name}"
     namespace = var.namespace
@@ -61,7 +61,7 @@ resource "kubernetes_stateful_set" "redis" {
       }
     }
 
-    service_name = kubernetes_service.redis.metadata[0].name
+    service_name = kubernetes_service_v1.redis.metadata[0].name
 
     template {
       metadata {
@@ -128,14 +128,14 @@ resource "kubernetes_stateful_set" "redis" {
         volume {
           name = "config"
           config_map {
-            name = kubernetes_config_map.redis_conf.metadata[0].name
+            name = kubernetes_config_map_v1.redis_conf.metadata[0].name
           }
         }
 
         volume {
           name = "scripts"
           config_map {
-            name         = kubernetes_config_map.redis_scripts.metadata[0].name
+            name         = kubernetes_config_map_v1.redis_scripts.metadata[0].name
             default_mode = "0755"
           }
         }
@@ -164,7 +164,7 @@ resource "kubernetes_stateful_set" "redis" {
   }
 }
 
-resource "kubernetes_job" "cluster" {
+resource "kubernetes_job_v1" "cluster" {
   metadata {
     name      = "redis-${var.name}-cluster"
     namespace = var.namespace
@@ -203,5 +203,5 @@ resource "kubernetes_job" "cluster" {
     }
   }
 
-  depends_on = [kubernetes_stateful_set.redis]
+  depends_on = [kubernetes_stateful_set_v1.redis]
 }

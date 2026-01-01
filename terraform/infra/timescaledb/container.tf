@@ -7,7 +7,6 @@ module "container" {
   name      = var.name
   namespace = var.namespace
 
-  ver     = var.ver
   profile = var.container.profile
 
   user     = var.user
