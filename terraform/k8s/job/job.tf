@@ -14,6 +14,10 @@ resource "kubernetes_job_v1" "job" {
   }
 
   spec {
+    selector {
+      match_labels = {}
+    }
+
     template {
       metadata {
         name = var.name
