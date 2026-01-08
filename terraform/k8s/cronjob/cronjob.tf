@@ -11,6 +11,7 @@ resource "kubernetes_cron_job_v1" "job" {
     concurrency_policy            = "Replace"
     failed_jobs_history_limit     = 5
     schedule                      = var.schedule
+    timezone                      = var.timezone
     starting_deadline_seconds     = 10
     successful_jobs_history_limit = 10
 

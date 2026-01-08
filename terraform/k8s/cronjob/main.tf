@@ -4,6 +4,9 @@ variable "namespace" {}
 variable "image" {}
 variable "tag" {}
 variable "schedule" {}
+variable "timezone" {
+  default = "Etc/UTC"
+}
 variable "conf" {
   type = object({
     configmaps = optional(list(string))
