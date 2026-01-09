@@ -44,6 +44,13 @@ output "passwords" {
   sensitive = true
 }
 
+output "management_users" {
+  value = [
+    for user in var.setup.users :
+    user.name if contains(user.tags, "management")
+  ]
+}
+
 output "admin_hostname" {
   value     = "${local.name}.${var.namespace}.svc.cluster.local"
   sensitive = false
@@ -52,14 +59,4 @@ output "admin_hostname" {
 output "admin_port" {
   value     = 15672
   sensitive = false
-}
-
-output "admin_username" {
-  value     = ""
-  sensitive = false
-}
-
-output "admin_password" {
-  value     = ""
-  sensitive = true
 }

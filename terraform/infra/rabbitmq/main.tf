@@ -40,9 +40,11 @@ variable "setup" {
 //}
 
 locals {
-  name_amqp = "amqp-${var.name}"
+  name_amqp     = "amqp-${var.name}"
+  name_rabbitmq = "rabbitmq-${var.name}"
 
-  cfg_amqp = "${var.env.prefix}_AMQP_${upper(var.name)}"
+  cfg_amqp     = "${var.env.prefix}_AMQP_${upper(var.name)}"
+  cfg_rabbitmq = "${var.env.prefix}_RABBITMQ_${upper(var.name)}"
 
   targetmodule = coalesce(
     try(module.container[0], null),
@@ -50,7 +52,7 @@ locals {
   )
 }
 
-resource "kubernetes_config_map_v1" "common" {
+resource "kubernetes_config_map_v1" "amqp" {
   metadata {
     name      = local.name_amqp
     namespace = var.namespace
@@ -59,6 +61,18 @@ resource "kubernetes_config_map_v1" "common" {
   data = {
     "${local.cfg_amqp}_HOST" = local.targetmodule.hostname
     "${local.cfg_amqp}_PORT" = local.targetmodule.port
+  }
+}
+
+resource "kubernetes_config_map_v1" "rabbitmq" {
+  metadata {
+    name      = local.name_rabbitmq
+    namespace = var.namespace
+  }
+
+  data = {
+    "${local.cfg_rabbitmq}_HOST" = local.targetmodule.admin_hostname
+    "${local.cfg_rabbitmq}_PORT" = local.targetmodule.admin_port
   }
 }
 
@@ -90,7 +104,12 @@ resource "kubernetes_secret_v1" "passwords" {
 
 output "k8s" {
   value = {
-    configmap = kubernetes_config_map_v1.common.metadata[0].name
+    rabbitmq = {
+      configmap = kubernetes_config_map_v1.rabbitmq.metadata[0].name
+    }
+    amqp = {
+      configmap = kubernetes_config_map_v1.amqp.metadata[0].name
+    }
     users = {
       for user in var.setup.users :
       user.name => {
@@ -99,4 +118,26 @@ output "k8s" {
       }
     }
   }
+}
+
+output "api" {
+  value = {
+    host = local.targetmodule.admin_hostname
+    port = local.targetmodule.admin_port
+  }
+}
+
+output "amqp" {
+  value = {
+    host = local.targetmodule.hostname
+    port = local.targetmodule.port
+  }
+}
+
+output "users" {
+  value = {
+    for user in var.setup.users :
+    user.name => local.targetmodule.passwords[user.name]
+  }
+  sensitive = true
 }

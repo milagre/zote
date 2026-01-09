@@ -2,6 +2,7 @@ package zamqp
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/spf13/cast"
@@ -26,14 +27,23 @@ func NewConnectionDetails(user string, pass string, host string, port int, vhost
 }
 
 func (d ConnectionDetails) URI() string {
-	return amqp091.URI{
-		Scheme:   "amqp",
-		Host:     d.host,
-		Port:     d.port,
-		Username: d.user,
-		Password: d.pass,
-		Vhost:    d.vhost,
-	}.String()
+	u := &url.URL{
+		Scheme: "amqp",
+		Host:   fmt.Sprintf("%s:%d", d.host, d.port),
+		User:   url.UserPassword(d.user, d.pass),
+	}
+
+	// Per AMQP URI spec (https://www.rabbitmq.com/uri-spec.html), the default
+	// vhost "/" must be encoded as "%2F" in the URI path.
+	if d.vhost == "/" {
+		return u.String() + "/%2F"
+	}
+
+	if d.vhost != "" {
+		u.Path = "/" + d.vhost
+	}
+
+	return u.String()
 }
 
 func Dial(details ConnectionDetails) (Connection, error) {
@@ -100,10 +110,12 @@ type Exchange struct {
 
 type ExchangeType string
 
-const ExchangeTypeDirect = "direct"
-const ExchangeTypeFanout = "fanout"
-const ExchangeTypeTopic = "topic"
-const ExchangeTypeHeaders = "headers"
+const (
+	ExchangeTypeDirect  = "direct"
+	ExchangeTypeFanout  = "fanout"
+	ExchangeTypeTopic   = "topic"
+	ExchangeTypeHeaders = "headers"
+)
 
 var AnonymousExchange = Exchange{
 	Name: "",
