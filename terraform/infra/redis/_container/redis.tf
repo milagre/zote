@@ -164,6 +164,12 @@ resource "kubernetes_stateful_set_v1" "redis" {
       }
     }
   }
+
+  lifecycle {
+    ignore_changes = [
+      spec[0].template[0].metadata[0].annotations["kubectl.kubernetes.io/restartedAt"]
+    ]
+  }
 }
 
 resource "kubernetes_job_v1" "cluster" {

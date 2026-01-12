@@ -367,6 +367,11 @@ resource "kubernetes_stateful_set_v1" "rabbitmq" {
 
     service_name = "${local.name}-headless"
   }
+  lifecycle {
+    ignore_changes = [
+      spec[0].template[0].metadata[0].annotations["kubectl.kubernetes.io/restartedAt"]
+    ]
+  }
 }
 
 resource "kubernetes_service_v1" "client" {
