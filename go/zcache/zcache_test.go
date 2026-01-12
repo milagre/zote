@@ -17,13 +17,14 @@ type testData struct {
 
 // mockCache is a mock implementation of the Cache interface for testing
 type mockCache struct {
-	getError error
-	getData  []byte
-	setError error
-	setCalls []setCalls
+	getError   error
+	getData    map[string][]byte
+	setError   error
+	setCalls   []setCall
+	clearError error
 }
 
-type setCalls struct {
+type setCall struct {
 	namespace  string
 	key        string
 	expiration time.Duration
@@ -46,14 +47,20 @@ func (m *mockCache) Get(ctx context.Context, namespace string, key string) (<-ch
 		return ch, m.getError
 	}
 
-	if m.getData != nil {
-		ch <- m.getData
+	data, ok := m.getData[key]
+	if !ok {
+		return ch, nil
 	}
+
+	if data != nil {
+		ch <- data
+	}
+
 	return ch, nil
 }
 
 func (m *mockCache) Set(ctx context.Context, namespace string, key string, expiration time.Duration, value []byte) error {
-	m.setCalls = append(m.setCalls, setCalls{
+	m.setCalls = append(m.setCalls, setCall{
 		namespace:  namespace,
 		key:        key,
 		expiration: expiration,
@@ -62,10 +69,17 @@ func (m *mockCache) Set(ctx context.Context, namespace string, key string, expir
 	return m.setError
 }
 
+func (m *mockCache) Clear(ctx context.Context, namespace string, key string) error {
+	delete(m.getData, key)
+	return m.clearError
+}
+
 func TestReadThrough_CacheHit(t *testing.T) {
 	ctx := context.Background()
 	cache := &mockCache{
-		getData: []byte("cached-value"),
+		getData: map[string][]byte{
+			"test-key": []byte("cached-value"),
+		},
 	}
 
 	loaderCalled := false
@@ -164,7 +178,9 @@ func TestReadThrough_CacheGetError(t *testing.T) {
 func TestReadThrough_UnmarshalError(t *testing.T) {
 	ctx := context.Background()
 	cache := &mockCache{
-		getData: []byte("invalid-data"),
+		getData: map[string][]byte{
+			"test-key": []byte("invalid-data"),
+		},
 	}
 
 	loaderCalled := false
@@ -343,7 +359,9 @@ func TestReadThrough_MultipleWarnings(t *testing.T) {
 func TestReadThrough_EmptyCacheData(t *testing.T) {
 	ctx := context.Background()
 	cache := &mockCache{
-		getData: []byte(""), // Empty but valid data
+		getData: map[string][]byte{
+			"test-key": []byte(""), // Empty but valid data
+		},
 	}
 
 	loaderCalled := false

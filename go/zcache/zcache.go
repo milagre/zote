@@ -39,6 +39,7 @@ import (
 type Cache interface {
 	Set(ctx context.Context, namespace string, key string, expiration time.Duration, value []byte) error
 	Get(ctx context.Context, namespace string, key string) (<-chan []byte, error)
+	Clear(ctx context.Context, namespace string, key string) error
 }
 
 type (

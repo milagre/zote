@@ -13,6 +13,7 @@ import (
 type RedisClient interface {
 	SetEx(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
 	Get(ctx context.Context, key string) *redis.StringCmd
+	Del(ctx context.Context, key ...string) *redis.IntCmd
 }
 
 type redisCache struct {
@@ -56,6 +57,18 @@ func (c redisCache) Get(ctx context.Context, namespace string, key string) (<-ch
 	}
 
 	return res, nil
+}
+
+func (c redisCache) Clear(ctx context.Context, namespace string, key string) error {
+	err := c.client.Del(
+		ctx,
+		c.attr(namespace, key),
+	).Err()
+	if err != nil {
+		return fmt.Errorf("clearing redis cache entry: %w", err)
+	}
+
+	return nil
 }
 
 func (c redisCache) attr(namespace string, key string) string {
