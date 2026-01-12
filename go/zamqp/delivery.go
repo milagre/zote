@@ -22,11 +22,14 @@ type Delivery interface {
 	ContentEncoding() string
 	Tag() uint64
 	Attempt() int
+	QueueName() string
 
 	Ack(context.Context) error
 	Reject(context.Context) error
 	Retry(context.Context) error
+	RetryWithData(ctx context.Context, content []byte, contentType string) error
 	RetryDelayed(context.Context, time.Duration) error
+	RetryDelayedWithData(ctx context.Context, delay time.Duration, content []byte, contentType string) error
 	Fatal(context.Context) error
 
 	Parse(v interface{}) error
@@ -131,6 +134,10 @@ func (m *delivery) Attempt() int {
 	return attempt(m.Headers())
 }
 
+func (m *delivery) QueueName() string {
+	return m.queueName
+}
+
 func (m *delivery) Ack(ctx context.Context) error {
 	err := m.respond(func() error {
 		return m.delivery.Ack(false)
@@ -158,9 +165,18 @@ func (m *delivery) Reject(ctx context.Context) error {
 }
 
 func (m *delivery) Retry(ctx context.Context) error {
-	// TODO: use `m.requeue` to increment attempt count properly
+	return m.RetryWithData(ctx, m.Body(), m.ContentType())
+}
+
+func (m *delivery) RetryWithData(ctx context.Context, content []byte, contentType string) error {
 	err := m.respond(func() error {
-		return m.delivery.Nack(false, true)
+		return m.requeue(ctx, requeueMessage{
+			data:              content,
+			contentType:       contentType,
+			originalQueueName: m.queueName,
+			headers:           m.Headers(),
+			kind:              "retry",
+		})
 	})
 	if err != nil {
 		return fmt.Errorf("retrying message: %w", err)
@@ -172,10 +188,14 @@ func (m *delivery) Retry(ctx context.Context) error {
 }
 
 func (m *delivery) RetryDelayed(ctx context.Context, delay time.Duration) error {
+	return m.RetryDelayedWithData(ctx, delay, m.Body(), m.ContentType())
+}
+
+func (m *delivery) RetryDelayedWithData(ctx context.Context, delay time.Duration, content []byte, contentType string) error {
 	err := m.respond(func() error {
 		return m.requeue(ctx, requeueMessage{
-			data:              m.Body(),
-			contentType:       m.ContentType(),
+			data:              content,
+			contentType:       contentType,
 			originalQueueName: m.queueName,
 			headers:           m.Headers(),
 			delay:             delay,

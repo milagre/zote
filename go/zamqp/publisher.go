@@ -49,7 +49,7 @@ func (p connPublisher) Publish(ctx context.Context, msg Message) error {
 	defer ch.Close()
 
 	exchange := msg.Exchange()
-	if exchange.Name != AnonymousExchange.Name {
+	if !msg.Options().SkipExchangeDeclaration && exchange.Name != AnonymousExchange.Name {
 		err = ExecuteDeclarations(ch, Declarations{Exchanges: []Exchange{exchange}})
 		if err != nil {
 			return fmt.Errorf("declaring exchange: %w", err)

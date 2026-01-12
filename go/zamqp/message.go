@@ -13,9 +13,10 @@ import (
 
 // MessageOptions are optional pieces of data for publishing a message. An empty object is valid.
 type MessageOptions struct {
-	Compress   bool
-	RoutingKey string
-	Headers    Headers
+	Compress                bool
+	RoutingKey              string
+	Headers                 Headers
+	SkipExchangeDeclaration bool
 }
 
 type Message interface {
