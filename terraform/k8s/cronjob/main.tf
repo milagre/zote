@@ -4,6 +4,10 @@ variable "namespace" {}
 variable "image" {}
 variable "tag" {}
 variable "schedule" {}
+variable "suspend" {
+  type    = bool
+  default = false
+}
 variable "timezone" {
   default = "Etc/UTC"
 }
