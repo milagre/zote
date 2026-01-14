@@ -18,7 +18,7 @@ func NewCORSMiddleware() Middleware {
 
 		headers := resp.Headers()
 		headers.Add("Access-Control-Allow-Origin", "*")
-		headers.Add("Access-Control-Allow-Method", "*")
+		headers.Add("Access-Control-Allow-Methods", "*")
 		headers.Add("Access-Control-Allow-Headers", "*")
 
 		return BasicResponseReader(resp.Status(), headers, resp.Body())
