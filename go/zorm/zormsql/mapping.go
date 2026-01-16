@@ -65,9 +65,20 @@ func (m Mapping) insertFields(requestedFields zorm.Fields) ([]string, []column) 
 	fields := make([]string, 0, len(m.Columns))
 	columns := make([]column, 0, len(m.Columns))
 
-	if len(requestedFields) == 0 {
+	// Get all insertable fields
+	allInsertableFields := make([]string, 0, len(m.Columns))
+	for _, c := range m.Columns {
+		if !c.NoInsert {
+			allInsertableFields = append(allInsertableFields, c.Field)
+		}
+	}
+
+	// Resolve requested fields (handles negation)
+	resolvedFields := requestedFields.Resolve(allInsertableFields)
+
+	for _, f := range resolvedFields {
 		for _, c := range m.Columns {
-			if !c.NoInsert {
+			if f == c.Field && !c.NoInsert {
 				fields = append(fields, c.Field)
 				columns = append(columns, column{
 					table: table{
@@ -77,41 +88,29 @@ func (m Mapping) insertFields(requestedFields zorm.Fields) ([]string, []column) 
 				})
 			}
 		}
-	} else {
-		for _, f := range requestedFields {
-			for _, c := range m.Columns {
-				if f == c.Field && !c.NoInsert {
-					fields = append(fields, c.Field)
-					columns = append(columns, column{
-						table: table{
-							name: m.Table,
-						},
-						name: c.Name,
-					})
-				}
-			}
-		}
 	}
 
 	return fields, columns
 }
 
-func (m Mapping) updateFields(fields zorm.Fields) []string {
+func (m Mapping) updateFields(requestedFields zorm.Fields) []string {
 	result := make([]string, 0, len(m.Columns))
 
-	if len(fields) == 0 {
-		for _, c := range m.Columns {
-			if !c.NoUpdate {
-				result = append(result, c.Field)
-			}
+	// Get all updatable fields
+	allUpdatableFields := make([]string, 0, len(m.Columns))
+	for _, c := range m.Columns {
+		if !c.NoUpdate {
+			allUpdatableFields = append(allUpdatableFields, c.Field)
 		}
-		return result
-	} else {
-		for _, f := range fields {
-			for _, c := range m.Columns {
-				if f == c.Field && !c.NoUpdate {
-					result = append(result, c.Field)
-				}
+	}
+
+	// Resolve requested fields (handles negation)
+	resolvedFields := requestedFields.Resolve(allUpdatableFields)
+
+	for _, f := range resolvedFields {
+		for _, c := range m.Columns {
+			if f == c.Field && !c.NoUpdate {
+				result = append(result, c.Field)
 			}
 		}
 	}
@@ -192,12 +191,11 @@ func (m Mapping) mapField(table table, columnAliasPrefix string, field string) (
 	return column{}, nil, fmt.Errorf("field %s is not mapped", field)
 }
 
-func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, fields []string, relations zorm.Relations) (structure, error) {
+func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, requestedFields zorm.Fields, relations zorm.Relations) (structure, error) {
 	ptrType := reflect.TypeOf(m.PtrType)
 
-	if len(fields) == 0 {
-		fields = m.allFields()
-	}
+	// Resolve requested fields (handles negation)
+	fields := requestedFields.Resolve(m.allFields())
 
 	pkf, err := m.primaryKeyFields()
 	if err != nil {

@@ -44,8 +44,10 @@ import (
 	"github.com/milagre/zote/go/zelement/zsort"
 )
 
-var ErrNotFound = fmt.Errorf("not found")
-var ErrConflict = fmt.Errorf("conflict")
+var (
+	ErrNotFound = fmt.Errorf("not found")
+	ErrConflict = fmt.Errorf("conflict")
+)
 
 type Queryer interface {
 	Find(ctx context.Context, ptrToListOfPtrs any, opts FindOptions) error
@@ -109,6 +111,22 @@ type Relation struct {
 type Fields []string
 
 func (f *Fields) Add(fields ...string) {
+	// If the list is negated, adding a field means removing its exclusion
+	if f.IsNegated() {
+		for _, newField := range fields {
+			negatedField := "-" + newField
+			// Remove the negated version of this field if present
+			for i, currField := range *f {
+				if currField == negatedField {
+					*f = append((*f)[:i], (*f)[i+1:]...)
+					break
+				}
+			}
+		}
+		return
+	}
+
+	// For affirmative fields, add if not already present
 	for _, newField := range fields {
 		found := false
 		for _, currField := range *f {
@@ -121,6 +139,45 @@ func (f *Fields) Add(fields ...string) {
 			*f = append(*f, newField)
 		}
 	}
+}
+
+// IsNegated returns true if the Fields list contains negated fields (fields starting with "-").
+// An empty list is not considered negated.
+func (f Fields) IsNegated() bool {
+	return len(f) > 0 && len(f[0]) > 0 && f[0][0] == '-'
+}
+
+// Resolve returns the effective list of fields based on the Fields configuration:
+//   - If Fields is empty, returns allFields (all fields)
+//   - If Fields contains negated fields (starting with "-"), returns allFields minus the negated fields
+//   - Otherwise, returns the Fields list as-is
+//
+// Negated and affirmative fields are mutually exclusive - mixing them is undefined behavior.
+func (f Fields) Resolve(allFields []string) []string {
+	if len(f) == 0 {
+		return allFields
+	}
+
+	if !f.IsNegated() {
+		return f
+	}
+
+	// Build a set of fields to exclude
+	excluded := make(map[string]bool, len(f))
+	for _, field := range f {
+		if len(field) > 0 && field[0] == '-' {
+			excluded[field[1:]] = true
+		}
+	}
+
+	// Return all fields except the excluded ones
+	result := make([]string, 0, len(allFields))
+	for _, field := range allFields {
+		if !excluded[field] {
+			result = append(result, field)
+		}
+	}
+	return result
 }
 
 func Get[T any](ctx context.Context, repo Queryer, list []*T, opts GetOptions) error {
