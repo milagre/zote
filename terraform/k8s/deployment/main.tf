@@ -127,6 +127,12 @@ output "public_hostname" {
   value = local.public_hostname
 }
 
+output "public_domains" {
+  value = concat([
+    local.public_hostname,
+  ], var.veneers)
+}
+
 output "private_hostname" {
   value = local.private_hostname
 }
