@@ -8,6 +8,6 @@ import (
 )
 
 func makeContext(ctx context.Context) context.Context {
-	ctx = zlog.Context(ctx, zlog.New(zlog.LevelDebug, zlogrus.New(zlog.LevelDebug)))
+	ctx = zlog.Context(ctx, zlog.New(zlog.LevelDebug, zlogrus.New(zlog.LevelDebug, zlog.FormatText)))
 	return ctx
 }

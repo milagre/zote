@@ -36,12 +36,14 @@ func (a boolsAspectType) Apply(c Configurable) {
 	c.AddBool("bool")
 }
 
-var stringsAspect stringsAspectType
-var intsAspect intsAspectType
-var boolsAspect boolsAspectType
+var (
+	stringsAspect stringsAspectType
+	intsAspect    intsAspectType
+	boolsAspect   boolsAspectType
+)
 
 func makeApp(cb func(e Env)) App {
-	var runme = func(_ context.Context, e Env) error { cb(e); return nil }
+	runme := func(_ context.Context, e Env) error { cb(e); return nil }
 	app := NewApp(
 		"runme",
 		"ZOTE",
@@ -62,7 +64,7 @@ func runTest(t *testing.T, wantCrash bool, command string, args []string, env []
 	if os.Getenv("ZOTE_TEST_EXECUTOR") == "1" {
 		ctx := zlog.Context(
 			context.Background(),
-			zlog.New(zlog.LevelInfo, zlogrus.New(zlog.LevelInfo)),
+			zlog.New(zlog.LevelInfo, zlogrus.New(zlog.LevelInfo, zlog.FormatText)),
 		)
 
 		executed := false

@@ -1,19 +1,28 @@
 package zlogrus
 
 import (
+	"time"
+
 	"github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
 	"github.com/milagre/zote/go/zlog"
 )
 
-func New(level zlog.Level) zlog.Destination {
+func New(level zlog.Level, format zlog.Format) zlog.Destination {
 	l := logrus.New()
-	l.Formatter = &prefixed.TextFormatter{
-		//DisableColors:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-		FullTimestamp:   true,
-		ForceFormatting: true,
+	switch format {
+	case zlog.FormatText:
+		l.Formatter = &prefixed.TextFormatter{
+			// DisableColors:   true,
+			TimestampFormat: "2006-01-02 15:04:05",
+			FullTimestamp:   true,
+			ForceFormatting: true,
+		}
+	case zlog.FormatJSON:
+		l.Formatter = &logrus.JSONFormatter{
+			TimestampFormat: time.RFC3339,
+		}
 	}
 	return Wrap(l, level)
 }

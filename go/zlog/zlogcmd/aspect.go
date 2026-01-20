@@ -21,6 +21,18 @@ func NewLog(defaultLevel zlog.Level) Aspect {
 
 func (a Aspect) Apply(c zcmd.Configurable) {
 	c.AddString("log-level").Default("info")
+	c.AddString("log-format").Default("text")
+}
+
+func (a Aspect) LogFormat(e zcmd.Env) zlog.Format {
+	switch strings.ToLower(e.String("log-format")) {
+	default:
+		fallthrough
+	case "text":
+		return zlog.FormatText
+	case "json":
+		return zlog.FormatJSON
+	}
 }
 
 func (a Aspect) LogLevel(e zcmd.Env) zlog.Level {

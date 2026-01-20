@@ -32,6 +32,17 @@ func (l Level) String() string {
 	return "unknown"
 }
 
+type Format string
+
+const (
+	FormatText Format = "text"
+	FormatJSON Format = "json"
+)
+
+func (f Format) String() string {
+	return string(f)
+}
+
 type Logger interface {
 	AddDestination(d Destination)
 
