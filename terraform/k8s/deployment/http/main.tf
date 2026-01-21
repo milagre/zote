@@ -40,7 +40,7 @@ variable "prometheus_monitored" {
 }
 variable "internal" {
   type = object({
-    public_hostname  = string
+    public_hostnames = list(string)
     private_hostname = string
     veneer_hostnames = list(string)
   })

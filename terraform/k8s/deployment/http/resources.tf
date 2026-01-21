@@ -99,15 +99,13 @@ resource "kubernetes_ingress_v1" "private_nginx" {
 
 locals {
   ingress_hostnames = concat(
-    [
-      var.internal.public_hostname,
-    ],
+    var.internal.public_hostnames,
     var.internal.veneer_hostnames,
   )
 }
 
 resource "kubernetes_ingress_v1" "public_nginx" {
-  count = var.internal.public_hostname == null ? 0 : 1
+  count = length(var.internal.public_hostnames) > 0 ? 1 : 0
 
   metadata {
     name      = "${var.name}-nginx-public"
@@ -159,7 +157,7 @@ resource "kubernetes_ingress_v1" "public_nginx" {
 }
 
 resource "kubernetes_ingress_v1" "tunnel" {
-  count = var.env.is_local && var.internal.public_hostname != null ? 1 : 0
+  count = var.env.is_local ? 1 : 0
 
   metadata {
     name      = "${var.name}-tunnel"
@@ -172,19 +170,23 @@ resource "kubernetes_ingress_v1" "tunnel" {
   spec {
     ingress_class_name = "cloudflare-tunnel"
 
-    rule {
-      host = var.internal.public_hostname
+    dynamic "rule" {
+      for_each = var.internal.public_hostnames
 
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
+      content {
+        host = rule.value
 
-          backend {
-            service {
-              name = kubernetes_service_v1.service.metadata[0].name
-              port {
-                number = 80
+        http {
+          path {
+            path      = "/"
+            path_type = "Prefix"
+
+            backend {
+              service {
+                name = kubernetes_service_v1.service.metadata[0].name
+                port {
+                  number = 80
+                }
               }
             }
           }

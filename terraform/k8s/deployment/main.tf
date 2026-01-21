@@ -3,8 +3,9 @@ variable "name" {}
 variable "namespace" {}
 variable "image" {}
 variable "tag" {}
-variable "public_domain" {
-  default = null
+variable "public_domains" {
+  type    = list(string)
+  default = []
 }
 variable "veneers" {
   type    = list(string)
@@ -53,7 +54,6 @@ variable "socket" {
   default = null
 }
 
-
 module "profile" {
   source = "./../../structs/profile"
 
@@ -89,7 +89,7 @@ module "http" {
   setup = var.http
 
   internal = {
-    public_hostname  = local.public_hostname
+    public_hostnames = local.public_hostnames
     private_hostname = local.private_hostname
     veneer_hostnames = var.veneers
   }
@@ -119,18 +119,14 @@ module "proc" {
 }
 
 locals {
-  public_hostname  = var.public_domain != null ? "${var.name}.${var.namespace}.${var.public_domain}" : null
+  public_hostnames = [
+    for domain in var.public_domains : "${var.name}.${var.namespace}.${domain}"
+  ]
   private_hostname = "${var.name}.${var.namespace}.svc.cluster.local"
 }
 
-output "public_hostname" {
-  value = local.public_hostname
-}
-
-output "public_domains" {
-  value = concat([
-    local.public_hostname,
-  ], var.veneers)
+output "public_hostnames" {
+  value = concat(local.public_hostnames, var.veneers)
 }
 
 output "private_hostname" {
