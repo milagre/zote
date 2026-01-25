@@ -74,13 +74,11 @@ type Repository interface {
 
 type PutOptions struct {
 	Include    Include
-	Relations  map[string]Include
 	GetOptions GetOptions
 }
 
 type DeleteOptions struct {
-	Include    Include
-	Relations  map[string]Include
+	// Include    Include // Not yet implemented
 	GetOptions GetOptions
 }
 
@@ -98,6 +96,10 @@ type GetOptions struct {
 type Include struct {
 	Fields    Fields
 	Relations Relations
+}
+
+func (i *Include) IsEmpty() bool {
+	return len(i.Fields) == 0 && len(i.Relations) == 0
 }
 
 type Relations map[string]Relation
@@ -180,18 +182,26 @@ func (f Fields) Resolve(allFields []string) []string {
 	return result
 }
 
+// Get retrieves models by their identifying key values.
+// Returns ErrNotFound if any requested model is not found.
 func Get[T any](ctx context.Context, repo Queryer, list []*T, opts GetOptions) error {
 	return repo.Get(ctx, list, opts)
 }
 
+// Find queries for models matching the given criteria and populates the target slice with results.
+// Use FindOptions to specify fields, relations, filtering (Where), sorting, and pagination.
 func Find[T any](ctx context.Context, repo Queryer, list *[]*T, opts FindOptions) error {
 	return repo.Find(ctx, list, opts)
 }
 
+// Put saves the provided models, creating new records or updating existing ones as appropriate.
+// After the operation, models are refreshed with any generated values.
+// Use Include.Relations to cascade saves to related models.
 func Put[T any](ctx context.Context, repo Queryer, list []*T, opts PutOptions) error {
 	return repo.Put(ctx, list, opts)
 }
 
+// Delete removes the provided models from the repository.
 func Delete[T any](ctx context.Context, repo Queryer, list []*T, opts DeleteOptions) error {
 	return repo.Delete(ctx, list, opts)
 }

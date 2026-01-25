@@ -1,39 +1,104 @@
 package zormsql
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"time"
 
 	"github.com/milagre/zote/go/zfunc"
 	"github.com/milagre/zote/go/zorm"
 	"github.com/milagre/zote/go/zreflect"
 )
 
+// Mapping defines how a Go struct maps to a database table.
+//
+// Example:
+//
+//	var UserMapping = zormsql.Mapping{
+//	    PtrType:    &User{},
+//	    Table:      "users",
+//	    PrimaryKey: []string{"id"},
+//	    UniqueKeys: [][]string{{"email"}},
+//	    Columns: []zormsql.Column{
+//	        {Name: "id", Field: "ID", NoInsert: true, NoUpdate: true},
+//	        {Name: "email", Field: "Email"},
+//	        {Name: "account_id", Field: "AccountID"},
+//	    },
+//	    Relations: []zormsql.Relation{
+//	        {Table: "accounts", Columns: map[string]string{"account_id": "id"}, Field: "Account"},
+//	    },
+//	}
 type Mapping struct {
-	PtrType    interface{}
-	Table      string
+	// PtrType is a pointer to a zero-value instance of the mapped struct (e.g., &User{}).
+	PtrType interface{}
+
+	// Table is the database table name.
+	Table string
+
+	// PrimaryKey lists the column names (not field names) that form the primary key.
 	PrimaryKey []string
+
+	// UniqueKeys lists additional unique constraints, each as a slice of column names.
+	// Used for upsert lookups when the primary key is not populated.
 	UniqueKeys [][]string
-	Columns    []Column
-	Relations  []Relation
+
+	// Columns defines the mapping between database columns and struct fields.
+	Columns []Column
+
+	// Relations defines navigational relationships to other mapped models.
+	Relations []Relation
 
 	repo *Repository
 }
 
+// Column defines the mapping between a single database column and a struct field.
 type Column struct {
-	Name     string
-	Field    string
+	// Name is the database column name.
+	Name string
+
+	// Field is the Go struct field name.
+	Field string
+
+	// NoInsert indicates this column should be excluded from INSERT statements.
+	// Use for auto-generated columns like auto-increment IDs or database-managed timestamps.
 	NoInsert bool
+
+	// NoUpdate indicates this column should be excluded from UPDATE statements.
+	// Use for immutable columns like primary keys or creation timestamps.
 	NoUpdate bool
 }
 
+// Relation defines a navigational relationship from this model to another.
+//
+// The same underlying FK constraint can be defined from both sides:
+//   - Account.Users: accounts.id = users.account_id (one-to-many)
+//   - User.Account: users.account_id = accounts.id (many-to-one)
+//
+// Example (many-to-one, FK on this model):
+//
+//	Relation{
+//	    Table:   "accounts",
+//	    Columns: map[string]string{"account_id": "id"},  // users.account_id = accounts.id
+//	    Field:   "Account",
+//	}
+//
+// Example (one-to-many, FK on related model):
+//
+//	Relation{
+//	    Table:   "users",
+//	    Columns: map[string]string{"id": "account_id"},  // accounts.id = users.account_id
+//	    Field:   "Users",
+//	}
 type Relation struct {
-	Table   string
+	// Table is the related table name.
+	Table string
+
+	// Columns maps this model's column names to the related model's column names.
+	// The map key is a column on this model's table; the value is a column on the related table.
 	Columns map[string]string
-	Field   string
+
+	// Field is the Go struct field name for the relation (pointer for to-one, slice for to-many).
+	Field string
 }
 
 func (m Mapping) relationByField(f string) (Relation, bool) {
@@ -43,6 +108,95 @@ func (m Mapping) relationByField(f string) (Relation, bool) {
 		}
 	}
 	return Relation{}, false
+}
+
+// columnsMatchPrimaryKey checks if the given column names exactly match this mapping's primary key.
+func (m Mapping) columnsMatchPrimaryKey(columnNames []string) bool {
+	if len(columnNames) != len(m.PrimaryKey) {
+		return false
+	}
+	pkSet := make(map[string]bool, len(m.PrimaryKey))
+	for _, pk := range m.PrimaryKey {
+		pkSet[pk] = true
+	}
+	for _, col := range columnNames {
+		if !pkSet[col] {
+			return false
+		}
+	}
+	return true
+}
+
+// foreignKeyIsLocal returns true if the FK column(s) are on this model's table.
+//
+// Example where FK is local (returns true):
+//
+//	User.Account where users.account_id → accounts.id
+//
+// Example where FK is on related model (returns false):
+//
+//	Account.Users where accounts.id ← users.account_id
+func (m Mapping) foreignKeyIsLocal(rel Relation) bool {
+	localCols := make([]string, 0, len(rel.Columns))
+	for localCol := range rel.Columns {
+		localCols = append(localCols, localCol)
+	}
+
+	// If local columns match this model's PK, FK is on the related model
+	return !m.columnsMatchPrimaryKey(localCols)
+}
+
+// categorizeRelationsForPut categorizes relations into "before" and "after" groups
+// based on FK location, determining the order in which related models should be put.
+//
+// Returns:
+//   - beforeRelations: FK is on this model - related models must be put first
+//   - afterRelations: FK is on related model - related models are put after this model
+func (m Mapping) categorizeRelationsForPut(relations zorm.Relations) (beforeRelations, afterRelations []relInfo, err error) {
+	for fieldName, relOpts := range relations {
+		rel, ok := m.relationByField(fieldName)
+		if !ok {
+			return nil, nil, fmt.Errorf("relation %s not found in mapping", fieldName)
+		}
+
+		// Get the related model's mapping
+		structField, ok := reflect.TypeOf(m.PtrType).Elem().FieldByName(fieldName)
+		if !ok {
+			return nil, nil, fmt.Errorf("field %s not found on struct", fieldName)
+		}
+
+		var relatedPtrType reflect.Type
+		if structField.Type.Kind() == reflect.Ptr {
+			relatedPtrType = structField.Type
+		} else if structField.Type.Kind() == reflect.Slice {
+			relatedPtrType = structField.Type.Elem()
+		} else {
+			return nil, nil, fmt.Errorf("relation field %s must be pointer or slice", fieldName)
+		}
+
+		relatedMapping, ok := m.repo.cfg.mappings[zreflect.TypeID(relatedPtrType)]
+		if !ok {
+			return nil, nil, fmt.Errorf("mapping unavailable for related type %s", zreflect.TypeID(relatedPtrType))
+		}
+
+		fkIsLocal := m.foreignKeyIsLocal(rel)
+		info := relInfo{
+			fieldName:      fieldName,
+			relation:       rel,
+			parentMapping:  m,
+			relatedMapping: relatedMapping,
+			fkIsLocal:      fkIsLocal,
+			includeOpts:    relOpts,
+		}
+
+		if fkIsLocal {
+			beforeRelations = append(beforeRelations, info)
+		} else {
+			afterRelations = append(afterRelations, info)
+		}
+	}
+
+	return beforeRelations, afterRelations, nil
 }
 
 func (m Mapping) hasValues(objPtr reflect.Value, fields []string) bool {
@@ -157,35 +311,6 @@ func (m Mapping) keyColumnsCanInsert(columnNames []string) bool {
 	return true
 }
 
-// lookupKey represents a key (primary or unique) that can be used for lookups.
-type lookupKey struct {
-	ColumnNames []string
-	FieldNames  []string
-	Values      []interface{}
-	CanInsert   bool
-	GroupKey    string // JSON-marshaled FieldNames for grouping objects by key type
-	ValuesKey   string // JSON-marshaled Values for mapping results back to objects
-}
-
-func newLookupKey(columnNames, fieldNames []string, values []interface{}, canInsert bool) (lookupKey, error) {
-	groupKey, err := json.Marshal(fieldNames)
-	if err != nil {
-		return lookupKey{}, fmt.Errorf("marshaling field names for group key: %w", err)
-	}
-	valuesKey, err := json.Marshal(values)
-	if err != nil {
-		return lookupKey{}, fmt.Errorf("marshaling values for values key: %w", err)
-	}
-	return lookupKey{
-		ColumnNames: columnNames,
-		FieldNames:  fieldNames,
-		Values:      values,
-		CanInsert:   canInsert,
-		GroupKey:    string(groupKey),
-		ValuesKey:   string(valuesKey),
-	}, nil
-}
-
 // findPopulatedLookupKey finds the first populated key for a given object.
 // It first checks the primary key, then each unique key in order.
 // Returns the key info and whether a key was found.
@@ -223,37 +348,6 @@ func (m Mapping) findPopulatedLookupKey(objPtr reflect.Value) (lookupKey, bool, 
 	}
 
 	return lookupKey{}, false, nil
-}
-
-// createNullableScanTarget creates a nullable scan target (sql.NullString, sql.NullInt64, etc.)
-// for a given field type. This is used for relation columns that might be NULL.
-func createNullableScanTarget(fieldType reflect.Type) interface{} {
-	// Handle pointer types - get the underlying type
-	elemType := fieldType
-	if fieldType.Kind() == reflect.Ptr {
-		elemType = fieldType.Elem()
-	}
-
-	switch elemType.Kind() {
-	case reflect.String:
-		return &sql.NullString{}
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return &sql.NullInt64{}
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		// Use NullInt64 for unsigned integers (may lose precision for very large uint64)
-		return &sql.NullInt64{}
-	case reflect.Float32, reflect.Float64:
-		return &sql.NullFloat64{}
-	case reflect.Bool:
-		return &sql.NullBool{}
-	default:
-		// For time.Time and other types, try to use the pointer type
-		if elemType == reflect.TypeOf(time.Time{}) {
-			return &sql.NullTime{}
-		}
-		// For unknown types, fall back to pointer (may fail on NULL, but that's the current behavior)
-		return reflect.New(fieldType).Interface()
-	}
 }
 
 func (m Mapping) mapField(table table, columnAliasPrefix string, field string) (column, interface{}, error) {
@@ -422,4 +516,76 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, requestedFiel
 		toOneRelations:  toOneRelations,
 		toManyRelations: toManyRelations,
 	}, nil
+}
+
+// lookupKey represents a key (primary or unique) that can be used for lookups.
+type lookupKey struct {
+	ColumnNames []string
+	FieldNames  []string
+	Values      []interface{}
+	CanInsert   bool
+	GroupKey    string // JSON-marshaled FieldNames for grouping objects by key type
+	ValuesKey   string // JSON-marshaled Values for mapping results back to objects
+}
+
+func newLookupKey(columnNames, fieldNames []string, values []interface{}, canInsert bool) (lookupKey, error) {
+	groupKey, err := json.Marshal(fieldNames)
+	if err != nil {
+		return lookupKey{}, fmt.Errorf("marshaling field names for group key: %w", err)
+	}
+	valuesKey, err := json.Marshal(values)
+	if err != nil {
+		return lookupKey{}, fmt.Errorf("marshaling values for values key: %w", err)
+	}
+	return lookupKey{
+		ColumnNames: columnNames,
+		FieldNames:  fieldNames,
+		Values:      values,
+		CanInsert:   canInsert,
+		GroupKey:    string(groupKey),
+		ValuesKey:   string(valuesKey),
+	}, nil
+}
+
+// relInfo holds information about a relation for cascading Put operations.
+type relInfo struct {
+	fieldName      string
+	relation       Relation
+	parentMapping  Mapping
+	relatedMapping Mapping
+	fkIsLocal      bool // true if FK column(s) are on this model's table
+	includeOpts    zorm.Relation
+}
+
+// copyFKValues copies FK field values between parent and related models.
+func (r relInfo) copyFKValues(parentVal, relatedVal reflect.Value) error {
+	for localCol, remoteCol := range r.relation.Columns {
+		localFields, err := r.parentMapping.columnNamesToFields([]string{localCol})
+		if err != nil {
+			return fmt.Errorf("mapping local column %s: %w", localCol, err)
+		}
+		remoteFields, err := r.relatedMapping.columnNamesToFields([]string{remoteCol})
+		if err != nil {
+			return fmt.Errorf("mapping remote column %s: %w", remoteCol, err)
+		}
+
+		localField := parentVal.Elem().FieldByName(localFields[0])
+		remoteField := relatedVal.Elem().FieldByName(remoteFields[0])
+
+		if r.fkIsLocal {
+			// FK is on parent: copy related's PK to parent's FK field
+			// Only copy if related has a value and parent doesn't
+			if !remoteField.IsZero() && localField.IsZero() {
+				localField.Set(remoteField)
+			}
+		} else {
+			// FK is on related: copy parent's PK to related's FK field
+			// Only copy if parent has a value and related doesn't
+			if !localField.IsZero() && remoteField.IsZero() {
+				remoteField.Set(localField)
+			}
+		}
+	}
+
+	return nil
 }

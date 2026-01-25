@@ -290,7 +290,14 @@ func (r *queryer) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions)
 			if !ok {
 				return fmt.Errorf("cannot process get results in find, found unexpected model identified by key: %s", mapKey)
 			}
-			origObj.Elem().Set(findVal.Elem())
+
+			// If specific fields were requested, only copy those fields
+			// Otherwise, replace the entire object
+			if len(findOpts.Include.Fields) > 0 {
+				copyFields(origObj, findVal, findOpts.Include.Fields)
+			} else {
+				origObj.Elem().Set(findVal.Elem())
+			}
 		}
 	}
 
@@ -301,6 +308,45 @@ func (r *queryer) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions)
 	return nil
 }
 
+// put performs an upsert operation on the provided models.
+//
+// # Cascading Relations
+//
+// When opts.Include.Relations specifies relations, those related models will also
+// be Put in the correct order based on foreign key dependencies. FK values are
+// automatically copied between parent and related models after each insert.
+//
+// Relations are navigational - the same FK constraint can be defined from both sides:
+//   - Account.Users: accounts.id = users.account_id (navigate from Account to Users)
+//   - User.Account: users.account_id = accounts.id (navigate from User to Account)
+//
+// The Relation.Columns map defines: localColumn → remoteColumn for the join.
+//
+// # FK Location Detection
+//
+// To determine which table holds the FK, check if local columns are this model's PK:
+//   - If local columns ARE this model's PK → FK is on related model
+//   - If remote columns ARE related model's PK → FK is on this model
+//
+// # Put Ordering
+//
+// Pattern A: FK is on this model (fkIsLocal=true)
+//
+//	Example: User.Account where users.account_id → accounts.id
+//	Put Account first, copy Account.ID to User.AccountID, then Put User
+//
+// Pattern B: FK is on related model (fkIsLocal=false)
+//
+//	Example: Account.Users where accounts.id ← users.account_id
+//	Put Account first, copy Account.ID to each User.AccountID, then Put Users
+//
+// # Limitations
+//
+// Cascading Put does NOT support scenarios requiring two writes to a single record:
+//   - Circular dependencies (A.b_id → B, B.a_id → A) where both FKs are required
+//   - Nullable FK workarounds (insert with NULL, insert related, update FK)
+//
+// These patterns will return an error. Handle them with separate Put calls.
 func (r *queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) error {
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
@@ -322,51 +368,135 @@ func (r *queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions)
 		return fmt.Errorf("mapping primary key for put: %w", err)
 	}
 
+	// Categorize relations by FK location for ordering
+	beforeRelations, afterRelations, err := mapping.categorizeRelationsForPut(opts.Include.Relations)
+	if err != nil {
+		return fmt.Errorf("categorizing relations: %w", err)
+	}
+
 	for i := 0; i < targetVal.Len(); i++ {
 		val := targetVal.Index(i)
 
-		// Find the first populated lookup key (PK first, then unique keys)
-		key, hasKey, err := mapping.findPopulatedLookupKey(val)
-		if err != nil {
-			return fmt.Errorf("finding lookup key: %w", err)
+		// Step 1: Put "before" relations (FK on this model - related must exist first)
+		for _, rel := range beforeRelations {
+			if err := r.putRelatedModels(ctx, val, rel, primaryKeyFields); err != nil {
+				return fmt.Errorf("putting before-relation %s: %w", rel.fieldName, err)
+			}
 		}
 
-		if hasKey {
-			// Try to update using the identified key
-			affected, err := r.update(ctx, mapping, key.FieldNames, val, opts.Include.Fields)
-			if err != nil {
-				return fmt.Errorf("performing update: %w", err)
-			}
+		// Step 2: Put this model
+		if err := r.putSingleModel(ctx, mapping, primaryKeyFields, val, opts.Include.Fields); err != nil {
+			return err
+		}
 
-			if affected == 0 {
-				// Update changed no rows - try insert if key columns allow it
-				if !key.CanInsert {
-					return fmt.Errorf("no rows affected for update and key columns are not insertable: %w", zorm.ErrNotFound)
-				}
-
-				err := r.insert(ctx, mapping, primaryKeyFields, val, opts.Include.Fields)
-				if err != nil {
-					if r.conn.Driver().IsConflictError(err) {
-						err = zorm.ErrConflict
-					}
-					return fmt.Errorf("performing insert after zero-row update: %w", err)
-				}
-			}
-		} else {
-			// No key populated - perform insert
-			err := r.insert(ctx, mapping, primaryKeyFields, val, opts.Include.Fields)
-			if err != nil {
-				if r.conn.Driver().IsConflictError(err) {
-					err = zorm.ErrConflict
-				}
-				return fmt.Errorf("performing insert: %w", err)
+		// Step 3: Put "after" relations (FK on related model - this model must exist first)
+		for _, rel := range afterRelations {
+			if err := r.putRelatedModels(ctx, val, rel, primaryKeyFields); err != nil {
+				return fmt.Errorf("putting after-relation %s: %w", rel.fieldName, err)
 			}
 		}
 	}
 
-	err = r.Get(ctx, listOfPtrs, opts.GetOptions)
+	// Default GetOptions.Include to PutOptions.Include if not specified
+	getOpts := opts.GetOptions
+	if getOpts.Include.IsEmpty() {
+		getOpts.Include = opts.Include
+	}
+
+	err = r.Get(ctx, listOfPtrs, getOpts)
 	if err != nil {
 		return fmt.Errorf("error in get after put: %w", err)
+	}
+
+	return nil
+}
+
+// putSingleModel performs the upsert logic for a single model instance.
+func (r *queryer) putSingleModel(ctx context.Context, mapping Mapping, primaryKeyFields []string, val reflect.Value, fields zorm.Fields) error {
+	// Find the first populated lookup key (PK first, then unique keys)
+	key, hasKey, err := mapping.findPopulatedLookupKey(val)
+	if err != nil {
+		return fmt.Errorf("finding lookup key: %w", err)
+	}
+
+	if hasKey {
+		// Try to update using the identified key
+		affected, err := r.update(ctx, mapping, key.FieldNames, val, fields)
+		if err != nil {
+			return fmt.Errorf("performing update: %w", err)
+		}
+
+		if affected == 0 {
+			// Update changed no rows - try insert if key columns allow it
+			if !key.CanInsert {
+				return fmt.Errorf("no rows affected for update and key columns are not insertable: %w", zorm.ErrNotFound)
+			}
+
+			err := r.insert(ctx, mapping, primaryKeyFields, val, fields)
+			if err != nil {
+				if r.conn.Driver().IsConflictError(err) {
+					err = zorm.ErrConflict
+				}
+				return fmt.Errorf("performing insert after zero-row update: %w", err)
+			}
+		}
+	} else {
+		// No key populated - perform insert
+		err := r.insert(ctx, mapping, primaryKeyFields, val, fields)
+		if err != nil {
+			if r.conn.Driver().IsConflictError(err) {
+				err = zorm.ErrConflict
+			}
+			return fmt.Errorf("performing insert: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// putRelatedModels puts the related models for a given relation field.
+func (r *queryer) putRelatedModels(ctx context.Context, parentVal reflect.Value, rel relInfo, parentPKFields []string) error {
+	fieldVal := parentVal.Elem().FieldByName(rel.fieldName)
+	if !fieldVal.IsValid() || fieldVal.IsZero() {
+		return nil // No related models to put
+	}
+
+	relatedPKFields, err := rel.relatedMapping.primaryKeyFields()
+	if err != nil {
+		return fmt.Errorf("getting related PK fields: %w", err)
+	}
+
+	// Handle both to-one (pointer) and to-many (slice) relations
+	var relatedModels []reflect.Value
+	if fieldVal.Kind() == reflect.Ptr {
+		if !fieldVal.IsNil() {
+			relatedModels = []reflect.Value{fieldVal}
+		}
+	} else if fieldVal.Kind() == reflect.Slice {
+		for j := 0; j < fieldVal.Len(); j++ {
+			relatedModels = append(relatedModels, fieldVal.Index(j))
+		}
+	}
+
+	if len(relatedModels) == 0 {
+		return nil
+	}
+
+	// Copy FK values between parent and related models based on FK location
+	for _, relatedVal := range relatedModels {
+		if err := rel.copyFKValues(parentVal, relatedVal); err != nil {
+			return fmt.Errorf("copying FK values: %w", err)
+		}
+
+		// Put the related model
+		if err := r.putSingleModel(ctx, rel.relatedMapping, relatedPKFields, relatedVal, rel.includeOpts.Include.Fields); err != nil {
+			return fmt.Errorf("putting related model: %w", err)
+		}
+
+		// After putting, copy back any generated values (e.g., auto-increment PKs)
+		if err := rel.copyFKValues(parentVal, relatedVal); err != nil {
+			return fmt.Errorf("copying FK values after put: %w", err)
+		}
 	}
 
 	return nil

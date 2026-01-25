@@ -55,8 +55,8 @@ func TestORM(t *testing.T) {
 
 	zormtest.RunFindTests(t, setup)
 	zormtest.RunGetTests(t, setup)
-
 	zormtest.RunPutTests(t, setup)
+	zormtest.RunDeleteTests(t, setup)
 }
 
 func TestORMNew(t *testing.T) {
