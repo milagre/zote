@@ -6,9 +6,11 @@ CREATE TABLE accounts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	modified DATETIME DEFAULT NULL,
-	company TEXT NOT NULL
+	company TEXT NOT NULL,
+	contact_email TEXT NOT NULL
 );
 
+CREATE UNIQUE INDEX `unq_accounts_company` ON accounts (company);
 
 CREATE TRIGGER accounts_modified_timestamp
 AFTER UPDATE ON accounts
@@ -16,10 +18,10 @@ BEGIN
    UPDATE accounts SET modified = datetime('now') WHERE id = NEW.id;
 END;
 
-INSERT INTO accounts (company) VALUES
-("Acme"),
-("Dunder Mifflin"),
-("Explorers, LLC");
+INSERT INTO accounts (company, contact_email) VALUES
+("Acme", "contact@acme.example"),
+("Dunder Mifflin", "contact@dundermifflin.example"),
+("Explorers, LLC", "dora@explorers.test");
 
 UPDATE accounts SET company="Acme, Inc." where company="Acme";
 

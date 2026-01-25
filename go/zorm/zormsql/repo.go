@@ -208,67 +208,94 @@ func (r *queryer) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions)
 		return fmt.Errorf("mapping unavailable for type %s", typeID)
 	}
 
-	pk, err := mapping.primaryKeyFields()
-	if err != nil {
-		return fmt.Errorf("mapping primary key for get in clause: %w", err)
+	// Group objects by their populated lookup key
+	type keyGroup struct {
+		keyFields []string
+		keys      []lookupKey
+		objMap    map[string]reflect.Value // maps ValuesKey to original object pointers
 	}
+	groups := make(map[string]*keyGroup)
 
-	objMap := reflect.MakeMap(reflect.MapOf(reflect.TypeOf(""), modelPtrType))
-
-	pkValues := make([][]zelement.Element, 0, targetVal.Len())
 	for i := 0; i < targetVal.Len(); i++ {
 		objPtr := targetVal.Index(i)
 
-		fieldValues := extractFields(pk, objPtr)
-		pkID, err := json.Marshal(fieldValues)
+		key, hasKey, err := mapping.findPopulatedLookupKey(objPtr)
 		if err != nil {
-			return fmt.Errorf("rendering primary key values into string key for get query: %w", err)
+			return fmt.Errorf("finding lookup key for get: %w", err)
 		}
 
-		values := zfunc.Map(fieldValues, func(v any) zelement.Element { return zelem.Value(v) })
-		pkValues = append(pkValues, values)
+		if !hasKey {
+			return fmt.Errorf("no populated key found for object at index %d", i)
+		}
 
-		objMap.SetMapIndex(reflect.ValueOf(string(pkID)), objPtr)
+		group, ok := groups[key.GroupKey]
+		if !ok {
+			group = &keyGroup{
+				keyFields: key.FieldNames,
+				keys:      make([]lookupKey, 0),
+				objMap:    make(map[string]reflect.Value),
+			}
+			groups[key.GroupKey] = group
+		}
+
+		group.keys = append(group.keys, key)
+		group.objMap[key.ValuesKey] = objPtr
 	}
 
-	where := zclause.In{
-		Left:  zfunc.Map(pk, func(f string) zelement.Element { return zelem.Field(f) }),
-		Right: pkValues,
-	}
+	totalFound := 0
 
-	findOpts := zorm.FindOptions{
-		Include: opts.Include,
-		Where:   where,
-	}
-	if len(findOpts.Include.Fields) > 0 {
-		findOpts.Include.Fields.Add(pk...)
-	}
+	// Query each group separately
+	for _, group := range groups {
+		keyFields := group.keyFields
 
-	findTarget := zreflect.MakeAddressableSliceOf(modelPtrType, 0, targetVal.Len())
+		// Build IN clause values from pre-computed key values
+		keyValues := make([][]zelement.Element, 0, len(group.keys))
+		for _, key := range group.keys {
+			values := zfunc.Map(key.Values, func(v any) zelement.Element { return zelem.Value(v) })
+			keyValues = append(keyValues, values)
+		}
 
-	err = r.Find(ctx, findTarget.Addr().Interface(), findOpts)
-	if err != nil {
-		return fmt.Errorf("executing find for get: %w", err)
-	}
+		where := zclause.In{
+			Left:  zfunc.Map(keyFields, func(f string) zelement.Element { return zelem.Field(f) }),
+			Right: keyValues,
+		}
 
-	if findTarget.Len() != targetVal.Len() {
-		return fmt.Errorf("expected %d rows found, but only got %d: %w", targetVal.Len(), findTarget.Len(), zorm.ErrNotFound)
-	}
+		findOpts := zorm.FindOptions{
+			Include: opts.Include,
+			Where:   where,
+		}
+		if len(findOpts.Include.Fields) > 0 {
+			findOpts.Include.Fields.Add(keyFields...)
+		}
 
-	for i := 0; i < findTarget.Len(); i++ {
-		findVal := findTarget.Index(i)
-		fieldValues := extractFields(pk, findVal)
-		pkID, err := json.Marshal(fieldValues)
+		findTarget := zreflect.MakeAddressableSliceOf(modelPtrType, 0, len(group.keys))
+
+		err = r.Find(ctx, findTarget.Addr().Interface(), findOpts)
 		if err != nil {
-			return fmt.Errorf("rendering primary key values into string key for get results: %w", err)
+			return fmt.Errorf("executing find for get: %w", err)
 		}
 
-		pkKey := reflect.ValueOf(string(pkID))
-		mapValue := objMap.MapIndex(pkKey)
-		if !mapValue.IsValid() {
-			return fmt.Errorf("cannot process get results in find, found unexpected model identified by primary key: %s", pkID)
+		totalFound += findTarget.Len()
+
+		// Map results back to original objects
+		for i := 0; i < findTarget.Len(); i++ {
+			findVal := findTarget.Index(i)
+			fieldValues := extractFields(keyFields, findVal)
+			mapKey, err := json.Marshal(fieldValues)
+			if err != nil {
+				return fmt.Errorf("rendering key values into string key for get results: %w", err)
+			}
+
+			origObj, ok := group.objMap[string(mapKey)]
+			if !ok {
+				return fmt.Errorf("cannot process get results in find, found unexpected model identified by key: %s", mapKey)
+			}
+			origObj.Elem().Set(findVal.Elem())
 		}
-		mapValue.Elem().Set(findVal.Elem())
+	}
+
+	if totalFound != targetVal.Len() {
+		return fmt.Errorf("expected %d rows found, but only got %d: %w", targetVal.Len(), totalFound, zorm.ErrNotFound)
 	}
 
 	return nil
@@ -277,7 +304,7 @@ func (r *queryer) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions)
 func (r *queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions) error {
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
-		return fmt.Errorf("invalid argument to get: %w", err)
+		return fmt.Errorf("invalid argument to put: %w", err)
 	}
 
 	if reflect.ValueOf(listOfPtrs).Len() == 0 {
@@ -292,18 +319,41 @@ func (r *queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions)
 
 	primaryKeyFields, err := mapping.primaryKeyFields()
 	if err != nil {
-		return fmt.Errorf("mapping primary key for get in clause: %w", err)
+		return fmt.Errorf("mapping primary key for put: %w", err)
 	}
 
 	for i := 0; i < targetVal.Len(); i++ {
 		val := targetVal.Index(i)
-		doUpdate := mapping.hasValues(val, primaryKeyFields)
-		if doUpdate {
-			err := r.update(ctx, mapping, primaryKeyFields, val, opts.Include.Fields)
+
+		// Find the first populated lookup key (PK first, then unique keys)
+		key, hasKey, err := mapping.findPopulatedLookupKey(val)
+		if err != nil {
+			return fmt.Errorf("finding lookup key: %w", err)
+		}
+
+		if hasKey {
+			// Try to update using the identified key
+			affected, err := r.update(ctx, mapping, key.FieldNames, val, opts.Include.Fields)
 			if err != nil {
 				return fmt.Errorf("performing update: %w", err)
 			}
+
+			if affected == 0 {
+				// Update changed no rows - try insert if key columns allow it
+				if !key.CanInsert {
+					return fmt.Errorf("no rows affected for update and key columns are not insertable: %w", zorm.ErrNotFound)
+				}
+
+				err := r.insert(ctx, mapping, primaryKeyFields, val, opts.Include.Fields)
+				if err != nil {
+					if r.conn.Driver().IsConflictError(err) {
+						err = zorm.ErrConflict
+					}
+					return fmt.Errorf("performing insert after zero-row update: %w", err)
+				}
+			}
 		} else {
+			// No key populated - perform insert
 			err := r.insert(ctx, mapping, primaryKeyFields, val, opts.Include.Fields)
 			if err != nil {
 				if r.conn.Driver().IsConflictError(err) {
@@ -457,7 +507,7 @@ func (r *queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 	return nil
 }
 
-func (r *queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value, fields zorm.Fields) error {
+func (r *queryer) update(ctx context.Context, mapping Mapping, keyFields []string, objPtr reflect.Value, fields zorm.Fields) (int, error) {
 	driver := r.conn.Driver()
 	targetTable := table{
 		name: mapping.Table,
@@ -466,7 +516,25 @@ func (r *queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields 
 	fields = mapping.updateFields(fields)
 	structure, err := mapping.mapStructure(targetTable, "", fields, zorm.Relations{})
 	if err != nil {
-		return fmt.Errorf("mapping update columns: %w", err)
+		return 0, fmt.Errorf("mapping update columns: %w", err)
+	}
+
+	// Map key fields to columns
+	keyColumns := make([]column, 0, len(keyFields))
+	for _, kf := range keyFields {
+		for _, c := range mapping.Columns {
+			if c.Field == kf {
+				keyColumns = append(keyColumns, column{
+					table: targetTable,
+					name:  c.Name,
+				})
+				break
+			}
+		}
+	}
+
+	if len(keyColumns) != len(keyFields) {
+		return 0, fmt.Errorf("could not map all key fields to columns")
 	}
 
 	query := fmt.Sprintf(
@@ -485,7 +553,7 @@ func (r *queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields 
 				c.escaped(driver),
 			)
 		}), ", "),
-		strings.Join(zfunc.Map(structure.primaryKey, func(c column) string {
+		strings.Join(zfunc.Map(keyColumns, func(c column) string {
 			return fmt.Sprintf(
 				"%s %s ?",
 				c.escaped(driver),
@@ -494,23 +562,19 @@ func (r *queryer) update(ctx context.Context, mapping Mapping, primaryKeyFields 
 		}), " AND "),
 	)
 
-	values := make([]any, 0, len(fields)+len(primaryKeyFields))
-	for _, f := range append(fields, primaryKeyFields...) {
+	values := make([]any, 0, len(fields)+len(keyFields))
+	for _, f := range append(fields, keyFields...) {
 		values = append(values, objPtr.Elem().FieldByName(f).Interface())
 	}
 
 	affected, _, err := zsql.Exec(ctx, r.conn, query, values)
 	if err != nil {
-		return fmt.Errorf("executing update: %w", err)
+		return 0, fmt.Errorf("executing update: %w", err)
 	}
 
-	if affected == 0 {
-		return fmt.Errorf("no rows affected for %v: %w", values, zorm.ErrNotFound)
+	if affected > 1 {
+		return affected, fmt.Errorf("more than one row (%d) affected by model update query (!!!)", affected)
 	}
 
-	if affected != 1 {
-		return fmt.Errorf("more than one row (%d) affected by model update query (!!!)", affected)
-	}
-
-	return nil
+	return affected, nil
 }

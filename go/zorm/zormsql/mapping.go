@@ -2,6 +2,7 @@ package zormsql
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
@@ -118,22 +119,110 @@ func (m Mapping) updateFields(requestedFields zorm.Fields) []string {
 	return result
 }
 
-func (m Mapping) primaryKeyFields() ([]string, error) {
-	result := make([]string, 0, len(m.PrimaryKey))
-	for _, pkCol := range m.PrimaryKey {
+// columnNamesToFields converts column names to their corresponding struct field names.
+func (m Mapping) columnNamesToFields(columnNames []string) ([]string, error) {
+	result := make([]string, 0, len(columnNames))
+	for _, colName := range columnNames {
 		for _, col := range m.Columns {
-			if pkCol == col.Name {
+			if colName == col.Name {
 				result = append(result, col.Field)
 				break
 			}
 		}
 	}
 
-	if len(result) != len(m.PrimaryKey) {
-		return nil, fmt.Errorf("primary key not fully mapped for %T", m.PtrType)
+	if len(result) != len(columnNames) {
+		return nil, fmt.Errorf("columns not fully mapped for %T", m.PtrType)
 	}
 
 	return result, nil
+}
+
+func (m Mapping) primaryKeyFields() ([]string, error) {
+	return m.columnNamesToFields(m.PrimaryKey)
+}
+
+// keyColumnsCanInsert checks if all columns in a key are insertable (not marked NoInsert).
+func (m Mapping) keyColumnsCanInsert(columnNames []string) bool {
+	for _, keyCol := range columnNames {
+		for _, col := range m.Columns {
+			if keyCol == col.Name {
+				if col.NoInsert {
+					return false
+				}
+				break
+			}
+		}
+	}
+	return true
+}
+
+// lookupKey represents a key (primary or unique) that can be used for lookups.
+type lookupKey struct {
+	ColumnNames []string
+	FieldNames  []string
+	Values      []interface{}
+	CanInsert   bool
+	GroupKey    string // JSON-marshaled FieldNames for grouping objects by key type
+	ValuesKey   string // JSON-marshaled Values for mapping results back to objects
+}
+
+func newLookupKey(columnNames, fieldNames []string, values []interface{}, canInsert bool) (lookupKey, error) {
+	groupKey, err := json.Marshal(fieldNames)
+	if err != nil {
+		return lookupKey{}, fmt.Errorf("marshaling field names for group key: %w", err)
+	}
+	valuesKey, err := json.Marshal(values)
+	if err != nil {
+		return lookupKey{}, fmt.Errorf("marshaling values for values key: %w", err)
+	}
+	return lookupKey{
+		ColumnNames: columnNames,
+		FieldNames:  fieldNames,
+		Values:      values,
+		CanInsert:   canInsert,
+		GroupKey:    string(groupKey),
+		ValuesKey:   string(valuesKey),
+	}, nil
+}
+
+// findPopulatedLookupKey finds the first populated key for a given object.
+// It first checks the primary key, then each unique key in order.
+// Returns the key info and whether a key was found.
+func (m Mapping) findPopulatedLookupKey(objPtr reflect.Value) (lookupKey, bool, error) {
+	// First, check primary key
+	pkFields, err := m.primaryKeyFields()
+	if err != nil {
+		return lookupKey{}, false, fmt.Errorf("getting primary key fields: %w", err)
+	}
+
+	if m.hasValues(objPtr, pkFields) {
+		values := extractFields(pkFields, objPtr)
+		key, err := newLookupKey(m.PrimaryKey, pkFields, values, m.keyColumnsCanInsert(m.PrimaryKey))
+		if err != nil {
+			return lookupKey{}, false, fmt.Errorf("creating primary key lookup: %w", err)
+		}
+		return key, true, nil
+	}
+
+	// Then, check each unique key in order
+	for _, ukCols := range m.UniqueKeys {
+		ukFields, err := m.columnNamesToFields(ukCols)
+		if err != nil {
+			return lookupKey{}, false, fmt.Errorf("getting unique key fields: %w", err)
+		}
+
+		if m.hasValues(objPtr, ukFields) {
+			values := extractFields(ukFields, objPtr)
+			key, err := newLookupKey(ukCols, ukFields, values, m.keyColumnsCanInsert(ukCols))
+			if err != nil {
+				return lookupKey{}, false, fmt.Errorf("creating unique key lookup: %w", err)
+			}
+			return key, true, nil
+		}
+	}
+
+	return lookupKey{}, false, nil
 }
 
 // createNullableScanTarget creates a nullable scan target (sql.NullString, sql.NullInt64, etc.)

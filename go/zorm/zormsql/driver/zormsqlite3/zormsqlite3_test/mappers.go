@@ -11,6 +11,11 @@ var AccountMapping = zormsql.Mapping{
 	PrimaryKey: []string{
 		"id",
 	},
+	UniqueKeys: [][]string{
+		{
+			"company",
+		},
+	},
 	Columns: []zormsql.Column{
 		{
 			Name:     "id",
@@ -33,6 +38,10 @@ var AccountMapping = zormsql.Mapping{
 		{
 			Name:  "company",
 			Field: "Company",
+		},
+		{
+			Name:  "contact_email",
+			Field: "ContactEmail",
 		},
 	},
 	Relations: []zormsql.Relation{

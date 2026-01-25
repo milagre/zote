@@ -20,7 +20,7 @@ func RunPutTests(t *testing.T, setup SetupFunc) {
 			obj := &Account{
 				Company: "NewCo",
 			}
-			err := zorm.Put[Account](ctx, r, []*Account{obj}, zorm.PutOptions{})
+			err := zorm.Put(ctx, r, []*Account{obj}, zorm.PutOptions{})
 			require.NoError(t, err)
 
 			assert.NotZero(t, obj.ID)
@@ -30,21 +30,36 @@ func RunPutTests(t *testing.T, setup SetupFunc) {
 		})
 	})
 
-	t.Run("PutAccountUpdate", func(t *testing.T) {
+	t.Run("PutAccountUpdateUniqueKey", func(t *testing.T) {
 		setup(t, func(ctx context.Context, r zorm.Repository) {
 			ctx = makeContext(ctx)
 
 			obj := &Account{
-				ID:      "1",
-				Company: "Acme, Incorporated",
+				Company:      "Acme, Inc.",
+				ContactEmail: "updated@acme.example",
 			}
-			err := zorm.Put[Account](ctx, r, []*Account{obj}, zorm.PutOptions{})
+			err := zorm.Put(ctx, r, []*Account{obj}, zorm.PutOptions{})
 			require.NoError(t, err)
 
 			assert.NotZero(t, obj.ID)
-			assert.NotNil(t, obj.Created)
 			assert.NotNil(t, obj.Modified)
-			assert.Equal(t, "Acme, Incorporated", obj.Company)
+			assert.Equal(t, "updated@acme.example", obj.ContactEmail)
+		})
+	})
+
+	t.Run("PutAccountInsertByUniqueKey", func(t *testing.T) {
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			obj := &Account{
+				Company:      "NewCo",
+				ContactEmail: "contact@newco.test",
+			}
+			err := zorm.Put(ctx, r, []*Account{obj}, zorm.PutOptions{})
+			require.NoError(t, err)
+
+			assert.NotZero(t, obj.ID)
+			assert.NotZero(t, obj.Created)
 		})
 	})
 
@@ -57,7 +72,7 @@ func RunPutTests(t *testing.T, setup SetupFunc) {
 				FirstName: "Duffy",
 				AccountID: "2",
 			}
-			err := zorm.Put[User](ctx, r, []*User{obj}, zorm.PutOptions{
+			err := zorm.Put(ctx, r, []*User{obj}, zorm.PutOptions{
 				Include: zorm.Include{
 					Fields: zorm.Fields{
 						"FirstName",

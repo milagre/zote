@@ -9,7 +9,8 @@ type Account struct {
 	Created  time.Time
 	Modified *time.Time
 
-	Company string
+	Company      string
+	ContactEmail string
 
 	Users []*User
 }

@@ -22,7 +22,7 @@ func RunFindTests(t *testing.T, setup SetupFunc) {
 			ctx = makeContext(ctx)
 
 			list := make([]*Account, 0, 2)
-			err := zorm.Find[Account](ctx, r, &list, zorm.FindOptions{})
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{})
 			require.NoError(t, err)
 
 			require.Len(t, list, 2)
@@ -47,7 +47,7 @@ func RunFindTests(t *testing.T, setup SetupFunc) {
 			ctx = makeContext(ctx)
 
 			list := make([]*Account, 0, 2)
-			err := zorm.Find[Account](ctx, r, &list, zorm.FindOptions{
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{
 				Include: zorm.Include{
 					Relations: zorm.Relations{
 						"Users": zorm.Relation{
@@ -73,7 +73,7 @@ func RunFindTests(t *testing.T, setup SetupFunc) {
 			ctx = makeContext(ctx)
 
 			list := make([]*User, 0, 10)
-			err := zorm.Find[User](ctx, r, &list, zorm.FindOptions{
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{
 				Include: zorm.Include{
 					Relations: zorm.Relations{
 						"Account": zorm.Relation{},
@@ -111,7 +111,7 @@ func RunFindTests(t *testing.T, setup SetupFunc) {
 			ctx = makeContext(ctx)
 
 			list := make([]*Account, 0, 10)
-			err := zorm.Find[Account](ctx, r, &list, zorm.FindOptions{
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{
 				Where: zelem.Eq(zelem.Field("Users.Address.State"), zelem.Value("PA")),
 			})
 			require.NoError(t, err)
@@ -124,7 +124,7 @@ func RunFindTests(t *testing.T, setup SetupFunc) {
 			ctx = makeContext(ctx)
 
 			list := make([]*Account, 0, 10)
-			err := zorm.Find[Account](ctx, r, &list, zorm.FindOptions{
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{
 				Sort: zelem.Sorts(zelem.Asc(zelem.Field("Users.Address.State"))),
 				Include: zorm.Include{
 					Relations: zorm.Relations{
@@ -163,7 +163,7 @@ func RunFindTests(t *testing.T, setup SetupFunc) {
 			ctx = makeContext(ctx)
 
 			list := make([]*Account, 0, 10)
-			err := zorm.Find[Account](ctx, r, &list, zorm.FindOptions{
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{
 				Where: zelem.Eq(zelem.Field("Users.Address.State"), zelem.Value("PA")),
 				Include: zorm.Include{
 					Relations: zorm.Relations{
@@ -199,7 +199,7 @@ func RunFindTests(t *testing.T, setup SetupFunc) {
 			ctx = makeContext(ctx)
 
 			list := make([]*Account, 0, 10)
-			err := zorm.Find[Account](ctx, r, &list, zorm.FindOptions{
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{
 				Where: zelem.Truthy(
 					zmethod.NewContains(
 						zelem.Field("Users.Address.State"),

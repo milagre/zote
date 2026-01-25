@@ -1,28 +1,44 @@
 package zormtest
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func assertAccount(t *testing.T, accountID string, account *Account) {
+func assertAccountFields(t *testing.T, accountID string, account *Account, fields []string) {
 	assert.Equal(t, accountID, account.ID)
 	assert.NotNil(t, account.Created)
 
+	var expectedFields map[string]string
 	switch accountID {
 	case "1":
-		assert.Equal(t, "Acme, Inc.", account.Company)
-
+		expectedFields = map[string]string{
+			"Company":      "Acme, Inc.",
+			"ContactEmail": "contact@acme.example",
+		}
 	case "2":
-		assert.Equal(t, "Dunder Mifflin", account.Company)
-
+		expectedFields = map[string]string{
+			"Company":      "Dunder Mifflin",
+			"ContactEmail": "contact@dundermifflin.example",
+		}
 	case "3":
-		assert.Equal(t, "Explorers, LLC", account.Company)
-
+		expectedFields = map[string]string{
+			"Company":      "Explorers, LLC",
+			"ContactEmail": "dora@explorers.test",
+		}
 	default:
 		assert.Failf(t, "Unspecified account for account ID %s - no expectations defined", accountID)
 	}
+
+	for _, field := range fields {
+		assert.Equal(t, expectedFields[field], reflect.ValueOf(account).Elem().FieldByName(field).Interface())
+	}
+}
+
+func assertAccount(t *testing.T, accountID string, account *Account) {
+	assertAccountFields(t, accountID, account, []string{"Company", "ContactEmail"})
 }
 
 func assertAddress(t *testing.T, address *UserAddress) {
