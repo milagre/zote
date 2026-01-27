@@ -37,10 +37,6 @@ func (d driver) NullSafeEqualityOperator() string {
 	return "<=>"
 }
 
-func (d driver) EscapeFulltextSearch(search string) string {
-	return `"` + EscapeString(search) + `"`
-}
-
 func (d driver) PrepareMethod(m string) *string {
 	var result *string
 
