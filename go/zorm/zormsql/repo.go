@@ -457,9 +457,6 @@ func (r *queryer) putSingleModel(ctx context.Context, mapping Mapping, primaryKe
 // putRelatedModels puts the related models for a given relation field.
 func (r *queryer) putRelatedModels(ctx context.Context, parentVal reflect.Value, rel relInfo, parentPKFields []string) error {
 	fieldVal := parentVal.Elem().FieldByName(rel.fieldName)
-	if !fieldVal.IsValid() || fieldVal.IsZero() {
-		return nil // No related models to put
-	}
 
 	relatedPKFields, err := rel.relatedMapping.primaryKeyFields()
 	if err != nil {
@@ -468,13 +465,24 @@ func (r *queryer) putRelatedModels(ctx context.Context, parentVal reflect.Value,
 
 	// Handle both to-one (pointer) and to-many (slice) relations
 	var relatedModels []reflect.Value
+	isToMany := false
 	if fieldVal.Kind() == reflect.Ptr {
-		if !fieldVal.IsNil() {
+		if fieldVal.IsValid() && !fieldVal.IsNil() {
 			relatedModels = []reflect.Value{fieldVal}
 		}
 	} else if fieldVal.Kind() == reflect.Slice {
-		for j := 0; j < fieldVal.Len(); j++ {
-			relatedModels = append(relatedModels, fieldVal.Index(j))
+		isToMany = true
+		if fieldVal.IsValid() && !fieldVal.IsNil() {
+			for j := 0; j < fieldVal.Len(); j++ {
+				relatedModels = append(relatedModels, fieldVal.Index(j))
+			}
+		}
+	}
+
+	// For to-many relations, handle orphan deletion
+	if isToMany {
+		if err := r.deleteOrphanedRelatedModels(ctx, parentVal, rel, relatedPKFields, relatedModels); err != nil {
+			return fmt.Errorf("deleting orphaned related models: %w", err)
 		}
 	}
 
@@ -502,13 +510,204 @@ func (r *queryer) putRelatedModels(ctx context.Context, parentVal reflect.Value,
 	return nil
 }
 
+// deleteOrphanedRelatedModels deletes related models that exist in the database
+// but are not in the provided list. For to-many relations, this ensures the
+// database matches exactly what's provided (respecting any Where filter).
+func (r *queryer) deleteOrphanedRelatedModels(
+	ctx context.Context,
+	parentVal reflect.Value,
+	rel relInfo,
+	relatedPKFields []string,
+	providedModels []reflect.Value,
+) error {
+	// Build the FK constraint: find all related rows for this parent
+	// For to-many relations, fkIsLocal is false, so FK is on the related model
+	// rel.relation.Columns maps parent column -> related column (e.g., "id" -> "user_id")
+	fkWhereClause, err := r.buildFKWhereClause(parentVal, rel)
+	if err != nil {
+		return fmt.Errorf("building FK where clause: %w", err)
+	}
+
+	// Combine FK constraint with optional relation Where filter
+	var combinedWhere zclause.Clause
+	if rel.includeOpts.Where != nil {
+		combinedWhere = zelem.And(fkWhereClause, rel.includeOpts.Where)
+	} else {
+		combinedWhere = fkWhereClause
+	}
+
+	// Find existing related models matching the combined WHERE
+	existingModels, err := r.findRelatedModels(ctx, rel.relatedMapping, combinedWhere)
+	if err != nil {
+		return fmt.Errorf("finding existing related models: %w", err)
+	}
+
+	if len(existingModels) == 0 {
+		return nil // Nothing to delete
+	}
+
+	// Build set of provided PKs (after setting FK values so they're populated)
+	providedPKs := make(map[string]bool)
+	for _, model := range providedModels {
+		// Copy FK values to ensure the model has the parent's FK
+		if err := rel.copyFKValues(parentVal, model); err != nil {
+			return fmt.Errorf("copying FK values for PK extraction: %w", err)
+		}
+		pk := extractPKString(model, relatedPKFields)
+		if pk != "" {
+			providedPKs[pk] = true
+		}
+	}
+
+	// Find orphans: existing models not in provided set
+	var orphans []reflect.Value
+	for _, existing := range existingModels {
+		pk := extractPKString(existing, relatedPKFields)
+		if pk != "" && !providedPKs[pk] {
+			orphans = append(orphans, existing)
+		}
+	}
+
+	// Delete orphans
+	if _, err := r.deleteByPK(ctx, rel.relatedMapping, relatedPKFields, orphans); err != nil {
+		return fmt.Errorf("deleting orphaned models: %w", err)
+	}
+
+	return nil
+}
+
+// buildFKWhereClause builds a WHERE clause for the FK constraint.
+func (r *queryer) buildFKWhereClause(parentVal reflect.Value, rel relInfo) (zclause.Clause, error) {
+	// For to-many relations (fkIsLocal=false), the FK is on the related model
+	// rel.relation.Columns maps parent column name -> related column name
+	// We need to find the related field name for the FK column
+	for localCol, remoteCol := range rel.relation.Columns {
+		// Get the parent field value (the PK)
+		localFields, err := rel.parentMapping.columnNamesToFields([]string{localCol})
+		if err != nil {
+			return nil, fmt.Errorf("mapping local column %s: %w", localCol, err)
+		}
+		parentPKValue := parentVal.Elem().FieldByName(localFields[0]).Interface()
+
+		// Get the related field name for the FK
+		remoteFields, err := rel.relatedMapping.columnNamesToFields([]string{remoteCol})
+		if err != nil {
+			return nil, fmt.Errorf("mapping remote column %s: %w", remoteCol, err)
+		}
+
+		// Build WHERE clause: relatedFK = parentPK
+		return zelem.Eq(zelem.Field(remoteFields[0]), zelem.Value(parentPKValue)), nil
+	}
+
+	return nil, fmt.Errorf("no FK columns found in relation")
+}
+
+// findRelatedModels finds models of the given type matching the WHERE clause.
+func (r *queryer) findRelatedModels(ctx context.Context, mapping Mapping, where zclause.Clause) ([]reflect.Value, error) {
+	// Create a slice to hold results
+	sliceType := reflect.SliceOf(reflect.TypeOf(mapping.PtrType))
+	resultSlice := reflect.MakeSlice(sliceType, 0, 10)
+	resultPtr := reflect.New(sliceType)
+	resultPtr.Elem().Set(resultSlice)
+
+	// Find using the mapping's model type
+	err := r.find(ctx, resultPtr.Interface(), zorm.FindOptions{
+		Where: where,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("finding related models: %w", err)
+	}
+
+	// Convert result to []reflect.Value
+	resultSlice = resultPtr.Elem()
+	result := make([]reflect.Value, resultSlice.Len())
+	for i := 0; i < resultSlice.Len(); i++ {
+		result[i] = resultSlice.Index(i)
+	}
+
+	return result, nil
+}
+
+// extractPKString extracts a string representation of the PK for comparison.
+func extractPKString(model reflect.Value, pkFields []string) string {
+	if model.Kind() == reflect.Ptr {
+		if model.IsNil() {
+			return ""
+		}
+		model = model.Elem()
+	}
+
+	var parts []string
+	for _, field := range pkFields {
+		val := model.FieldByName(field)
+		if !val.IsValid() || val.IsZero() {
+			return "" // PK not set, can't identify
+		}
+		parts = append(parts, fmt.Sprintf("%v", val.Interface()))
+	}
+	return strings.Join(parts, "|")
+}
+
+// deleteByPK deletes models by their primary keys. Returns the number of rows deleted.
+func (r *queryer) deleteByPK(ctx context.Context, mapping Mapping, pkFields []string, models []reflect.Value) (int, error) {
+	if len(models) == 0 {
+		return 0, nil
+	}
+
+	driver := r.conn.Driver()
+	targetTable := table{name: mapping.Table}
+
+	// Build PK column names
+	pkStructure, err := mapping.mapStructure(targetTable, "", pkFields, zorm.Relations{})
+	if err != nil {
+		return 0, fmt.Errorf("mapping PK columns: %w", err)
+	}
+
+	whereCols := make([]string, 0, len(pkStructure.columns))
+	for _, col := range pkStructure.columns {
+		whereCols = append(whereCols, col.escaped(driver))
+	}
+
+	// Collect all PK values
+	values := make([]interface{}, 0, len(models)*len(pkFields))
+	for _, model := range models {
+		if model.Kind() == reflect.Ptr {
+			model = model.Elem()
+		}
+		for _, field := range pkFields {
+			values = append(values, model.FieldByName(field).Interface())
+		}
+	}
+
+	// Build DELETE query
+	query := fmt.Sprintf(
+		"DELETE FROM %s WHERE (%s) IN (%s)",
+		targetTable.escaped(driver),
+		strings.Join(whereCols, ","),
+		strings.Join(
+			zfunc.MakeSlice(
+				"("+strings.Join(zfunc.MakeSlice("?", len(pkFields)), ",")+")",
+				len(models),
+			),
+			",",
+		),
+	)
+
+	count, _, err := zsql.Exec(ctx, r.conn, query, values)
+	if err != nil {
+		return 0, fmt.Errorf("executing delete: %w", err)
+	}
+
+	return count, nil
+}
+
 func (r *queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOptions) error {
 	targetVal, modelPtrType, err := validateListOfPtr(listOfPtrs)
 	if err != nil {
 		return fmt.Errorf("invalid argument to delete: %w", err)
 	}
 
-	if reflect.ValueOf(listOfPtrs).Len() == 0 {
+	if targetVal.Len() == 0 {
 		return nil
 	}
 
@@ -518,20 +717,9 @@ func (r *queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 		return fmt.Errorf("mapping unavailable for type %s", typeID)
 	}
 
-	driver := r.conn.Driver()
-
-	targetTable := table{
-		name: mapping.Table,
-	}
-
 	primaryKeyFields, err := mapping.primaryKeyFields()
 	if err != nil {
-		return fmt.Errorf("mapping primary key for delete in clause: %w", err)
-	}
-
-	primaryKeyStructure, err := mapping.mapStructure(targetTable, "", primaryKeyFields, zorm.Relations{})
-	if err != nil {
-		return fmt.Errorf("mapping primary key columns for delete: %w", err)
+		return fmt.Errorf("mapping primary key for delete: %w", err)
 	}
 
 	err = r.Get(ctx, listOfPtrs, opts.GetOptions)
@@ -539,45 +727,19 @@ func (r *queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 		return fmt.Errorf("error in get before delete: %w", err)
 	}
 
-	values := make([]interface{}, 0, targetVal.Len()*len(primaryKeyFields))
+	// Convert to []reflect.Value for deleteByPK
+	models := make([]reflect.Value, targetVal.Len())
 	for i := 0; i < targetVal.Len(); i++ {
-		val := targetVal.Index(i)
-
-		primaryKeyValue := make([]interface{}, 0, len(primaryKeyFields))
-		for _, f := range primaryKeyFields {
-			primaryKeyValue = append(primaryKeyValue, val.Elem().FieldByName(f).Interface())
-		}
-
-		values = append(values, primaryKeyValue...)
+		models[i] = targetVal.Index(i)
 	}
 
-	whereCols := make([]string, 0, len(primaryKeyStructure.columns))
-	for _, col := range primaryKeyStructure.columns {
-		whereCols = append(whereCols, col.escaped(driver))
-	}
-
-	query := fmt.Sprintf(
-		"DELETE FROM %s WHERE (%s) IN (%s)",
-		targetTable.escaped(driver),
-		strings.Join(whereCols, ","),
-		strings.Join(
-			zfunc.MakeSlice(
-				"("+strings.Join(zfunc.MakeSlice("?", len(primaryKeyFields)), ",")+")",
-				targetVal.Len(),
-			),
-			",",
-		),
-	)
-
-	// fmt.Printf("Q: %s\nV: %s", query, values)
-
-	count, _, err := zsql.Exec(ctx, r.conn, query, values)
+	count, err := r.deleteByPK(ctx, mapping, primaryKeyFields, models)
 	if err != nil {
-		return fmt.Errorf("executing delete: %w", err)
+		return fmt.Errorf("deleting models: %w", err)
 	}
 
 	if count != targetVal.Len() {
-		return fmt.Errorf("expected %d rows affected, but only got %d: %w", count, targetVal.Len(), zorm.ErrNotFound)
+		return fmt.Errorf("expected %d rows affected, but only got %d: %w", targetVal.Len(), count, zorm.ErrNotFound)
 	}
 
 	return nil
