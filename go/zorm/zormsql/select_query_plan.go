@@ -528,6 +528,16 @@ func (plan selectQueryPlan) loadStructure(structure structure, offset int, v ref
 				panic("invalid relation in select query plan structure")
 			}
 
+			// Check for NULL primary key before processing relation
+			relPrimaryKeyOffset := offset
+			relPrimaryKeyTarget := plan.target[relPrimaryKeyOffset : relPrimaryKeyOffset+len(rel.structure.primaryKeyTarget)]
+
+			if isPrimaryKeyNull(relPrimaryKeyTarget) {
+				// Skip loading null relation and advance offset past all relation columns (including nested relations)
+				offset += len(rel.structure.fullTarget())
+				continue
+			}
+
 			if f.IsNil() {
 				t, _ := v.Type().FieldByName(name)
 				f.Set(zreflect.MakeAddressableSliceOf(t.Type.Elem(), 0, 1))
