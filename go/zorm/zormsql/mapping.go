@@ -495,6 +495,9 @@ func (m Mapping) mapStructure(tbl table, columnAliasPrefix string, requestedFiel
 					},
 				}
 			}),
+			onWhere:        rel.Where,
+			sort:           rel.Sort,
+			relatedMapping: &otherMapping,
 		}
 
 		relationList = append(relationList, f)

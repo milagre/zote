@@ -2,6 +2,7 @@ package zormtest
 
 import (
 	"context"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -209,6 +210,134 @@ func RunFindTests(t *testing.T, setup SetupFunc) {
 			})
 			require.NoError(t, err)
 			require.Equal(t, len(list), 1, "Should have exactly 1 account")
+		})
+	})
+
+	// Tests for relation-level Where and Sort
+
+	t.Run("FindUserFilteredRelation", func(t *testing.T) {
+		// Tests filtering a to-many relation using Where on the Relation.
+		// User 1 has auths: password, oauth2
+		// User 2 has auths: password, passkey
+		// When filtering for provider="password", each user should only have their password auth.
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			list := make([]*User, 0, 10)
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{
+				Include: zorm.Include{
+					Relations: zorm.Relations{
+						"Auths": zorm.Relation{
+							Where: zelem.Eq(zelem.Field("Provider"), zelem.Value("password")),
+						},
+					},
+				},
+			})
+			require.NoError(t, err)
+			require.GreaterOrEqual(t, len(list), 2, "Should have at least 2 users")
+
+			foundUser1 := false
+			for _, user := range list {
+				for _, auth := range user.Auths {
+					assert.Equal(
+						t,
+						"password",
+						auth.Provider,
+						"User %s auth %s should have provider=password, got %s",
+						user.ID,
+						auth.ID,
+						auth.Provider,
+					)
+				}
+
+				if user.ID == "1" {
+					foundUser1 = true
+					assert.Len(t, user.Auths, 1, "User 1 should have exactly 1 auth (password only)")
+				}
+			}
+
+			assert.True(t, foundUser1, "User 1 should be in results")
+		})
+	})
+
+	t.Run("FindUserSortedRelation", func(t *testing.T) {
+		// Tests sorting a to-many relation using Sort on the Relation.
+		// User 1 has auths: password (id=1), oauth2 (id=2)
+		// When sorted by Provider ASC, oauth2 should come before password.
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			list := make([]*User, 0, 10)
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{
+				Include: zorm.Include{
+					Relations: zorm.Relations{
+						"Auths": zorm.Relation{
+							Sort: zelem.Sorts(zelem.Asc(zelem.Field("Provider"))),
+						},
+					},
+				},
+			})
+			require.NoError(t, err)
+			require.GreaterOrEqual(t, len(list), 2, "Should have at least 2 users")
+
+			// Find user 1 and verify auth order
+			foundUser1 := false
+			for _, user := range list {
+				if user.ID == "1" {
+					foundUser1 = true
+					require.Len(t, user.Auths, 2, "User 1 should have 2 auths")
+					assert.True(t, sort.SliceIsSorted(
+						user.Auths,
+						func(i, j int) bool { return user.Auths[i].Provider < user.Auths[j].Provider },
+					), "User auths should be sorted by provider ASC")
+					break
+				}
+			}
+
+			assert.True(t, foundUser1, "User 1 should be in results")
+		})
+	})
+
+	t.Run("FindUserFilteredAndSortedRelation", func(t *testing.T) {
+		// Tests combining Where and Sort on a to-many relation.
+		// Get users with auths where provider contains 'pass' (password, passkey), sorted by provider DESC.
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			list := make([]*User, 0, 10)
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{
+				Include: zorm.Include{
+					Relations: zorm.Relations{
+						"Auths": zorm.Relation{
+							Where: zelem.Truthy(
+								zmethod.NewContains(
+									zelem.Field("Provider"),
+									zelem.Value("pass"),
+								),
+							),
+							Sort: zelem.Sorts(zelem.Desc(zelem.Field("Provider"))),
+						},
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			foundUser2 := false
+			for _, user := range list {
+				// Find user 2 who has password and passkey
+				if user.ID == "2" {
+					foundUser2 = true
+					require.NotNil(t, user, "User 2 should be in results")
+					require.Len(t, user.Auths, 2, "User 2 should have 2 auths matching 'pass'")
+
+					assert.True(t, sort.SliceIsSorted(
+						user.Auths,
+						func(i, j int) bool { return user.Auths[i].Provider > user.Auths[j].Provider },
+					), "User auths should be sorted by provider DESC")
+					break
+				}
+			}
+			assert.True(t, foundUser2, "User 2 should be in results")
 		})
 	})
 }

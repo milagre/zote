@@ -2,6 +2,7 @@ package zormtest
 
 import (
 	"context"
+	"sort"
 	"testing"
 	"time"
 
@@ -175,7 +176,7 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 				Include: zorm.Include{
 					Relations: zorm.Relations{
 						"Auths": zorm.Relation{
-							Sort: zelem.Sorts(zelem.Asc(zelem.Field("ID"))),
+							Sort: zelem.Sorts(zelem.Desc(zelem.Field("ID"))),
 						},
 					},
 				},
@@ -186,7 +187,35 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 
 			if assert.NotNil(t, obj.Auths) {
 				require.Equal(t, 2, len(obj.Auths))
+				assert.True(t, sort.SliceIsSorted(
+					obj.Auths,
+					func(i, j int) bool { return obj.Auths[i].ID > obj.Auths[j].ID },
+				), "User auths should be sorted by ID DESC")
 			}
+		})
+	})
+
+	t.Run("GetUserFilteredRelation", func(t *testing.T) {
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			obj := &User{
+				ID: "1",
+			}
+			err := zorm.Get(ctx, r, []*User{obj}, zorm.GetOptions{
+				Include: zorm.Include{
+					Relations: zorm.Relations{
+						"Auths": zorm.Relation{
+							Where: zelem.Eq(zelem.Field("Provider"), zelem.Value("password")),
+						},
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			require.NotNil(t, obj.Auths)
+			require.Equal(t, 1, len(obj.Auths))
+			assertUserAuth(t, obj.ID, obj.Auths[0])
 		})
 	})
 

@@ -2,6 +2,7 @@ package zormsql
 
 import (
 	"github.com/milagre/zote/go/zelement/zclause"
+	"github.com/milagre/zote/go/zelement/zsort"
 	"github.com/milagre/zote/go/zsql"
 )
 
@@ -49,6 +50,10 @@ type join struct {
 	rightTable table
 	onPairs    [][2]column
 	onWhere    zclause.Clause
+
+	// Rendered WHERE clause and values for relation filtering
+	onWhereSQL    string
+	onWhereValues []interface{}
 }
 
 type structure struct {
@@ -105,7 +110,9 @@ func (s structure) getRelation(name string) (joinStructure, bool) {
 }
 
 type joinStructure struct {
-	onPairs   [][2]column
-	onWhere   zclause.Clause
-	structure structure
+	onPairs        [][2]column
+	onWhere        zclause.Clause
+	sort           []zsort.Sort
+	structure      structure
+	relatedMapping *Mapping // Pointer to the related model's mapping for WHERE/Sort resolution
 }

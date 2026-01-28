@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/milagre/zote/go/zelement/zsort"
 )
 
 // copyFields copies only the specified fields from src to dst.
@@ -99,4 +101,46 @@ func createNullableScanTarget(fieldType reflect.Type) interface{} {
 		// For unknown types, fall back to pointer (may fail on NULL, but that's the current behavior)
 		return reflect.New(fieldType).Interface()
 	}
+}
+
+// sortRelations sorts to-many relation slices in memory based on their Sort configuration.
+func sortRelations(obj reflect.Value, s structure) error {
+	for _, name := range s.relations {
+		rel, ok := s.toManyRelations[name]
+		if !ok {
+			// to-one relation, check for nested relations
+			if rel, ok = s.toOneRelations[name]; ok {
+				field := obj.FieldByName(name)
+				if !field.IsNil() {
+					if err := sortRelations(field.Elem(), rel.structure); err != nil {
+						return fmt.Errorf("sorting nested relation %s: %w", name, err)
+					}
+				}
+			}
+			continue
+		}
+
+		field := obj.FieldByName(name)
+		if field.IsNil() || field.Len() == 0 {
+			continue
+		}
+
+		// Sort if Sort is configured
+		if len(rel.sort) > 0 {
+			if err := zsort.ApplyToValue(field, rel.sort); err != nil {
+				return fmt.Errorf("sorting relation %s: %w", name, err)
+			}
+		}
+
+		// Recurse into nested relations
+		for i := 0; i < field.Len(); i++ {
+			elem := field.Index(i)
+			if elem.Kind() == reflect.Ptr && !elem.IsNil() {
+				if err := sortRelations(elem.Elem(), rel.structure); err != nil {
+					return fmt.Errorf("sorting nested relation %s[%d]: %w", name, i, err)
+				}
+			}
+		}
+	}
+	return nil
 }

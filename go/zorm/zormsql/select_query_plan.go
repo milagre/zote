@@ -187,11 +187,30 @@ func buildSelectQueryPlan(r *queryer, mapping Mapping, fields []string, relation
 				return fmt.Errorf("%s", f)
 			}
 
-			outerJoins = append(outerJoins, join{
+			j := join{
 				leftTable:  tbl,
 				rightTable: rel.structure.table,
 				onPairs:    rel.onPairs,
-			})
+				onWhere:    rel.onWhere,
+			}
+
+			// Render relation WHERE clause if present
+			if rel.onWhere != nil && rel.relatedMapping != nil {
+				visitor := &whereVisitor{
+					driver:  r.conn.Driver(),
+					table:   rel.structure.table,
+					mapping: *rel.relatedMapping,
+					cfg:     r.cfg,
+				}
+				w, v, err := visitor.Visit(rel.onWhere)
+				if err != nil {
+					return fmt.Errorf("visiting relation where for %s: %w", f, err)
+				}
+				j.onWhereSQL = w
+				j.onWhereValues = v
+			}
+
+			outerJoins = append(outerJoins, j)
 
 			err := visit(rel.structure.table, rel.structure)
 			if err != nil {
@@ -330,6 +349,14 @@ func (plan selectQueryPlan) process(targetList reflect.Value, rows *sql.Rows) er
 			count++
 			targetList.SetLen(count)
 			targetList.Index(count - 1).Set(obj.Addr())
+		}
+	}
+
+	// Post-process: sort to-many relations in memory
+	for i := 0; i < targetList.Len(); i++ {
+		obj := targetList.Index(i).Elem()
+		if err := sortRelations(obj, plan.structure); err != nil {
+			return fmt.Errorf("sorting relations: %w", err)
 		}
 	}
 
@@ -628,29 +655,35 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 		},
 	), " ")
 
+	var outerJoinWhereValues []interface{}
 	outerJoins := strings.Join(zfunc.Map(
 		plan.outerJoins,
 		func(j join) string {
+			onConditions := zfunc.Map(j.onPairs, func(cols [2]column) string {
+				return fmt.Sprintf(
+					"%s=%s",
+					driver.EscapeTableColumn(
+						cols[0].table.alias,
+						cols[0].name,
+					),
+					driver.EscapeTableColumn(
+						cols[1].table.alias,
+						cols[1].name,
+					),
+				)
+			})
+
+			// Add relation WHERE clause to JOIN ON condition if present
+			if j.onWhereSQL != "" {
+				onConditions = append(onConditions, j.onWhereSQL)
+				outerJoinWhereValues = append(outerJoinWhereValues, j.onWhereValues...)
+			}
+
 			return fmt.Sprintf(
 				`LEFT OUTER JOIN %s AS %s ON (%s)`,
 				driver.EscapeTable(j.rightTable.name),
 				driver.EscapeTable(j.rightTable.alias),
-				strings.Join(
-					zfunc.Map(j.onPairs, func(cols [2]column) string {
-						return fmt.Sprintf(
-							"%s=%s",
-							driver.EscapeTableColumn(
-								cols[0].table.alias,
-								cols[0].name,
-							),
-							driver.EscapeTableColumn(
-								cols[1].table.alias,
-								cols[1].name,
-							),
-						)
-					}),
-					" AND ",
-				),
+				strings.Join(onConditions, " AND "),
 			)
 		},
 	), " ")
@@ -692,6 +725,7 @@ func (plan selectQueryPlan) query(driver zsql.Driver) (string, []interface{}) {
 	))
 
 	values := append(plan.whereValues, plan.orderValues...)
+	values = append(values, outerJoinWhereValues...)
 
 	return result, values
 }
