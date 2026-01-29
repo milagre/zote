@@ -94,6 +94,24 @@ func RunGetTests(t *testing.T, setup SetupFunc) {
 		})
 	})
 
+	t.Run("GetUserAuthByCompositeUniqueKey", func(t *testing.T) {
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			obj := &UserAuth{
+				UserID:   "1",
+				Provider: "password",
+			}
+			err := zorm.Get(ctx, r, []*UserAuth{obj}, zorm.GetOptions{})
+			require.NoError(t, err)
+
+			assert.Equal(t, "1", obj.ID)
+			assert.Equal(t, "1", obj.UserID)
+			assert.Equal(t, "password", obj.Provider)
+			assert.Equal(t, "P@ssw0rd!", obj.Data)
+		})
+	})
+
 	t.Run("GetUser", func(t *testing.T) {
 		setup(t, func(ctx context.Context, r zorm.Repository) {
 			ctx = makeContext(ctx)

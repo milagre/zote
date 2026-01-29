@@ -99,6 +99,8 @@ CREATE TABLE user_auths (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE UNIQUE INDEX `unq_user_auths_user_provider` ON user_auths (user_id, provider);
+
 CREATE TRIGGER user_auths_modified_timestamp
 AFTER UPDATE ON user_auths
 BEGIN

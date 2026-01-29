@@ -165,6 +165,9 @@ var UserAuthMapping = zormsql.Mapping{
 	PrimaryKey: []string{
 		"id",
 	},
+	UniqueKeys: [][]string{
+		{"user_id", "provider"},
+	},
 	Columns: []zormsql.Column{
 		{
 			Name:     "id",

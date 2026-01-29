@@ -121,10 +121,13 @@ func (v *whereVisitor) VisitIn(c zclause.In) error {
 
 	v.result += "("
 
-	for _, left := range c.Left {
+	for i, left := range c.Left {
 		err := left.Accept(v)
 		if err != nil {
 			return fmt.Errorf("visiting left side of in clause: %w", err)
+		}
+		if i != len(c.Left)-1 {
+			v.result += ","
 		}
 	}
 
