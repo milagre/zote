@@ -91,6 +91,7 @@ type FindOptions struct {
 
 type GetOptions struct {
 	Include Include
+	Where   zclause.Clause
 }
 
 type Include struct {

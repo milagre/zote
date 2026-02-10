@@ -255,14 +255,19 @@ func (r *queryer) get(ctx context.Context, listOfPtrs any, opts zorm.GetOptions)
 			keyValues = append(keyValues, values)
 		}
 
-		where := zclause.In{
+		keyWhere := zclause.In{
 			Left:  zfunc.Map(keyFields, func(f string) zelement.Element { return zelem.Field(f) }),
 			Right: keyValues,
 		}
 
+		var combinedWhere zclause.Clause = keyWhere
+		if opts.Where != nil {
+			combinedWhere = zelem.And(keyWhere, opts.Where)
+		}
+
 		findOpts := zorm.FindOptions{
 			Include: opts.Include,
-			Where:   where,
+			Where:   combinedWhere,
 		}
 		if len(findOpts.Include.Fields) > 0 {
 			findOpts.Include.Fields.Add(keyFields...)
