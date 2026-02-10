@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func FindAll[T any](ctx context.Context, repo Repository, pageSize int, opts FindOptions, cb func(*T) error) error {
+func FindAll[T any](ctx context.Context, repo Queryer, pageSize int, opts FindOptions, cb func(*T) error) error {
 	list := make([]*T, 0, pageSize)
 	opts.Offset = 0
 	page := 0
