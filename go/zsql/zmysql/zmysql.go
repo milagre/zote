@@ -56,6 +56,18 @@ func (d driver) PrepareMethod(m string) *string {
 	return result
 }
 
+func (d driver) SupportsInsertReturning() bool {
+	return false
+}
+
+func (d driver) PositionalPlaceholders() bool {
+	return false
+}
+
+func (d driver) LastIDReturnsFirstRow() bool {
+	return true
+}
+
 func (d driver) IsConflictError(err error) bool {
 	var mysqlErr *mysql.MySQLError
 	return errors.As(err, &mysqlErr) && mysqlErr.Number == 1062

@@ -91,6 +91,15 @@ type Driver interface {
 	PrepareMethod(m string) *string
 
 	IsConflictError(error) bool
+
+	// SupportsInsertReturning is true for drivers (e.g. PostgreSQL) support
+	// `INSERT ... RETURNING` statements to get generated IDs.
+	SupportsInsertReturning() bool
+	// PositionalPlaceholders is true when the driver uses $1, $2, ... instead of ?.
+	PositionalPlaceholders() bool
+	// LastIDReturnsFirstRow is true when LastInsertId() returns the first row's ID for a multi-row INSERT.
+	// i.e. MySQL returns the first row; SQLite returns the last row.
+	LastIDReturnsFirstRow() bool
 }
 
 type HasDriver interface {
@@ -243,13 +252,13 @@ func Begin(ctx context.Context, db Transactor, cb func(context.Context, Transact
 
 type (
 	ScanFunc      func(dest ...any) error
-	QueryCallback func(ScanFunc) error
+	QueryCallback func(ScanFunc, int) error
 )
 
-func Query(ctx context.Context, db Queryer, cb QueryCallback, query string, args []any) (bool, error) {
+func Query(ctx context.Context, db Queryer, cb QueryCallback, query string, args []any) (int, error) {
 	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
-		return false, fmt.Errorf("executing query: %w", err)
+		return 0, fmt.Errorf("executing query: %w", err)
 	}
 
 	defer func() {
@@ -258,16 +267,16 @@ func Query(ctx context.Context, db Queryer, cb QueryCallback, query string, args
 		}
 	}()
 
-	found := false
+	found := 0
 	for rows.Next() {
-		found = true
-		if err = cb(rows.Scan); err != nil {
-			return false, fmt.Errorf("scanning row: %w", err)
+		if err = cb(rows.Scan, found); err != nil {
+			return 0, fmt.Errorf("scanning row: %w", err)
 		}
+		found++
 	}
 
 	if err = rows.Err(); err != nil {
-		return false, fmt.Errorf("processing rows: %w", err)
+		return 0, fmt.Errorf("processing rows: %w", err)
 	}
 
 	return found, err

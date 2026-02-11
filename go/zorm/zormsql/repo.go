@@ -379,22 +379,24 @@ func (r *queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions)
 		return fmt.Errorf("categorizing relations: %w", err)
 	}
 
+	// Step 1: Put "before" relations for each item
 	for i := 0; i < targetVal.Len(); i++ {
 		val := targetVal.Index(i)
-
-		// Step 1: Put "before" relations (FK on this model - related must exist first)
 		for _, rel := range beforeRelations {
 			if err := r.putRelatedModels(ctx, val, rel, primaryKeyFields); err != nil {
 				return fmt.Errorf("putting before-relation %s: %w", rel.fieldName, err)
 			}
 		}
+	}
 
-		// Step 2: Put this model
-		if err := r.putSingleModel(ctx, mapping, primaryKeyFields, val, opts.Include.Fields); err != nil {
-			return err
-		}
+	// Step 2: Put each model (batch insert when possible, else insert/update per model)
+	if err := r.putModels(ctx, mapping, primaryKeyFields, targetVal, opts.Include.Fields); err != nil {
+		return fmt.Errorf("putting models: %w", err)
+	}
 
-		// Step 3: Put "after" relations (FK on related model - this model must exist first)
+	// Step 3: Put "after" relations for each item
+	for i := 0; i < targetVal.Len(); i++ {
+		val := targetVal.Index(i)
 		for _, rel := range afterRelations {
 			if err := r.putRelatedModels(ctx, val, rel, primaryKeyFields); err != nil {
 				return fmt.Errorf("putting after-relation %s: %w", rel.fieldName, err)
@@ -411,6 +413,52 @@ func (r *queryer) put(ctx context.Context, listOfPtrs any, opts zorm.PutOptions)
 	err = r.Get(ctx, listOfPtrs, getOpts)
 	if err != nil {
 		return fmt.Errorf("error in get after put: %w", err)
+	}
+
+	return nil
+}
+
+// putModels puts a slice of models: batch-inserts insert-only rows when the mapping
+// allows it, then runs putSingleModel for each row that needs an update or single insert.
+func (r *queryer) putModels(ctx context.Context, mapping Mapping, primaryKeyFields []string, sliceOfPtrs reflect.Value, fields zorm.Fields) error {
+	n := sliceOfPtrs.Len()
+	if n == 0 {
+		return nil
+	}
+	canBatchInsert := mapping.hasSingleNoInsertPrimaryKey()
+
+	var batchedModels reflect.Value
+	var unbatchedModels []reflect.Value
+	if canBatchInsert {
+		batchedModels = reflect.MakeSlice(sliceOfPtrs.Type(), 0, n)
+		for i := 0; i < n; i++ {
+			val := sliceOfPtrs.Index(i)
+			_, hasKey, err := mapping.findPopulatedLookupKey(val)
+			if err != nil {
+				return fmt.Errorf("finding lookup key for batch check: %w", err)
+			}
+			if !hasKey {
+				batchedModels = reflect.Append(batchedModels, val)
+			} else {
+				unbatchedModels = append(unbatchedModels, val)
+			}
+		}
+	} else {
+		for i := 0; i < n; i++ {
+			unbatchedModels = append(unbatchedModels, sliceOfPtrs.Index(i))
+		}
+	}
+
+	if canBatchInsert && batchedModels.Len() > 0 {
+		if err := r.insertBatch(ctx, mapping, primaryKeyFields, batchedModels, fields); err != nil {
+			return fmt.Errorf("batch insert: %w", err)
+		}
+	}
+
+	for _, val := range unbatchedModels {
+		if err := r.putSingleModel(ctx, mapping, primaryKeyFields, val, fields); err != nil {
+			return fmt.Errorf("putting model: %w", err)
+		}
 	}
 
 	return nil
@@ -495,18 +543,27 @@ func (r *queryer) putRelatedModels(ctx context.Context, parentVal reflect.Value,
 		return nil
 	}
 
-	// Copy FK values between parent and related models based on FK location
+	// Copy FK values from parent to all related before any put
 	for _, relatedVal := range relatedModels {
 		if err := rel.copyFKValues(parentVal, relatedVal); err != nil {
 			return fmt.Errorf("copying FK values: %w", err)
 		}
+	}
 
-		// Put the related model
-		if err := r.putSingleModel(ctx, rel.relatedMapping, relatedPKFields, relatedVal, rel.includeOpts.Include.Fields); err != nil {
-			return fmt.Errorf("putting related model: %w", err)
-		}
+	// Build a slice reflect.Value for putModels (to-many: use fieldVal; to-one: slice of one)
+	var sliceVal reflect.Value
+	if isToMany {
+		sliceVal = fieldVal
+	} else {
+		sliceVal = reflect.MakeSlice(reflect.SliceOf(fieldVal.Type()), 1, 1)
+		sliceVal.Index(0).Set(fieldVal)
+	}
+	if err := r.putModels(ctx, rel.relatedMapping, relatedPKFields, sliceVal, rel.includeOpts.Include.Fields); err != nil {
+		return fmt.Errorf("putting related models: %w", err)
+	}
 
-		// After putting, copy back any generated values (e.g., auto-increment PKs)
+	// After putting, copy back any generated values (e.g., auto-increment PKs)
+	for _, relatedVal := range relatedModels {
 		if err := rel.copyFKValues(parentVal, relatedVal); err != nil {
 			return fmt.Errorf("copying FK values after put: %w", err)
 		}
@@ -750,6 +807,30 @@ func (r *queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 	return nil
 }
 
+// buildBatchInsertPlaceholders returns the VALUES placeholder clause for n rows
+// and cols columns. If usePositional is true, returns ($1,...,$c),($c+1,...).
+// Otherwise returns (?,...,?)
+func buildBatchInsertPlaceholders(rows, cols int, usePositional bool) string {
+	if rows == 0 || cols == 0 {
+		return ""
+	}
+
+	rowParts := make([]string, rows)
+	for i := 0; i < rows; i++ {
+		if usePositional {
+			placeholders := make([]string, cols)
+			for j := 0; j < cols; j++ {
+				placeholders[j] = fmt.Sprintf("$%d", i*cols+j+1)
+			}
+			rowParts[i] = "(" + strings.Join(placeholders, ",") + ")"
+		} else {
+			rowParts[i] = "(" + strings.Join(zfunc.MakeSlice("?", cols), ",") + ")"
+		}
+	}
+
+	return strings.Join(rowParts, ",")
+}
+
 func (r *queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value, fields zorm.Fields) error {
 	targetTable := table{
 		name: mapping.Table,
@@ -798,6 +879,106 @@ func (r *queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 			field.Set(idVal)
 		} else {
 			return fmt.Errorf("cannot populate primary key field that isn't int or string type: %v", field.Type())
+		}
+	}
+
+	return nil
+}
+
+// insertBatch inserts multiple rows in one statement and backfills generated
+// PKs. May use multi-row INSERT and LastInsertId(), or multi-row INSERT ...
+// RETURNING primary key column, depending on driver options, to retrieve insert IDs.
+func (r *queryer) insertBatch(ctx context.Context, mapping Mapping, primaryKeyFields []string, sliceOfPtrs reflect.Value, fields zorm.Fields) error {
+	n := sliceOfPtrs.Len()
+	if n == 0 {
+		return nil
+	}
+
+	singlePK := len(primaryKeyFields) == 1 && len(mapping.PrimaryKey) == 1
+	var pkFieldName string
+	if singlePK {
+		pkFieldName = primaryKeyFields[0]
+	}
+
+	driver := r.conn.Driver()
+	useReturning := driver.SupportsInsertReturning()
+	usePositional := driver.PositionalPlaceholders()
+	targetTable := table{name: mapping.Table}
+
+	fields, columns := mapping.insertFields(fields)
+	queryColumns := make([]string, 0, len(columns))
+	for _, col := range columns {
+		queryColumns = append(queryColumns, col.escaped(driver))
+	}
+
+	cols := len(queryColumns)
+	valuesPlaceholders := buildBatchInsertPlaceholders(n, cols, usePositional)
+
+	returningClause := ""
+	if useReturning && singlePK {
+		pkCol := column{table: targetTable, name: mapping.PrimaryKey[0]}
+		returningClause = " RETURNING " + pkCol.escaped(driver)
+	}
+
+	query := fmt.Sprintf(
+		`INSERT INTO %s (%s) VALUES %s%s`,
+		targetTable.escaped(driver),
+		strings.Join(queryColumns, ","),
+		valuesPlaceholders,
+		returningClause,
+	)
+
+	values := make([]interface{}, 0, n*cols)
+	for i := 0; i < n; i++ {
+		objPtr := sliceOfPtrs.Index(i)
+		for _, f := range fields {
+			values = append(values, objPtr.Elem().FieldByName(f).Interface())
+		}
+	}
+
+	if useReturning && returningClause != "" {
+		// Query path: INSERT ... RETURNING pk; run as Query and scan IDs from result set.
+		foundRows, err := zsql.Query(ctx, r.conn, func(scan zsql.ScanFunc, i int) error {
+			objPtr := sliceOfPtrs.Index(i)
+
+			field := objPtr.Elem().FieldByName(pkFieldName)
+			if !zreflect.IsInt(field.Type()) && !zreflect.IsString(field.Type()) {
+				return fmt.Errorf("cannot populate primary key field that isn't int or string type: %v", field.Type())
+			}
+			if err := scan(field.Addr().Interface()); err != nil {
+				return fmt.Errorf("scanning RETURNING id: %w", err)
+			}
+
+			return nil
+		}, query, values)
+		if err != nil {
+			return fmt.Errorf("batch insert: %w", err)
+		}
+		if foundRows != n {
+			return fmt.Errorf("batch insert RETURNING: expected %d rows, got %d", n, foundRows)
+		}
+	} else {
+		// Exec path: multi-row INSERT; use LastInsertId and driver semantics to backfill IDs.
+		_, lastID, err := zsql.Exec(ctx, r.conn, query, values)
+		if err != nil {
+			return fmt.Errorf("executing batch insert: %w", err)
+		}
+		if singlePK && lastID != 0 {
+			firstID := lastID
+			if !driver.LastIDReturnsFirstRow() {
+				firstID = lastID - int64(n) + 1
+			}
+
+			for i := 0; i < n; i++ {
+				objPtr := sliceOfPtrs.Index(i)
+				field := objPtr.Elem().FieldByName(pkFieldName)
+				id := firstID + int64(i)
+				if zreflect.IsInt(field.Type()) {
+					field.Set(reflect.ValueOf(id).Convert(field.Type()))
+				} else if zreflect.IsString(field.Type()) {
+					field.SetString(fmt.Sprintf("%d", id))
+				}
+			}
 		}
 	}
 

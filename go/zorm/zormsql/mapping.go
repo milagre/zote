@@ -296,6 +296,23 @@ func (m Mapping) primaryKeyFields() ([]string, error) {
 	return m.columnNamesToFields(m.PrimaryKey)
 }
 
+// hasSingleNoInsertPrimaryKey returns true when the primary key is exactly one
+// column and that column is marked NoInsert (e.g. auto-increment). Batch insert
+// can only backfill IDs in that case.
+func (m Mapping) hasSingleNoInsertPrimaryKey() bool {
+	if len(m.PrimaryKey) != 1 {
+		return false
+	}
+
+	for _, c := range m.Columns {
+		if c.Name == m.PrimaryKey[0] && c.NoInsert {
+			return true
+		}
+	}
+
+	return false
+}
+
 // keyColumnsCanInsert checks if all columns in a key are insertable (not marked NoInsert).
 func (m Mapping) keyColumnsCanInsert(columnNames []string) bool {
 	for _, keyCol := range columnNames {
