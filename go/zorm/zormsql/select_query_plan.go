@@ -385,8 +385,21 @@ func convertNullableValue(nullableVal interface{}, targetType reflect.Type) (ref
 		strVal := reflect.ValueOf(v.String)
 		if targetType.Kind() == reflect.Ptr {
 			ptrVal := reflect.New(targetType.Elem())
-			ptrVal.Elem().Set(strVal)
+			elemType := targetType.Elem()
+			if strVal.Type().AssignableTo(elemType) {
+				ptrVal.Elem().Set(strVal)
+			} else if strVal.Type().ConvertibleTo(elemType) {
+				ptrVal.Elem().Set(strVal.Convert(elemType))
+			} else {
+				ptrVal.Elem().Set(strVal)
+			}
 			return ptrVal, true
+		}
+		if strVal.Type().AssignableTo(targetType) {
+			return strVal, true
+		}
+		if strVal.Type().ConvertibleTo(targetType) {
+			return strVal.Convert(targetType), true
 		}
 		return strVal, true
 	case sql.NullInt64:
@@ -462,8 +475,19 @@ func convertNullableValue(nullableVal interface{}, targetType reflect.Type) (ref
 			return val.Addr(), true
 		}
 		if val.Kind() == reflect.Ptr {
-			return val.Elem(), true
+			val = val.Elem()
 		}
+
+		// []byte from driver for string column: normalize to string so we can assign/convert to string or custom string types
+		if val.Kind() == reflect.Slice && val.Type().Elem().Kind() == reflect.Uint8 {
+			val = reflect.ValueOf(string(val.Bytes()))
+		}
+
+		// Convert when possible to support type aliases (e.g. type SomeEnum string)
+		if val.Type().ConvertibleTo(targetType) {
+			val = val.Convert(targetType)
+		}
+
 		return val, true
 	}
 }
