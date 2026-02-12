@@ -857,7 +857,7 @@ func (r *queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 
 	values := make([]interface{}, 0, len(fields))
 	for _, f := range fields {
-		values = append(values, objPtr.Elem().FieldByName(f).Interface())
+		values = append(values, fieldValueForSQL(objPtr.Elem().FieldByName(f)))
 	}
 
 	// fmt.Printf("Q: %s\nV: %s", query, plan.values)
@@ -932,7 +932,7 @@ func (r *queryer) insertBatch(ctx context.Context, mapping Mapping, primaryKeyFi
 	for i := 0; i < n; i++ {
 		objPtr := sliceOfPtrs.Index(i)
 		for _, f := range fields {
-			values = append(values, objPtr.Elem().FieldByName(f).Interface())
+			values = append(values, fieldValueForSQL(objPtr.Elem().FieldByName(f)))
 		}
 	}
 
@@ -1042,7 +1042,7 @@ func (r *queryer) update(ctx context.Context, mapping Mapping, keyFields []strin
 
 	values := make([]any, 0, len(fields)+len(keyFields))
 	for _, f := range append(fields, keyFields...) {
-		values = append(values, objPtr.Elem().FieldByName(f).Interface())
+		values = append(values, fieldValueForSQL(objPtr.Elem().FieldByName(f)))
 	}
 
 	affected, _, err := zsql.Exec(ctx, r.conn, query, values)

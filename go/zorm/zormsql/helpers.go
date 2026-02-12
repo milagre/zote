@@ -2,12 +2,15 @@ package zormsql
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"reflect"
 	"time"
 
 	"github.com/milagre/zote/go/zelement/zsort"
 )
+
+var valuerType = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
 
 // copyFields copies only the specified fields from src to dst.
 func copyFields(dst, src reflect.Value, fields []string) {
@@ -28,6 +31,20 @@ func extractFields(fields []string, objPtr reflect.Value) []interface{} {
 		values = append(values, objPtr.Elem().FieldByName(f).Interface())
 	}
 	return values
+}
+
+// fieldValueForSQL returns the interface{} value to pass as a SQL parameter for the given
+// struct field. If the field's value type does not implement driver.Valuer but its pointer
+// type does (i.e. Valuer is defined on a pointer receiver), and the field is addressable,
+// the pointer is returned so that database/sql can invoke the Value() method.
+func fieldValueForSQL(field reflect.Value) interface{} {
+	v := field.Interface()
+
+	if _, ok := v.(driver.Valuer); !ok && field.CanAddr() && reflect.PointerTo(field.Type()).Implements(valuerType) {
+		return field.Addr().Interface()
+	}
+
+	return v
 }
 
 func validateListOfPtr(listOfPtrs any) (reflect.Value, reflect.Type, error) {
