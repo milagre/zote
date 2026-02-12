@@ -22,6 +22,11 @@ func ScanJSON[T any](ptr *T, value interface{}) error {
 		return nil
 	}
 
+	// Reset before unmarshal so map types start fresh (json.Unmarshal merges
+	// into existing maps rather than replacing them, which causes key
+	// accumulation when the scan target is reused across rows).
+	*ptr = *new(T)
+
 	var bytes []byte
 	switch v := value.(type) {
 	case []uint8:
