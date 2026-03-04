@@ -91,7 +91,7 @@ func RunPutTests(t *testing.T, setup SetupFunc) {
 
 	// Cascading Put tests
 
-	t.Run("PutUserWithNewAccount", func(t *testing.T) {
+	t.Run("PutNewSingleRelation", func(t *testing.T) {
 		// Tests cascading put where FK is local (account_id on users table).
 		// Account should be inserted FIRST, then its generated ID copied to User.
 		setup(t, func(ctx context.Context, r zorm.Repository) {
@@ -124,7 +124,7 @@ func RunPutTests(t *testing.T, setup SetupFunc) {
 		})
 	})
 
-	t.Run("PutAccountWithNewUsers", func(t *testing.T) {
+	t.Run("PutNewToManyRelation", func(t *testing.T) {
 		// Tests cascading put of to-many relation where FK is remote.
 		// Account should be inserted FIRST, then Users get Account's ID.
 		setup(t, func(ctx context.Context, r zorm.Repository) {
@@ -155,6 +155,68 @@ func RunPutTests(t *testing.T, setup SetupFunc) {
 				assert.NotZero(t, user.ID)
 				assert.Equal(t, obj.ID, user.AccountID)
 			}
+		})
+	})
+
+	t.Run("PutNestedRelations", func(t *testing.T) {
+		// Tests nested cascading put: Account -> Users -> Auths (3 levels).
+		// Account is inserted first, Users get Account's ID, Auths get User's ID.
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			obj := &Account{
+				Company: "NestedCascadeCo",
+				Users: []*User{
+					{
+						FirstName: "NestedUser1",
+						Auths: []*UserAuth{
+							{Provider: "password", Data: "hash1"},
+							{Provider: "oauth2", Data: "token1"},
+						},
+					},
+					{
+						FirstName: "NestedUser2",
+						Auths: []*UserAuth{
+							{Provider: "sso", Data: "sso-data"},
+						},
+					},
+				},
+			}
+			err := zorm.Put(ctx, r, []*Account{obj}, zorm.PutOptions{
+				Include: zorm.Include{
+					Relations: zorm.Relations{
+						"Users": zorm.Relation{
+							Include: zorm.Include{
+								Relations: zorm.Relations{
+									"Auths": zorm.Relation{},
+								},
+							},
+						},
+					},
+				},
+			})
+			require.NoError(t, err)
+
+			assert.NotZero(t, obj.ID)
+			require.Len(t, obj.Users, 2)
+
+			for _, user := range obj.Users {
+				assert.NotZero(t, user.ID)
+				assert.Equal(t, obj.ID, user.AccountID)
+			}
+
+			user1 := obj.Users[0]
+			require.Len(t, user1.Auths, 2, "User1 should have 2 auths")
+			for _, auth := range user1.Auths {
+				assert.NotZero(t, auth.ID, "Auth should have generated ID")
+				assert.Equal(t, user1.ID, auth.UserID, "Auth should reference its user")
+			}
+
+			user2 := obj.Users[1]
+			require.Len(t, user2.Auths, 1, "User2 should have 1 auth")
+			assert.NotZero(t, user2.Auths[0].ID)
+			assert.Equal(t, user2.ID, user2.Auths[0].UserID)
+			assert.Equal(t, "sso", user2.Auths[0].Provider)
 		})
 	})
 

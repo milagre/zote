@@ -550,7 +550,7 @@ func (r *queryer) putRelatedModels(ctx context.Context, parentVal reflect.Value,
 		}
 	}
 
-	// Build a slice reflect.Value for putModels (to-many: use fieldVal; to-one: slice of one)
+	// Build a slice for put (to-many: use fieldVal; to-one: slice of one)
 	var sliceVal reflect.Value
 	if isToMany {
 		sliceVal = fieldVal
@@ -558,7 +558,9 @@ func (r *queryer) putRelatedModels(ctx context.Context, parentVal reflect.Value,
 		sliceVal = reflect.MakeSlice(reflect.SliceOf(fieldVal.Type()), 1, 1)
 		sliceVal.Index(0).Set(fieldVal)
 	}
-	if err := r.putModels(ctx, rel.relatedMapping, relatedPKFields, sliceVal, rel.includeOpts.Include.Fields); err != nil {
+	if err := r.put(ctx, sliceVal.Interface(), zorm.PutOptions{
+		Include: rel.includeOpts.Include,
+	}); err != nil {
 		return fmt.Errorf("putting related models: %w", err)
 	}
 
