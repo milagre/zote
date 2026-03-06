@@ -68,6 +68,10 @@ func (d driver) LastIDReturnsFirstRow() bool {
 	return true
 }
 
+func (d driver) EmptyInsertSuffix() string {
+	return "() VALUES ()"
+}
+
 func (d driver) IsConflictError(err error) bool {
 	var mysqlErr *mysql.MySQLError
 	return errors.As(err, &mysqlErr) && mysqlErr.Number == 1062

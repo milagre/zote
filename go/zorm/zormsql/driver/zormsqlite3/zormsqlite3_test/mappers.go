@@ -210,3 +210,19 @@ var UserAuthMapping = zormsql.Mapping{
 		},
 	},
 }
+
+var IDsOnlyMapping = zormsql.Mapping{
+	PtrType: &zormtest.IDsOnly{},
+	Table:   "ids_only",
+	PrimaryKey: []string{
+		"id",
+	},
+	Columns: []zormsql.Column{
+		{
+			Name:     "id",
+			Field:    "ID",
+			NoInsert: true,
+			NoUpdate: true,
+		},
+	},
+}

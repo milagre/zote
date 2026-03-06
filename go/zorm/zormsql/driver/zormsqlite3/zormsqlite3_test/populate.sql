@@ -112,3 +112,11 @@ INSERT INTO user_auths (user_id, provider, data) SELECT id, 'oauth2', '{"token":
 
 INSERT INTO user_auths (user_id, provider, data) SELECT id, 'password', 't0tally_S3CURE!' FROM users WHERE first_name='Dwight';
 INSERT INTO user_auths (user_id, provider, data) SELECT id, 'passkey', '{"secret":"5678"}' FROM users WHERE first_name='Dwight';
+
+CREATE TABLE ids_only (
+	id INTEGER PRIMARY KEY AUTOINCREMENT
+);
+
+INSERT INTO ids_only (id) VALUES (1);
+INSERT INTO ids_only (id) VALUES (2);
+INSERT INTO ids_only (id) VALUES (3);

@@ -38,7 +38,7 @@ func setup(t *testing.T, cb func(context.Context, zorm.Repository)) {
 	require.NoError(t, err, "opening database")
 	defer conn.Close()
 
-	//repoConn := conn
+	// repoConn := conn
 	repoConn := zsql.LoggingTransactor{Transactor: conn}
 
 	repo := zormsql.NewRepository("test.db", repoConn)
@@ -46,6 +46,7 @@ func setup(t *testing.T, cb func(context.Context, zorm.Repository)) {
 	repo.AddMapping(UserMapping)
 	repo.AddMapping(UserAuthMapping)
 	repo.AddMapping(UserAddressMapping)
+	repo.AddMapping(IDsOnlyMapping)
 
 	cb(context.Background(), repo)
 }

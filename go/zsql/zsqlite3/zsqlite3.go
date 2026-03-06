@@ -67,6 +67,10 @@ func (d driver) LastIDReturnsFirstRow() bool {
 	return false
 }
 
+func (d driver) EmptyInsertSuffix() string {
+	return "DEFAULT VALUES"
+}
+
 func (d driver) IsConflictError(err error) bool {
 	var sqliteErr *sqlite.Error
 	return errors.As(err, &sqliteErr) && sqliteErr.Code() == sqlite3.SQLITE_CONSTRAINT

@@ -95,11 +95,17 @@ type Driver interface {
 	// SupportsInsertReturning is true for drivers (e.g. PostgreSQL) support
 	// `INSERT ... RETURNING` statements to get generated IDs.
 	SupportsInsertReturning() bool
+
 	// PositionalPlaceholders is true when the driver uses $1, $2, ... instead of ?.
 	PositionalPlaceholders() bool
+
 	// LastIDReturnsFirstRow is true when LastInsertId() returns the first row's ID for a multi-row INSERT.
 	// i.e. MySQL returns the first row; SQLite returns the last row.
 	LastIDReturnsFirstRow() bool
+
+	// EmptyInsertSuffix returns the clause after "INSERT INTO table " for inserting one row with no columns
+	// (all values DB-generated). SQLite: "DEFAULT VALUES"; MySQL: "() VALUES ()".
+	EmptyInsertSuffix() string
 }
 
 type HasDriver interface {

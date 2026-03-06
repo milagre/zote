@@ -811,10 +811,11 @@ func (r *queryer) delete(ctx context.Context, listOfPtrs any, opts zorm.DeleteOp
 
 // buildBatchInsertPlaceholders returns the VALUES placeholder clause for n rows
 // and cols columns. If usePositional is true, returns ($1,...,$c),($c+1,...).
-// Otherwise returns (?,...,?)
-func buildBatchInsertPlaceholders(rows, cols int, usePositional bool) string {
-	if rows == 0 || cols == 0 {
-		return ""
+// Otherwise returns (?,...,?). rows and cols must be positive (empty insert is
+// handled in insertBatch via driver.EmptyInsertSuffix and per-row inserts).
+func buildBatchInsertPlaceholders(rows, cols int, usePositional bool) (string, error) {
+	if rows <= 0 || cols <= 0 {
+		return "", fmt.Errorf("buildBatchInsertPlaceholders requires rows>0 and cols>0, got rows=%d cols=%d", rows, cols)
 	}
 
 	rowParts := make([]string, rows)
@@ -830,36 +831,40 @@ func buildBatchInsertPlaceholders(rows, cols int, usePositional bool) string {
 		}
 	}
 
-	return strings.Join(rowParts, ",")
+	return strings.Join(rowParts, ","), nil
 }
 
 func (r *queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields []string, objPtr reflect.Value, fields zorm.Fields) error {
-	targetTable := table{
-		name: mapping.Table,
-	}
+	driver := r.conn.Driver()
+	targetTable := table{name: mapping.Table}
 
 	fields, columns := mapping.insertFields(fields)
-	queryColumns := make([]string, 0, len(columns))
-	for _, col := range columns {
-		queryColumns = append(queryColumns, col.escaped(r.conn.Driver()))
-	}
-
-	query := fmt.Sprintf(
-		`
+	var query string
+	var values []interface{}
+	if len(columns) == 0 {
+		query = fmt.Sprintf("INSERT INTO %s %s", targetTable.escaped(driver), driver.EmptyInsertSuffix())
+		values = nil
+	} else {
+		queryColumns := make([]string, 0, len(columns))
+		for _, col := range columns {
+			queryColumns = append(queryColumns, col.escaped(driver))
+		}
+		query = fmt.Sprintf(
+			`
 		INSERT INTO
 		%s
 		(%s)
 		VALUES
 		(%s)
 		`,
-		targetTable.escaped(r.conn.Driver()),
-		strings.Join(queryColumns, ","),
-		strings.Join(zfunc.MakeSlice("?", len(queryColumns)), ","),
-	)
-
-	values := make([]interface{}, 0, len(fields))
-	for _, f := range fields {
-		values = append(values, fieldValueForSQL(objPtr.Elem().FieldByName(f)))
+			targetTable.escaped(driver),
+			strings.Join(queryColumns, ","),
+			strings.Join(zfunc.MakeSlice("?", len(queryColumns)), ","),
+		)
+		values = make([]interface{}, 0, len(fields))
+		for _, f := range fields {
+			values = append(values, fieldValueForSQL(objPtr.Elem().FieldByName(f)))
+		}
 	}
 
 	// fmt.Printf("Q: %s\nV: %s", query, plan.values)
@@ -914,7 +919,22 @@ func (r *queryer) insertBatch(ctx context.Context, mapping Mapping, primaryKeyFi
 	}
 
 	cols := len(queryColumns)
-	valuesPlaceholders := buildBatchInsertPlaceholders(n, cols, usePositional)
+
+	// No columns: use driver-specific syntax (e.g. SQLite DEFAULT VALUES, MySQL () VALUES ()).
+	// Run one insert per row so each gets its generated ID backfilled.
+	if cols == 0 {
+		for i := 0; i < n; i++ {
+			if err := r.insert(ctx, mapping, primaryKeyFields, sliceOfPtrs.Index(i), fields); err != nil {
+				return fmt.Errorf("inserting row %d: %w", i, err)
+			}
+		}
+		return nil
+	}
+
+	valuesPlaceholders, err := buildBatchInsertPlaceholders(n, cols, usePositional)
+	if err != nil {
+		return fmt.Errorf("building batch insert placeholders: %w", err)
+	}
 
 	returningClause := ""
 	if useReturning && singlePK {

@@ -89,6 +89,18 @@ func RunPutTests(t *testing.T, setup SetupFunc) {
 		})
 	})
 
+	// Put on a model with no insertable columns (IDsOnly: only column is PK and NoInsert).
+	t.Run("PutNoColumnInsert", func(t *testing.T) {
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			obj := &IDsOnly{}
+			err := zorm.Put(ctx, r, []*IDsOnly{obj}, zorm.PutOptions{})
+			require.NoError(t, err)
+			assert.NotEmpty(t, obj.ID, "generated PK should be backfilled")
+		})
+	})
+
 	// Cascading Put tests
 
 	t.Run("PutNewSingleRelation", func(t *testing.T) {

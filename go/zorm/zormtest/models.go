@@ -52,3 +52,7 @@ type UserAddress struct {
 	City   string
 	State  string
 }
+
+type IDsOnly struct {
+	ID string
+}
