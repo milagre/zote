@@ -60,6 +60,61 @@ func TestFields_Add(t *testing.T) {
 	}
 }
 
+func TestFields_Contains(t *testing.T) {
+	tests := []struct {
+		name   string
+		fields Fields
+		field  string
+		want   bool
+	}{
+		{
+			name:   "empty affirmative",
+			fields: Fields{},
+			field:  "ID",
+			want:   false,
+		},
+		{
+			name:   "nil fields",
+			fields: nil,
+			field:  "ID",
+			want:   false,
+		},
+		{
+			name:   "affirmative hit",
+			fields: Fields{"Name", "AssetID"},
+			field:  "AssetID",
+			want:   true,
+		},
+		{
+			name:   "affirmative miss",
+			fields: Fields{"Name", "Type"},
+			field:  "AssetID",
+			want:   false,
+		},
+		{
+			name:   "negated excluded",
+			fields: Fields{"-Created", "-Modified"},
+			field:  "Created",
+			want:   false,
+		},
+		{
+			name:   "negated not excluded",
+			fields: Fields{"-Created", "-Modified"},
+			field:  "Email",
+			want:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.fields.Contains(tt.field)
+			if got != tt.want {
+				t.Errorf("Fields.Contains(%q) = %v, want %v", tt.field, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestFields_IsNegated(t *testing.T) {
 	tests := []struct {
 		name   string

@@ -144,6 +144,35 @@ func (f *Fields) Add(fields ...string) {
 	}
 }
 
+// Contains reports whether field is included in the Fields list.
+// For an affirmative list, it returns true if field appears as an element.
+// For a negated list (see IsNegated), it returns true if "-field" is not present
+// (i.e. the field is not excluded). An empty list contains no explicit field names.
+func (f Fields) Contains(field string) bool {
+	if len(f) == 0 {
+		return false
+	}
+
+	if f.IsNegated() {
+		negatedField := "-" + field
+		for _, curr := range f {
+			if curr == negatedField {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	for _, curr := range f {
+		if curr == field {
+			return true
+		}
+	}
+
+	return false
+}
+
 // IsNegated returns true if the Fields list contains negated fields (fields starting with "-").
 // An empty list is not considered negated.
 func (f Fields) IsNegated() bool {
