@@ -974,6 +974,9 @@ func (r *queryer) insertBatch(ctx context.Context, mapping Mapping, primaryKeyFi
 			return nil
 		}, query, values)
 		if err != nil {
+			if r.conn.Driver().IsConflictError(err) {
+				err = zorm.ErrConflict
+			}
 			return fmt.Errorf("batch insert: %w", err)
 		}
 		if foundRows != n {
@@ -983,6 +986,9 @@ func (r *queryer) insertBatch(ctx context.Context, mapping Mapping, primaryKeyFi
 		// Exec path: multi-row INSERT; use LastInsertId and driver semantics to backfill IDs.
 		_, lastID, err := zsql.Exec(ctx, r.conn, query, values)
 		if err != nil {
+			if r.conn.Driver().IsConflictError(err) {
+				err = zorm.ErrConflict
+			}
 			return fmt.Errorf("executing batch insert: %w", err)
 		}
 		if singlePK && lastID != 0 {
