@@ -17,6 +17,11 @@ type MessageOptions struct {
 	RoutingKey              string
 	Headers                 Headers
 	SkipExchangeDeclaration bool
+
+	// JobID is the only way to set the job ID explicitly when publishing. The internal job
+	// header key in MessageOptions.Headers is ignored. When JobID is empty, the job ID comes
+	// from context (see IDs), then generated.
+	JobID string
 }
 
 type Message interface {
@@ -145,9 +150,9 @@ func (m requeueMessage) finalHeaders() Headers {
 	}
 
 	if m.kind == "retry" {
-		headers[HeaderAttempt] = attempt(m.headers) + 1
+		headers[headerAttempt] = attempt(m.headers) + 1
 	} else {
-		headers[HeaderAttempt] = 1
+		headers[headerAttempt] = 1
 	}
 
 	return headers

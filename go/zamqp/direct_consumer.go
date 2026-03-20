@@ -8,10 +8,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rabbitmq/amqp091-go"
 
 	"github.com/milagre/zote/go/zlog"
 	"github.com/milagre/zote/go/zstats"
+	"github.com/milagre/zote/go/ztrace"
 )
 
 type directConsumer struct {
@@ -205,6 +207,13 @@ func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliv
 				"message": del.Tag(),
 			})
 			msgCtx := zlog.Context(ctx, msgLogger)
+
+			h := del.Headers()
+			msgCtx = Context(msgCtx,
+				headerStringDefault(h, headerJobID, uuid.NewString),
+				headerStringDefault(h, headerMessageID, uuid.NewString),
+			)
+			msgCtx = ztrace.Context(msgCtx, headerStringDefault(h, headerTraceID, ztrace.NewTraceID))
 
 			func() {
 				defer msgLogger.Info("Complete")

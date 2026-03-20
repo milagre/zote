@@ -13,6 +13,7 @@ import (
 
 	"github.com/milagre/zote/go/zlog"
 	"github.com/milagre/zote/go/zstats"
+	"github.com/milagre/zote/go/ztrace"
 )
 
 type Server interface {
@@ -153,6 +154,8 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	stats = stats.WithPrefix("zapi")
 	requestContext = zstats.Context(requestContext, stats)
 
+	requestContext = contextWithTraceID(requestContext, r.Header)
+
 	r = r.WithContext(requestContext)
 
 	access := logger.WithFields(zlog.Fields{
@@ -278,6 +281,16 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	execute(parents, current.route, params)
+}
+
+// contextWithTraceID sets ztrace.ID on ctx: from x-zote-trace-id when present and
+// non-empty after trim, otherwise a new trace ID from ztrace.NewTraceID().
+func contextWithTraceID(ctx context.Context, header http.Header) context.Context {
+	traceID := strings.TrimSpace(header.Get(ztrace.HeaderTraceID))
+	if traceID == "" {
+		traceID = ztrace.NewTraceID()
+	}
+	return ztrace.Context(ctx, traceID)
 }
 
 func isParam(p string) (string, bool) {

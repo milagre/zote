@@ -6,6 +6,8 @@ import (
 
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/spf13/cast"
+
+	"github.com/milagre/zote/go/ztrace"
 )
 
 type ConnectionDetails struct {
@@ -149,10 +151,36 @@ func (h Headers) toTable() amqp091.Table {
 	return t
 }
 
-const HeaderAttempt = "x-zote-attempt"
+// AMQP application header keys for internal correlation (x-zote-*).
+const (
+	headerAttempt   = "x-zote-attempt"
+	headerJobID     = "x-zote-job-id"
+	headerMessageID = "x-zote-message-id"
+	headerTraceID   = ztrace.HeaderTraceID
+)
+
+func headerString(h Headers, key string) (string, bool) {
+	v, ok := h[key]
+	if !ok {
+		return "", false
+	}
+	s, err := cast.ToStringE(v)
+	if err != nil || s == "" {
+		return "", false
+	}
+	return s, true
+}
+
+// headerStringDefault returns the non-empty string header for key, or defaultFn() if missing or invalid.
+func headerStringDefault(h Headers, key string, defaultFn func() string) string {
+	if s, ok := headerString(h, key); ok {
+		return s
+	}
+	return defaultFn()
+}
 
 func attempt(headers Headers) int {
-	v, ok := headers[HeaderAttempt]
+	v, ok := headers[headerAttempt]
 	if !ok {
 		return 1
 	}

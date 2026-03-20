@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/rabbitmq/amqp091-go"
+
+	"github.com/milagre/zote/go/ztrace"
 )
 
 type Publisher interface {
@@ -67,9 +70,8 @@ func (p connPublisher) Publish(ctx context.Context, msg Message) error {
 		return fmt.Errorf("preparing publishing: %w", err)
 	}
 
-	for k, v := range msg.Options().Headers {
-		publishing.Headers[k] = v
-	}
+	mergedHeaders := mergePublishHeaders(ctx, msg)
+	publishing.Headers = mergedHeaders.toTable()
 
 	err = ch.channel.PublishWithContext(ctx, exchange.Name, msg.Options().RoutingKey, true, false, publishing)
 	if err != nil {
@@ -86,4 +88,35 @@ func (p connPublisher) Publish(ctx context.Context, msg Message) error {
 	}
 
 	return nil
+}
+
+func mergePublishHeaders(ctx context.Context, msg Message) Headers {
+	mo := msg.Options()
+	h := Headers{}
+	for k, v := range mo.Headers {
+		if k == headerJobID {
+			continue
+		}
+		h[k] = v
+	}
+
+	if mo.JobID != "" {
+		h[headerJobID] = mo.JobID
+	} else if j, _, ok := IDs(ctx); ok {
+		h[headerJobID] = j
+	} else {
+		h[headerJobID] = uuid.NewString()
+	}
+
+	h[headerMessageID] = uuid.NewString()
+
+	if _, ok := h[headerTraceID]; !ok {
+		if t, ok := ztrace.ID(ctx); ok {
+			h[headerTraceID] = t
+		} else {
+			h[headerTraceID] = ztrace.NewTraceID()
+		}
+	}
+
+	return h
 }
