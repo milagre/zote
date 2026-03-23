@@ -2,6 +2,8 @@ package zamqp
 
 import (
 	"context"
+
+	"github.com/milagre/zote/go/zlog"
 )
 
 // Logical context keys for interoperability: zamqp_job_id, zamqp_message_id.
@@ -17,6 +19,7 @@ type contextValues struct {
 
 // Context returns a derived context that carries jobID and messageID for IDs.
 func Context(ctx context.Context, jobID, messageID string) context.Context {
+	zlog.FromContext(ctx).AddFields(zlog.Fields{"job_id": jobID, "message_id": messageID})
 	return context.WithValue(ctx, contextKey, contextValues{jobID: jobID, messageID: messageID})
 }
 

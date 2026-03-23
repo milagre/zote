@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/milagre/zote/go/zlog"
 )
 
 // HeaderTraceID is the canonical application header for passing
@@ -18,6 +19,7 @@ var traceIDKey traceIDKeyType = "trace_id"
 
 // Context returns a derived context that carries traceID for ID.
 func Context(ctx context.Context, traceID string) context.Context {
+	zlog.FromContext(ctx).AddField("trace_id", traceID)
 	return context.WithValue(ctx, traceIDKey, traceID)
 }
 
