@@ -3,6 +3,7 @@ package zamqp
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/spf13/cast"
@@ -161,11 +162,15 @@ const (
 
 func headerString(h Headers, key string) (string, bool) {
 	v, ok := h[key]
-	if !ok {
+	if !ok || v == nil {
 		return "", false
 	}
 	s, err := cast.ToStringE(v)
-	if err != nil || s == "" {
+	if err != nil {
+		return "", false
+	}
+	s = strings.TrimSpace(s)
+	if s == "" {
 		return "", false
 	}
 	return s, true

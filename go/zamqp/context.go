@@ -17,9 +17,13 @@ type contextValues struct {
 	messageID string
 }
 
-// Context returns a derived context that carries jobID and messageID for IDs.
+// Context returns a derived context that carries jobID and messageID for IDs and attaches
+// job_id / message_id to the zlog logger in ctx.
 func Context(ctx context.Context, jobID, messageID string) context.Context {
-	zlog.FromContext(ctx).AddFields(zlog.Fields{"job_id": jobID, "message_id": messageID})
+	ctx = zlog.Context(ctx, zlog.FromContext(ctx).WithFields(zlog.Fields{
+		"job_id":     jobID,
+		"message_id": messageID,
+	}))
 	return context.WithValue(ctx, contextKey, contextValues{jobID: jobID, messageID: messageID})
 }
 

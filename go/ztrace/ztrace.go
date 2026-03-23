@@ -17,9 +17,10 @@ type traceIDKeyType string
 
 var traceIDKey traceIDKeyType = "trace_id"
 
-// Context returns a derived context that carries traceID for ID.
+// Context returns a derived context that carries traceID for ID and attaches trace_id to the
+// zlog logger in ctx (via WithField so the value is visible to zlog.FromContext).
 func Context(ctx context.Context, traceID string) context.Context {
-	zlog.FromContext(ctx).AddField("trace_id", traceID)
+	ctx = zlog.Context(ctx, zlog.FromContext(ctx).WithField("trace_id", traceID))
 	return context.WithValue(ctx, traceIDKey, traceID)
 }
 
