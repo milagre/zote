@@ -21,7 +21,7 @@ func FromContext(ctx context.Context) Logger {
 	fmt.Println("warn: logger requested but no logger is set")
 	debug.PrintStack()
 
-	return &logger{}
+	return newLogger(LevelError)
 }
 
 func Context(ctx context.Context, logger Logger) context.Context {

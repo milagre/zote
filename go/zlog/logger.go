@@ -13,10 +13,10 @@ type logger struct {
 }
 
 func New(level Level, destinations ...Destination) Logger {
-	return new(level, destinations...)
+	return newLogger(level, destinations...)
 }
 
-func new(level Level, destinations ...Destination) *logger {
+func newLogger(level Level, destinations ...Destination) *logger {
 	return &logger{
 		destinations: append([]Destination{}, destinations...),
 		level:        level,
@@ -67,7 +67,7 @@ func (l *logger) sendf(level Level, format string, args ...interface{}) {
 }
 
 func (l *logger) withFields(fields Fields) Logger {
-	result := new(l.level, l.destinations...)
+	result := newLogger(l.level, l.destinations...)
 
 	for k, v := range l.fields {
 		result.fields[k] = v
