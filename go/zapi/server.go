@@ -154,7 +154,7 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	stats = stats.WithPrefix("zapi")
 	requestContext = zstats.Context(requestContext, stats)
 
-	requestContext = contextWithTraceID(requestContext, r.Header)
+	requestContext = contextWithCorrelationID(requestContext, r.Header)
 
 	r = r.WithContext(requestContext)
 
@@ -283,14 +283,14 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	execute(parents, current.route, params)
 }
 
-// contextWithTraceID sets ztrace.ID on ctx: from x-zote-trace-id when present and
-// non-empty after trim, otherwise a new trace ID from ztrace.NewTraceID().
-func contextWithTraceID(ctx context.Context, header http.Header) context.Context {
-	traceID := strings.TrimSpace(header.Get(ztrace.HeaderTraceID))
-	if traceID == "" {
-		traceID = ztrace.NewTraceID()
+// contextWithCorrelationID sets ztrace.ID on ctx: from x-zote-correlation-id when present and
+// non-empty after trim, otherwise a new correlation ID from ztrace.NewCorrelationID().
+func contextWithCorrelationID(ctx context.Context, header http.Header) context.Context {
+	cid := strings.TrimSpace(header.Get(ztrace.HeaderCorrelationID))
+	if cid == "" {
+		cid = ztrace.NewID()
 	}
-	return ztrace.Context(ctx, traceID)
+	return ztrace.Context(ctx, cid)
 }
 
 func isParam(p string) (string, bool) {

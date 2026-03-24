@@ -9,28 +9,28 @@ import (
 	"github.com/milagre/zote/go/zlog"
 )
 
-// HeaderTraceID is the canonical application header for passing
-// a trace ID over the wire.
-const HeaderTraceID = "x-zote-trace-id"
+// HeaderCorrelationID is the canonical application header for passing
+// a correlation ID over the wire.
+const HeaderCorrelationID = "x-zote-correlation-id"
 
-type traceIDKeyType string
+type correlationIDKeyType string
 
-var traceIDKey traceIDKeyType = "trace_id"
+var correlationIDKey correlationIDKeyType = "correlation_id"
 
-// Context returns a derived context that carries traceID for ID and attaches trace_id to the
+// Context returns a derived context that carries correlationID for ID and attaches correlation_id to the
 // zlog logger in ctx (via WithField so the value is visible to zlog.FromContext).
-func Context(ctx context.Context, traceID string) context.Context {
-	ctx = zlog.Context(ctx, zlog.FromContext(ctx).WithField("trace_id", traceID))
-	return context.WithValue(ctx, traceIDKey, traceID)
+func Context(ctx context.Context, correlationID string) context.Context {
+	ctx = zlog.Context(ctx, zlog.FromContext(ctx).WithField("correlation_id", correlationID))
+	return context.WithValue(ctx, correlationIDKey, correlationID)
 }
 
-// ID returns the trace ID from ctx, if set and non-empty.
+// ID returns the correlation ID from ctx, if set and non-empty.
 func ID(ctx context.Context) (string, bool) {
-	v, ok := ctx.Value(traceIDKey).(string)
+	v, ok := ctx.Value(correlationIDKey).(string)
 	return v, ok && v != ""
 }
 
-// NewTraceID returns a new random trace identifier (UUID string).
-func NewTraceID() string {
+// NewID returns a new random correlation identifier (UUID string).
+func NewID() string {
 	return uuid.NewString()
 }

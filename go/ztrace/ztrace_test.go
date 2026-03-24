@@ -9,14 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTraceIDContext(t *testing.T) {
+func TestCorrelationIDContext(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 	_, ok := ID(ctx)
 	require.False(t, ok)
 
-	id := NewTraceID()
+	id := NewID()
 	require.NotEmpty(t, id)
 
 	ctx = Context(ctx, id)
@@ -25,18 +25,18 @@ func TestTraceIDContext(t *testing.T) {
 	require.Equal(t, id, got)
 }
 
-func TestOutgoingTraceID(t *testing.T) {
+func TestOutgoingCorrelationID(t *testing.T) {
 	t.Parallel()
 
 	t.Run("from context", func(t *testing.T) {
 		t.Parallel()
-		ctx := Context(context.Background(), "trace-1")
-		require.Equal(t, "trace-1", OutgoingTraceID(ctx))
+		ctx := Context(context.Background(), "correlation-1")
+		require.Equal(t, "correlation-1", OutgoingCorrelationID(ctx))
 	})
 
 	t.Run("generated when missing", func(t *testing.T) {
 		t.Parallel()
-		id := OutgoingTraceID(context.Background())
+		id := OutgoingCorrelationID(context.Background())
 		_, err := uuid.Parse(id)
 		require.NoError(t, err)
 	})
@@ -45,10 +45,10 @@ func TestOutgoingTraceID(t *testing.T) {
 func TestApplyHTTPRequestHeader(t *testing.T) {
 	t.Parallel()
 
-	ctx := Context(context.Background(), "trace-xyz")
+	ctx := Context(context.Background(), "correlation-xyz")
 	req, err := http.NewRequest(http.MethodGet, "http://example.com/", nil)
 	require.NoError(t, err)
 
 	ApplyHTTPRequestHeader(ctx, req)
-	require.Equal(t, "trace-xyz", req.Header.Get(HeaderTraceID))
+	require.Equal(t, "correlation-xyz", req.Header.Get(HeaderCorrelationID))
 }

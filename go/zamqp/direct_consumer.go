@@ -213,7 +213,7 @@ func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliv
 				headerStringDefault(h, headerJobID, uuid.NewString),
 				headerStringDefault(h, headerMessageID, uuid.NewString),
 			)
-			msgCtx = ztrace.Context(msgCtx, headerStringDefault(h, headerTraceID, ztrace.NewTraceID))
+			msgCtx = ztrace.Context(msgCtx, headerStringDefault(h, headerCorrelationID, ztrace.NewID))
 
 			func() {
 				defer msgLogger.Info("Complete")

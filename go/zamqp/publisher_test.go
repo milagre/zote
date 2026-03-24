@@ -37,7 +37,7 @@ func TestMergePublishHeaders_GeneratesJobIDAndTraceWhenMissing(t *testing.T) {
 
 	_, err := uuid.Parse(h[headerJobID].(string))
 	require.NoError(t, err)
-	_, err = uuid.Parse(h[headerTraceID].(string))
+	_, err = uuid.Parse(h[headerCorrelationID].(string))
 	require.NoError(t, err)
 
 	_, _, ok := IDs(ctx)
@@ -112,30 +112,30 @@ func TestMergePublishHeaders_HeadersJobIDIgnoredGeneratesUUID(t *testing.T) {
 func TestMergePublishHeaders_TraceFromContext(t *testing.T) {
 	t.Parallel()
 
-	ctx := ztrace.Context(context.Background(), "trace-1")
+	ctx := ztrace.Context(context.Background(), "correlation-1")
 	msg := NewRawMessage([]byte("x"), "text/plain", AnonymousExchange, MessageOptions{})
 	h := mergePublishHeaders(ctx, msg)
 
-	require.Equal(t, "trace-1", h[headerTraceID])
-	tid, ok := ztrace.ID(ctx)
+	require.Equal(t, "correlation-1", h[headerCorrelationID])
+	cid, ok := ztrace.ID(ctx)
 	require.True(t, ok)
-	require.Equal(t, "trace-1", tid)
+	require.Equal(t, "correlation-1", cid)
 }
 
-func TestMergePublishHeaders_ExplicitTraceHeaderPreservedJobFromContext(t *testing.T) {
+func TestMergePublishHeaders_ExplicitCorrelationHeaderPreservedJobFromContext(t *testing.T) {
 	t.Parallel()
 
 	ctx := Context(context.Background(), "job-ctx", "msg-ctx")
 	msg := NewRawMessage([]byte("x"), "text/plain", AnonymousExchange, MessageOptions{
 		Headers: Headers{
-			headerJobID:   "job-header",
-			headerTraceID: "trace-header",
+			headerJobID:         "job-header",
+			headerCorrelationID: "correlation-header",
 		},
 	})
 	h := mergePublishHeaders(ctx, msg)
 
 	require.Equal(t, "job-ctx", h[headerJobID])
-	require.Equal(t, "trace-header", h[headerTraceID])
+	require.Equal(t, "correlation-header", h[headerCorrelationID])
 	jid, mid, ok := IDs(ctx)
 	require.True(t, ok)
 	require.Equal(t, "job-ctx", jid)

@@ -110,11 +110,11 @@ func mergePublishHeaders(ctx context.Context, msg Message) Headers {
 
 	h[headerMessageID] = uuid.NewString()
 
-	if _, ok := h[headerTraceID]; !ok {
+	if _, ok := h[headerCorrelationID]; !ok {
 		if t, ok := ztrace.ID(ctx); ok {
-			h[headerTraceID] = t
+			h[headerCorrelationID] = t
 		} else {
-			h[headerTraceID] = ztrace.NewTraceID()
+			h[headerCorrelationID] = ztrace.NewID()
 		}
 	}
 

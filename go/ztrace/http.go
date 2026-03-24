@@ -5,16 +5,16 @@ import (
 	"net/http"
 )
 
-// OutgoingTraceID returns the trace ID from ctx when set; otherwise a new NewTraceID().
+// OutgoingCorrelationID returns the trace ID from ctx when set; otherwise a new NewCorrelationID().
 // Use this (or ApplyHTTPRequestHeader) when propagating correlation on outbound calls.
-func OutgoingTraceID(ctx context.Context) string {
+func OutgoingCorrelationID(ctx context.Context) string {
 	if id, ok := ID(ctx); ok {
 		return id
 	}
-	return NewTraceID()
+	return NewID()
 }
 
-// ApplyHTTPRequestHeader sets HeaderTraceID on req using OutgoingTraceID(ctx).
+// ApplyHTTPRequestHeader sets HeaderCorrelationID on req using OutgoingCorrelationID(ctx).
 func ApplyHTTPRequestHeader(ctx context.Context, req *http.Request) {
-	req.Header.Set(HeaderTraceID, OutgoingTraceID(ctx))
+	req.Header.Set(HeaderCorrelationID, OutgoingCorrelationID(ctx))
 }

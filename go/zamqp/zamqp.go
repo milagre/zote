@@ -154,10 +154,10 @@ func (h Headers) toTable() amqp091.Table {
 
 // AMQP application header keys for internal correlation (x-zote-*).
 const (
-	headerAttempt   = "x-zote-attempt"
-	headerJobID     = "x-zote-job-id"
-	headerMessageID = "x-zote-message-id"
-	headerTraceID   = ztrace.HeaderTraceID
+	headerAttempt       = "x-zote-attempt"
+	headerJobID         = "x-zote-job-id"
+	headerMessageID     = "x-zote-message-id"
+	headerCorrelationID = ztrace.HeaderCorrelationID
 )
 
 func headerString(h Headers, key string) (string, bool) {
