@@ -28,6 +28,10 @@ variable "args" {
   type    = list(string)
   default = null
 }
+variable "attempts" {
+  type    = number
+  default = null
+}
 
 module "profile" {
   source = "./../../structs/profile"

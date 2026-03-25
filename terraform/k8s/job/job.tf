@@ -18,6 +18,8 @@ resource "kubernetes_job_v1" "job" {
       match_labels = {}
     }
 
+    backoff_limit = coalesce(var.attempts, 100000)
+
     template {
       metadata {
         name = var.name
