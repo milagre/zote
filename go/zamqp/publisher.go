@@ -11,7 +11,12 @@ import (
 )
 
 type Publisher interface {
-	Publish(ctx context.Context, msg Message) error
+	Publish(ctx context.Context, msg Message) (PublishResult, error)
+}
+
+type PublishResult struct {
+	JobID     string
+	MessageID string
 }
 
 func NewPublisherFromDetails(details ConnectionDetails) Publisher {
@@ -24,10 +29,10 @@ type dsnPublisher struct {
 	details ConnectionDetails
 }
 
-func (p dsnPublisher) Publish(ctx context.Context, msg Message) error {
+func (p dsnPublisher) Publish(ctx context.Context, msg Message) (PublishResult, error) {
 	conn, err := Dial(p.details)
 	if err != nil {
-		return fmt.Errorf("dialing for publisher connection: %w", err)
+		return PublishResult{}, fmt.Errorf("dialing for publisher connection: %w", err)
 	}
 	defer conn.Close()
 
@@ -44,10 +49,10 @@ type connPublisher struct {
 	conn Connection
 }
 
-func (p connPublisher) Publish(ctx context.Context, msg Message) error {
+func (p connPublisher) Publish(ctx context.Context, msg Message) (PublishResult, error) {
 	ch, err := p.conn.NewChannel()
 	if err != nil {
-		return fmt.Errorf("opening channel: %w", err)
+		return PublishResult{}, fmt.Errorf("opening channel: %w", err)
 	}
 	defer ch.Close()
 
@@ -55,19 +60,19 @@ func (p connPublisher) Publish(ctx context.Context, msg Message) error {
 	if !msg.Options().SkipExchangeDeclaration && exchange.Name != AnonymousExchange.Name {
 		err = ExecuteDeclarations(ch, Declarations{Exchanges: []Exchange{exchange}})
 		if err != nil {
-			return fmt.Errorf("declaring exchange: %w", err)
+			return PublishResult{}, fmt.Errorf("declaring exchange: %w", err)
 		}
 	}
 
 	confs := ch.channel.NotifyPublish(make(chan amqp091.Confirmation, 1))
 	err = ch.channel.Confirm(false)
 	if err != nil {
-		return fmt.Errorf("enabling confirm mode: %w", err)
+		return PublishResult{}, fmt.Errorf("enabling confirm mode: %w", err)
 	}
 
 	publishing, err := messageToPublishing(msg)
 	if err != nil {
-		return fmt.Errorf("preparing publishing: %w", err)
+		return PublishResult{}, fmt.Errorf("preparing publishing: %w", err)
 	}
 
 	mergedHeaders := mergePublishHeaders(ctx, msg)
@@ -75,19 +80,22 @@ func (p connPublisher) Publish(ctx context.Context, msg Message) error {
 
 	err = ch.channel.PublishWithContext(ctx, exchange.Name, msg.Options().RoutingKey, true, false, publishing)
 	if err != nil {
-		return fmt.Errorf("publishing: %w", err)
+		return PublishResult{}, fmt.Errorf("publishing: %w", err)
 	}
 
 	select {
 	case <-ctx.Done():
-		return fmt.Errorf("context canceled while publishing: %w", ctx.Err())
+		return PublishResult{}, fmt.Errorf("context canceled while publishing: %w", ctx.Err())
 	case c := <-confs:
 		if !c.Ack {
-			return fmt.Errorf("amqp server rejected publish")
+			return PublishResult{}, fmt.Errorf("amqp server rejected publish")
 		}
 	}
 
-	return nil
+	return PublishResult{
+		JobID:     mergedHeaders[headerJobID].(string),
+		MessageID: mergedHeaders[headerMessageID].(string),
+	}, nil
 }
 
 func mergePublishHeaders(ctx context.Context, msg Message) Headers {
@@ -102,8 +110,6 @@ func mergePublishHeaders(ctx context.Context, msg Message) Headers {
 
 	if mo.JobID != "" {
 		h[headerJobID] = mo.JobID
-	} else if j, _, ok := IDs(ctx); ok {
-		h[headerJobID] = j
 	} else {
 		h[headerJobID] = uuid.NewString()
 	}

@@ -239,7 +239,7 @@ func (m *delivery) requeue(ctx context.Context, msg requeueMessage) error {
 	}
 
 	publisher := NewPublisherFromConnection(m.channel.conn)
-	err = publisher.Publish(ctx, msg)
+	_, err = publisher.Publish(ctx, msg)
 	if err != nil {
 		return fmt.Errorf("publishing %s: %w", msg.kind, err)
 	}

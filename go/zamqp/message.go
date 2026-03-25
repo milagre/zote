@@ -128,10 +128,12 @@ type requeueMessage struct {
 var _ Message = requeueMessage{}
 
 func (m requeueMessage) Options() MessageOptions {
+	jobID, _ := headerString(m.headers, headerJobID)
 	return MessageOptions{
 		Compress:   false,
 		Headers:    m.finalHeaders(),
 		RoutingKey: m.queueDefinition().Name,
+		JobID:      jobID,
 	}
 }
 

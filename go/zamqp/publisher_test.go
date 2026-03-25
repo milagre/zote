@@ -10,16 +10,18 @@ import (
 	"github.com/milagre/zote/go/ztrace"
 )
 
-func TestMergePublishHeaders_JobIDFromIDs(t *testing.T) {
+func TestMergePublishHeaders_GeneratesJobIDWhenContextHasIDs(t *testing.T) {
 	t.Parallel()
 
 	ctx := Context(context.Background(), "job-from-ctx", "msg-from-ctx")
 	msg := NewRawMessage([]byte("x"), "text/plain", AnonymousExchange, MessageOptions{})
 	h := mergePublishHeaders(ctx, msg)
 
-	require.Equal(t, "job-from-ctx", h[headerJobID])
+	_, err := uuid.Parse(h[headerJobID].(string))
+	require.NoError(t, err)
+	require.NotEqual(t, "job-from-ctx", h[headerJobID])
 	require.NotEmpty(t, h[headerMessageID])
-	_, err := uuid.Parse(h[headerMessageID].(string))
+	_, err = uuid.Parse(h[headerMessageID].(string))
 	require.NoError(t, err)
 
 	jid, mid, ok := IDs(ctx)
@@ -83,7 +85,7 @@ func TestMergePublishHeaders_HeadersJobIDIgnoredWhenJobIDOptionSet(t *testing.T)
 	require.Equal(t, "job-opt", h[headerJobID])
 }
 
-func TestMergePublishHeaders_HeadersJobIDIgnoredUsesContext(t *testing.T) {
+func TestMergePublishHeaders_HeadersJobIDIgnoredGeneratesUUIDWhenContextPresent(t *testing.T) {
 	t.Parallel()
 
 	ctx := Context(context.Background(), "job-from-ctx", "msg-from-ctx")
@@ -92,7 +94,10 @@ func TestMergePublishHeaders_HeadersJobIDIgnoredUsesContext(t *testing.T) {
 	})
 	h := mergePublishHeaders(ctx, msg)
 
-	require.Equal(t, "job-from-ctx", h[headerJobID])
+	_, err := uuid.Parse(h[headerJobID].(string))
+	require.NoError(t, err)
+	require.NotEqual(t, "job-from-ctx", h[headerJobID])
+	require.NotEqual(t, "job-header", h[headerJobID])
 }
 
 func TestMergePublishHeaders_HeadersJobIDIgnoredGeneratesUUID(t *testing.T) {
@@ -122,7 +127,7 @@ func TestMergePublishHeaders_TraceFromContext(t *testing.T) {
 	require.Equal(t, "correlation-1", cid)
 }
 
-func TestMergePublishHeaders_ExplicitCorrelationHeaderPreservedJobFromContext(t *testing.T) {
+func TestMergePublishHeaders_ExplicitCorrelationHeaderPreservedJobGenerated(t *testing.T) {
 	t.Parallel()
 
 	ctx := Context(context.Background(), "job-ctx", "msg-ctx")
@@ -134,7 +139,9 @@ func TestMergePublishHeaders_ExplicitCorrelationHeaderPreservedJobFromContext(t 
 	})
 	h := mergePublishHeaders(ctx, msg)
 
-	require.Equal(t, "job-ctx", h[headerJobID])
+	_, err := uuid.Parse(h[headerJobID].(string))
+	require.NoError(t, err)
+	require.NotEqual(t, "job-ctx", h[headerJobID])
 	require.Equal(t, "correlation-header", h[headerCorrelationID])
 	jid, mid, ok := IDs(ctx)
 	require.True(t, ok)
