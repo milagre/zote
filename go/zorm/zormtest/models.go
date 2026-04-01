@@ -56,3 +56,7 @@ type UserAddress struct {
 type IDsOnly struct {
 	ID string
 }
+
+type GUID struct {
+	ID string
+}

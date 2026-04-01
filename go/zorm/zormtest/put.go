@@ -101,6 +101,34 @@ func RunPutTests(t *testing.T, setup SetupFunc) {
 		})
 	})
 
+	// Pre-assigned PK, no updatable columns: must INSERT when the row is missing
+	t.Run("PutGUIDInsert", func(t *testing.T) {
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			obj := &GUID{ID: "guid-put-test-1"}
+			err := zorm.Put(ctx, r, []*GUID{obj}, zorm.PutOptions{})
+			require.NoError(t, err)
+			assert.Equal(t, "guid-put-test-1", obj.ID)
+		})
+	})
+
+	// Same mapping when the row already exists: second Put must not attempt INSERT
+	t.Run("PutGUIDWhenRowExists", func(t *testing.T) {
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			obj := &GUID{ID: "guid-put-existing-1"}
+			err := zorm.Put(ctx, r, []*GUID{obj}, zorm.PutOptions{})
+			require.NoError(t, err)
+			assert.Equal(t, "guid-put-existing-1", obj.ID)
+
+			err = zorm.Put(ctx, r, []*GUID{obj}, zorm.PutOptions{})
+			require.NoError(t, err)
+			assert.Equal(t, "guid-put-existing-1", obj.ID)
+		})
+	})
+
 	// Cascading Put tests
 
 	t.Run("PutNewSingleRelation", func(t *testing.T) {

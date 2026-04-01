@@ -226,3 +226,16 @@ var IDsOnlyMapping = zormsql.Mapping{
 		},
 	},
 }
+
+var GUIDMapping = zormsql.Mapping{
+	PtrType:    &zormtest.GUID{},
+	Table:      "guids",
+	PrimaryKey: []string{"id"},
+	Columns: []zormsql.Column{
+		{
+			Name:     "id",
+			Field:    "ID",
+			NoUpdate: true,
+		},
+	},
+}

@@ -47,6 +47,7 @@ func setup(t *testing.T, cb func(context.Context, zorm.Repository)) {
 	repo.AddMapping(UserAuthMapping)
 	repo.AddMapping(UserAddressMapping)
 	repo.AddMapping(IDsOnlyMapping)
+	repo.AddMapping(GUIDMapping)
 
 	cb(context.Background(), repo)
 }

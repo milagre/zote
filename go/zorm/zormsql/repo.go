@@ -878,12 +878,17 @@ func (r *queryer) insert(ctx context.Context, mapping Mapping, primaryKeyFields 
 		field := objPtr.Elem().FieldByName(primaryKeyFields[0])
 
 		if zreflect.IsInt(field.Type()) {
-			idVal := reflect.ValueOf(&id).Elem()
-			field.Set(idVal)
+			if field.IsZero() {
+				idVal := reflect.ValueOf(&id).Elem()
+				field.Set(idVal)
+			}
 		} else if zreflect.IsString(field.Type()) {
-			idStrVal := fmt.Sprintf("%d", id)
-			idVal := reflect.ValueOf(&idStrVal).Elem()
-			field.Set(idVal)
+			// Do not replace a caller-assigned string PK (e.g. UUID) with LastInsertId().
+			if field.String() == "" {
+				idStrVal := fmt.Sprintf("%d", id)
+				idVal := reflect.ValueOf(&idStrVal).Elem()
+				field.Set(idVal)
+			}
 		} else {
 			return fmt.Errorf("cannot populate primary key field that isn't int or string type: %v", field.Type())
 		}
@@ -1013,19 +1018,7 @@ func (r *queryer) insertBatch(ctx context.Context, mapping Mapping, primaryKeyFi
 	return nil
 }
 
-func (r *queryer) update(ctx context.Context, mapping Mapping, keyFields []string, objPtr reflect.Value, fields zorm.Fields) (int, error) {
-	driver := r.conn.Driver()
-	targetTable := table{
-		name: mapping.Table,
-	}
-
-	fields = mapping.updateFields(fields)
-	structure, err := mapping.mapStructure(targetTable, "", fields, zorm.Relations{})
-	if err != nil {
-		return 0, fmt.Errorf("mapping update columns: %w", err)
-	}
-
-	// Map key fields to columns
+func keyColumnsForLookup(mapping Mapping, targetTable table, keyFields []string) ([]column, error) {
 	keyColumns := make([]column, 0, len(keyFields))
 	for _, kf := range keyFields {
 		for _, c := range mapping.Columns {
@@ -1038,9 +1031,84 @@ func (r *queryer) update(ctx context.Context, mapping Mapping, keyFields []strin
 			}
 		}
 	}
-
 	if len(keyColumns) != len(keyFields) {
-		return 0, fmt.Errorf("could not map all key fields to columns")
+		return nil, fmt.Errorf("could not map all key fields to columns")
+	}
+	return keyColumns, nil
+}
+
+func (r *queryer) rowExistsForKey(ctx context.Context, mapping Mapping, keyFields []string, objPtr reflect.Value) (bool, error) {
+	driver := r.conn.Driver()
+	targetTable := table{name: mapping.Table}
+	keyColumns, err := keyColumnsForLookup(mapping, targetTable, keyFields)
+	if err != nil {
+		return false, err
+	}
+	query := fmt.Sprintf(
+		`SELECT 1 FROM %s WHERE %s LIMIT 1`,
+		targetTable.escaped(driver),
+		strings.Join(zfunc.Map(keyColumns, func(c column) string {
+			return fmt.Sprintf(
+				"%s %s ?",
+				c.escaped(driver),
+				driver.NullSafeEqualityOperator(),
+			)
+		}), " AND "),
+	)
+	values := make([]any, 0, len(keyFields))
+	for _, kf := range keyFields {
+		values = append(values, fieldValueForSQL(objPtr.Elem().FieldByName(kf)))
+	}
+	n, err := zsql.Query(ctx, r.conn, func(scan zsql.ScanFunc, i int) error {
+		var one int
+		return scan(&one)
+	}, query, values)
+	if err != nil {
+		return false, fmt.Errorf("querying row existence: %w", err)
+	}
+	return n > 0, nil
+}
+
+func (r *queryer) update(ctx context.Context, mapping Mapping, keyFields []string, objPtr reflect.Value, fields zorm.Fields) (int, error) {
+	driver := r.conn.Driver()
+	targetTable := table{
+		name: mapping.Table,
+	}
+
+	setFieldNames := mapping.updateFields(fields)
+	if len(setFieldNames) == 0 {
+		// No SET clause: distinguish missing row (insert) from existing row (no-op).
+		exists, err := r.rowExistsForKey(ctx, mapping, keyFields, objPtr)
+		if err != nil {
+			return 0, fmt.Errorf("checking row for no-op update: %w", err)
+		}
+		if exists {
+			return 1, nil
+		}
+		return 0, nil
+	}
+
+	setColumns := make([]column, 0, len(setFieldNames))
+	for _, f := range setFieldNames {
+		var colName string
+		for _, c := range mapping.Columns {
+			if c.Field == f {
+				colName = c.Name
+				break
+			}
+		}
+		if colName == "" {
+			return 0, fmt.Errorf("mapping update field %s: no column", f)
+		}
+		setColumns = append(setColumns, column{
+			table: targetTable,
+			name:  colName,
+		})
+	}
+
+	keyColumns, err := keyColumnsForLookup(mapping, targetTable, keyFields)
+	if err != nil {
+		return 0, fmt.Errorf("mapping key columns: %w", err)
 	}
 
 	query := fmt.Sprintf(
@@ -1053,7 +1121,7 @@ func (r *queryer) update(ctx context.Context, mapping Mapping, keyFields []strin
 		%s
 		`,
 		targetTable.escaped(driver),
-		strings.Join(zfunc.Map(structure.columns, func(c column) string {
+		strings.Join(zfunc.Map(setColumns, func(c column) string {
 			return fmt.Sprintf(
 				"%s=?",
 				c.escaped(driver),
@@ -1068,9 +1136,12 @@ func (r *queryer) update(ctx context.Context, mapping Mapping, keyFields []strin
 		}), " AND "),
 	)
 
-	values := make([]any, 0, len(fields)+len(keyFields))
-	for _, f := range append(fields, keyFields...) {
+	values := make([]any, 0, len(setFieldNames)+len(keyFields))
+	for _, f := range setFieldNames {
 		values = append(values, fieldValueForSQL(objPtr.Elem().FieldByName(f)))
+	}
+	for _, kf := range keyFields {
+		values = append(values, fieldValueForSQL(objPtr.Elem().FieldByName(kf)))
 	}
 
 	affected, _, err := zsql.Exec(ctx, r.conn, query, values)
