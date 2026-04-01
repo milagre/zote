@@ -115,8 +115,9 @@ func createNullableScanTarget(fieldType reflect.Type) interface{} {
 		if elemType == reflect.TypeOf(time.Time{}) {
 			return &sql.NullTime{}
 		}
-		// For unknown types, fall back to pointer (may fail on NULL, but that's the current behavior)
-		return reflect.New(fieldType).Interface()
+		// Decimals, JSON-backed types, and other sql.Scanner implementations: scan as string
+		// first so NULL is representable; convertNullableValue decodes into the real type.
+		return &sql.NullString{}
 	}
 }
 
