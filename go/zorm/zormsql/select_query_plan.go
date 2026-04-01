@@ -382,9 +382,19 @@ func convertNullableValue(nullableVal interface{}, targetType reflect.Type) (ref
 		if !v.Valid {
 			return reflect.Zero(targetType), false
 		}
-		// The fallback type for scan targets is NullString, decoded into the full
-		// destination type if sql.Scanner is implemented
-		if targetType.Kind() != reflect.Ptr {
+		// The fallback type for scan targets is NullString
+		// Decode via sql.Scanner when supported (e.g. JSON in a string column). For type T
+		// use *T for Scan; for *T use reflect.New(Elem()).
+		switch targetType.Kind() {
+		case reflect.Ptr:
+			ptrVal := reflect.New(targetType.Elem())
+			if scanner, ok := ptrVal.Interface().(sql.Scanner); ok {
+				if err := scanner.Scan([]byte(v.String)); err != nil {
+					return reflect.Zero(targetType), false
+				}
+				return ptrVal, true
+			}
+		default:
 			pv := reflect.New(targetType)
 			if scanner, ok := pv.Interface().(sql.Scanner); ok {
 				if err := scanner.Scan([]byte(v.String)); err != nil {
