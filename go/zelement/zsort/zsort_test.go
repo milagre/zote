@@ -3,10 +3,11 @@ package zsort_test
 import (
 	"testing"
 
-	"github.com/milagre/zote/go/zelement"
-	"github.com/milagre/zote/go/zelement/zsort"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/milagre/zote/go/zelement"
+	"github.com/milagre/zote/go/zelement/zsort"
 )
 
 type Person struct {
