@@ -202,18 +202,19 @@ func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliv
 			c.busyCounter.Add(1)
 			stats.Count("received", 1)
 
-			msgLogger := logger.WithFields(zlog.Fields{
-				"attempt": del.Attempt(),
-				"message": del.Tag(),
-			})
-			msgCtx := zlog.Context(ctx, msgLogger)
-
 			h := del.Headers()
-			msgCtx = Context(msgCtx,
+			msgCtx := Context(ctx,
 				headerStringDefault(h, headerJobID, uuid.NewString),
 				headerStringDefault(h, headerMessageID, uuid.NewString),
 			)
 			msgCtx = ztrace.Context(msgCtx, headerStringDefault(h, headerCorrelationID, ztrace.NewID))
+
+			msgLogger := zlog.FromContext(msgCtx)
+			msgLogger = msgLogger.WithFields(zlog.Fields{
+				"attempt": del.Attempt(),
+				"message": del.Tag(),
+			})
+			msgCtx = zlog.Context(msgCtx, msgLogger)
 
 			func() {
 				defer msgLogger.Info("Complete")
