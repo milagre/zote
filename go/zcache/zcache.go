@@ -85,7 +85,7 @@ func ReadThrough[T any](
 	if !loaded {
 		result, err = loader(ctx)
 		if err != nil {
-			return result, warnings, fmt.Errorf("fetching read-through from source: %w", err)
+			return result, nil, fmt.Errorf("fetching read-through from source: %w", err)
 		}
 
 		data, err := marshal(result)
