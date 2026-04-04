@@ -1,0 +1,13 @@
+# Local Terraform working directory (terraform/src)
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+.terraform.tfstate.lock.info
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Keep: .terraform.lock.hcl

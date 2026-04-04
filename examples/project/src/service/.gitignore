@@ -1,0 +1,10 @@
+# Go build outputs in this module
+/vendor/
+/service
+/main
+*.exe
+*.test
+*.out
+profile.cov
+coverage.out
+coverage.html

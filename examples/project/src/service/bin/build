@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# .../src/service/bin -> .../examples/project (three levels: bin→service→src→project root)
+ROOT=$(cd "${DIR}/../../.." && pwd)
+
+cd "${ROOT}"
+
+# shellcheck source=/dev/null
+. "${ROOT}/inc/minikube"
+
+export DOCKER_BUILDKIT=1
+docker build \
+	-f src/service/docker/build.dockerfile \
+	-t example/service:latest \
+	.
+
+minikube_load_local_image example/service:latest
+
+echo "Done"

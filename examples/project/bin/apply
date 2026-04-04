@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+
+DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT=$(cd "${DIR}/.." && pwd)
+
+# shellcheck source=/dev/null
+. "${ROOT}/inc/minikube"
+setup_minikube
+
+echo "Ensuring Terraform is initialized..."
+"${DIR}/init"
+
+echo "Applying terraform..."
+"${DIR}/terraform" apply "$@"

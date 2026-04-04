@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -e
+
+DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+PROJ=$(cd "${DIR}/.." && pwd) # src/service
+ROOT=$(cd "${DIR}/../../.." && pwd) # examples/project
+
+cd "${PROJ}"
+
+# shellcheck source=/dev/null
+. "${ROOT}/inc/minikube"
+setup_minikube
+
+ARGS=("$@")
+TARGET="${1:-}"
+OPTS=()
+CMD_OPTS=()
+INTERCEPT=0
+
+cleanup() {
+	telepresence --use=service leave "${NAME}"
+}
+
+case "${TARGET}" in
+"api")
+	INTERCEPT=1
+	OPTS+=("--port=80")
+	;;
+"deleter")
+	CMD_OPTS=("--concurrency=1")
+	;;
+"")
+	echo "Usage: $0 <api|deleter> [--no-build] [--cleanup]"
+	exit 1
+	;;
+*)
+	echo "Unknown target: ${TARGET}"
+	echo "Usage: $0 <api|deleter> [--no-build] [--cleanup]"
+	exit 1
+	;;
+esac
+
+NAME="service-${TARGET}"
+
+joined=" ${ARGS[*]} "
+if [[ "${joined}" == *" --cleanup "* ]]; then
+	echo "Cleaning up telepresence session..."
+	cleanup
+	exit 0
+fi
+
+if [[ "${joined}" == *" --no-build "* ]]; then
+	echo "Skipping image build..."
+else
+	"${ROOT}/bin/build"
+fi
+
+ENV_FILE="${PROJ}/.env.dev"
+if [[ ! -f "${ENV_FILE}" ]]; then
+	touch "${ENV_FILE}"
+fi
+
+echo "Connecting telepresence (context zote, namespace service)"
+telepresence connect --docker --context=zote --namespace=service
+
+echo "Starting workload (${TARGET})"
+if [[ "${INTERCEPT}" -eq 1 ]]; then
+	telepresence intercept "${NAME}" \
+		--workload="${TARGET}" \
+		--service="${TARGET}" \
+		--use=service \
+		--detailed-output \
+		--env-file "${ENV_FILE}" \
+		"${OPTS[@]}" \
+		--docker-run -- \
+		-it example/service:latest "${TARGET}"
+else
+	telepresence replace "${TARGET}" \
+		--use=service \
+		--detailed-output \
+		--env-file "${ENV_FILE}" \
+		"${OPTS[@]}" \
+		--docker-run -- \
+		-it example/service:latest "${TARGET}" "${CMD_OPTS[@]}"
+fi

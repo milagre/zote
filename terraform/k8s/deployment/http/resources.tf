@@ -157,7 +157,7 @@ resource "kubernetes_ingress_v1" "public_nginx" {
 }
 
 resource "kubernetes_ingress_v1" "tunnel" {
-  count = var.env.is_local ? 1 : 0
+  count = var.env.is_local && length(var.internal.public_hostnames) > 0 ? 1 : 0
 
   metadata {
     name      = "${var.name}-tunnel"

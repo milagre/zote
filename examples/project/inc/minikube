@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Minikube setup for the examples/project stack (profile: zote).
+
+set -e
+
+function setup_minikube() {
+	set +e
+	MKSTATUS="$(minikube -p zote status 2>/dev/null)"
+	STATUS=$?
+	MKSTOPPED=$(echo "${MKSTATUS}" | grep -v type | grep Stopped)
+	STOPPED=$?
+	set -e
+
+	if [[ $STATUS -ne 0 || $STOPPED -eq 0 ]]; then
+		echo "Starting Minikube (profile zote)."
+		minikube -p zote start
+	else
+		echo "Minikube (profile zote) already running, skipping start."
+	fi
+
+	set +e
+	telepresence helm install 2>/dev/null
+	STATUS=$?
+	set -e
+
+	if [[ $STATUS -ne 0 ]]; then
+		echo "Telepresence helm install failed, skipping install."
+	else
+		echo "Telepresence helm install successful."
+	fi
+}
+
+# Load an image from the local Docker daemon into a running Minikube profile.
+# Args: [image_ref] [profile] — defaults: example/service:latest and MINIKUBE_PROFILE or zote.
+# No-op when minikube is missing or the profile is not running.
+function minikube_load_local_image() {
+	local image="${1:-example/service:latest}"
+	local profile="${2:-${MINIKUBE_PROFILE:-zote}}"
+	if ! command -v minikube >/dev/null 2>&1; then
+		return 0
+	fi
+	if ! minikube status -p "${profile}" >/dev/null 2>&1; then
+		return 0
+	fi
+	echo "Loading ${image} into Minikube (profile ${profile})"
+	minikube -p "${profile}" image load "${image}"
+}

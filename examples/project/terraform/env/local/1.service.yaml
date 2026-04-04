@@ -1,0 +1,41 @@
+service:
+  version: "latest"
+  registry: ""
+  public_domains: []
+  prometheus:
+    podmonitors:
+      enabled: false
+
+  api:
+    profile:
+      cpu: { min: 100m, max: 200m }
+      mem: { min: 64M, max: 128M }
+      num: { min: 1, max: 1 }
+
+  deleter:
+    concurrency: 1
+    profile:
+      cpu: { min: 100m, max: 200m }
+      mem: { min: 64M, max: 128M }
+      num: { min: 1, max: 1 }
+
+  db:
+    version: "8"
+    container:
+      primary:
+        profile:
+          cpu: { min: 250m, max: 500m }
+          mem: { min: 256M, max: 512M }
+      replica:
+        profile:
+          cpu: { min: 250m, max: 500m }
+          mem: { min: 256M, max: 512M }
+          num: { min: 1, max: 1 }
+
+  rabbitmq:
+    version: "3.12-management"
+    container:
+      profile:
+        cpu: { min: 250m, max: 500m }
+        mem: { min: 384M, max: 1024M }
+        num: { min: 1, max: 1 }

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+
+DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT=$(cd "${DIR}/.." && pwd)
+SVC="${ROOT}/src/service"
+
+cd "${SVC}"
+go mod tidy
+go test ./...
+
+"${SVC}/bin/build"

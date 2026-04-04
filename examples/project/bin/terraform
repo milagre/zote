@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+
+DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT=$(cd "${DIR}/.." && pwd) 
+
+cd "${ROOT}/terraform/src"
+export TF_VAR_root="${ROOT}/terraform"
+terraform "$@"

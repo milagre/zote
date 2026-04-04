@@ -1,0 +1,14 @@
+# Example project — build artifacts and local state (see also src/service/.gitignore, terraform/src/.gitignore)
+
+# Go (tests, coverage)
+*.coverprofile
+
+# Docker image exports
+*.tar
+
+# Local env overrides
+.env
+.env.local
+.env.*.local
+# Telepresence / local dev (generated or secrets)
+src/service/.env.dev
