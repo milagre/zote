@@ -20,6 +20,7 @@ type RequestBodyEncoding struct {
 	ContentType string
 	Style       string
 	Explode     *bool
+	Required    *bool
 }
 
 func BindMultipart(ptr interface{}, reader multipart.Reader) error {
@@ -64,7 +65,15 @@ func BindForm(ptr interface{}, form map[string][]string, files map[string][]*mul
 				if encoding.Explode != nil {
 					explode = *encoding.Explode
 				}
-				if err := BindStyledParameterWithLocation(encoding.Style, explode, tag, ParamLocationUndefined, value, field.Addr().Interface()); err != nil {
+				var required bool
+				if encoding.Required != nil {
+					required = *encoding.Required
+				}
+				if err := BindStyledParameterWithOptions(encoding.Style, tag, value, field.Addr().Interface(), BindStyledParameterOptions{
+					ParamLocation: ParamLocationUndefined,
+					Explode:       explode,
+					Required:      required,
+				}); err != nil {
 					return err
 				}
 			}
@@ -279,7 +288,12 @@ func bindAdditionalProperties(additionalProperties reflect.Value, parentStruct r
 
 func marshalFormImpl(v reflect.Value, result url.Values, name string) {
 	switch v.Kind() {
-	case reflect.Interface, reflect.Ptr:
+	case reflect.Ptr:
+		if v.IsNil() {
+			break
+		}
+		fallthrough
+	case reflect.Interface:
 		marshalFormImpl(v.Elem(), result, name)
 	case reflect.Slice:
 		for i := 0; i < v.Len(); i++ {
