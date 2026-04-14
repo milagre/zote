@@ -56,11 +56,15 @@ resource "kubernetes_config_map_v1" "config" {
     "primary.cnf" = <<-EOF
         [mysqld]
         log-bin
+        max_connections=100
+        innodb_buffer_pool_size=${floor(module.primary_profile.mem_mb.max * 0.5)}M
     EOF
 
     "replica.cnf" = <<-EOF
         [mysqld]
         super-read-only
+        max_connections=100
+        innodb_buffer_pool_size=${floor(module.primary_profile.mem_mb.max * 0.5)}M
     EOF
   }
 }
