@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
+	"log"
 	"strings"
 	"time"
 
@@ -12,6 +14,10 @@ import (
 	"github.com/milagre/zote/go/zelement/zmethod"
 	"github.com/milagre/zote/go/zsql"
 )
+
+func init() {
+	mysql.SetLogger(log.New(io.Discard, "", 0))
+}
 
 var Driver zsql.Driver = driver{}
 
