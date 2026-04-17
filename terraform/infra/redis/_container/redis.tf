@@ -8,6 +8,9 @@ resource "kubernetes_service_v1" "redis" {
   }
 
   spec {
+    # Headless: required for StatefulSet per-pod DNS (redis-0.redis-name.ns.svc) so cluster
+    # hostnames and CLUSTER MEET targets resolve to current Pod IPs after restarts.
+    cluster_ip = "None"
     port {
       port = 6379
     }
@@ -42,7 +45,8 @@ resource "kubernetes_config_map_v1" "redis_scripts" {
   }
 
   data = {
-    "update-nodes.sh" = file("${path.module}/update-nodes.sh")
+    "update-nodes.sh"      = file("${path.module}/update-nodes.sh")
+    "cluster-bootstrap.sh" = file("${path.module}/cluster-bootstrap.sh")
   }
 }
 
@@ -73,10 +77,20 @@ resource "kubernetes_stateful_set_v1" "redis" {
       }
 
       spec {
+        termination_grace_period_seconds = 60
+
         container {
           name              = "redis"
           image             = "redis:${var.ver}"
           image_pull_policy = "IfNotPresent"
+
+          lifecycle {
+            pre_stop {
+              exec {
+                command = ["sh", "-c", "redis-cli -p 6379 SHUTDOWN 2>/dev/null || true"]
+              }
+            }
+          }
 
           port {
             container_port = 6379
@@ -97,6 +111,29 @@ resource "kubernetes_stateful_set_v1" "redis" {
                 field_path = "status.podIP"
               }
             }
+          }
+
+          env {
+            name = "POD_NAME"
+            value_from {
+              field_ref {
+                field_path = "metadata.name"
+              }
+            }
+          }
+
+          env {
+            name = "POD_NAMESPACE"
+            value_from {
+              field_ref {
+                field_path = "metadata.namespace"
+              }
+            }
+          }
+
+          env {
+            name  = "REDIS_HEADLESS_SERVICE"
+            value = kubernetes_service_v1.redis.metadata[0].name
           }
 
           volume_mount {
@@ -180,7 +217,10 @@ resource "kubernetes_job_v1" "cluster" {
 
   wait_for_completion = false
 
+
   spec {
+    backoff_limit = 20
+
     template {
       metadata {
         name = "redis-${var.name}-cluster"
@@ -188,25 +228,47 @@ resource "kubernetes_job_v1" "cluster" {
 
       spec {
         container {
-          name              = "redis"
+          name              = "cluster-bootstrap"
           image             = "redis:${var.ver}"
           image_pull_policy = "IfNotPresent"
 
-          command = flatten([
-            "redis-cli",
-            "-h", "redis-${var.name}-a-0.redis-${var.name}",
-            "-p", "6379",
-            "--cluster", "create",
-            flatten([
-              for node in range((var.replicas + 1) * var.shards) :
-              [
-                "redis-${var.name}-${node}.redis-${var.name}:6379"
-              ]
-            ]),
-            "--cluster-replicas", var.replicas,
-            "--cluster-yes",
-          ])
+          command = ["/etc/scripts/cluster-bootstrap.sh"]
+
+          env {
+            name  = "REDIS_HEADLESS_NAME"
+            value = "redis-${var.name}"
+          }
+
+          env {
+            name  = "REDIS_CLUSTER_REPLICAS"
+            value = tostring(var.replicas)
+          }
+
+          env {
+            name  = "REDIS_NODE_COUNT"
+            value = tostring((var.replicas + 1) * var.shards)
+          }
+
+          env {
+            name  = "REDIS_CLUSTER_PORT"
+            value = "6379"
+          }
+
+          volume_mount {
+            name       = "scripts"
+            mount_path = "/etc/scripts"
+          }
         }
+
+        volume {
+          name = "scripts"
+          config_map {
+            name         = kubernetes_config_map_v1.redis_scripts.metadata[0].name
+            default_mode = "0755"
+          }
+        }
+
+        restart_policy = "Never"
       }
     }
   }
