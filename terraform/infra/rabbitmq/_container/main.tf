@@ -39,7 +39,7 @@ output "port" {
 output "passwords" {
   value = {
     for user in var.setup.users :
-    user.name => random_password.passwords[user.name].result
+    user.name => try(random_password.passwords[user.name].result, null)
   }
   sensitive = true
 }

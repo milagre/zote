@@ -113,8 +113,8 @@ output "k8s" {
     users = {
       for user in var.setup.users :
       user.name => {
-        configmap = kubernetes_config_map_v1.users[user.name].metadata[0].name
-        secret    = kubernetes_secret_v1.passwords[user.name].metadata[0].name
+        configmap = try(kubernetes_config_map_v1.users[user.name].metadata[0].name, null)
+        secret    = try(kubernetes_secret_v1.passwords[user.name].metadata[0].name, null)
       }
     }
   }

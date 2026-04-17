@@ -24,8 +24,8 @@ data "external" "password_hashes" {
   program = [
     "bash",
     "${path.module}/pwhash.sh",
-    random_bytes.salts[each.key].base64,
-    random_password.passwords[each.key].result,
+    try(random_bytes.salts[each.key].base64, ""),
+    try(random_password.passwords[each.key].result, ""),
   ]
 }
 
@@ -67,6 +67,7 @@ locals {
         password_hash     = data.external.password_hashes[user.name].result.hash,
         tags              = user.tags,
       }
+      if try(random_bytes.salts[user.name].base64, "") != "" && try(random_password.passwords[user.name].result, "") != ""
     ],
     vhosts = [
       for vhost in var.setup.vhosts :
