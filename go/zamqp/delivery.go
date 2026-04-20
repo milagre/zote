@@ -13,6 +13,7 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 
 	"github.com/milagre/zote/go/zlog"
+	"github.com/milagre/zote/go/zstats"
 )
 
 type Delivery interface {
@@ -146,6 +147,7 @@ func (m *delivery) Ack(ctx context.Context) error {
 		return fmt.Errorf("acking message: %w", err)
 	}
 
+	zstats.FromContext(ctx).Count("delivery.ack", 1)
 	zlog.FromContext(ctx).Info("Message acknowledged")
 
 	return nil
@@ -159,6 +161,7 @@ func (m *delivery) Reject(ctx context.Context) error {
 		return fmt.Errorf("rejecting message: %w", err)
 	}
 
+	zstats.FromContext(ctx).Count("delivery.reject", 1)
 	zlog.FromContext(ctx).Info("Message rejected")
 
 	return nil
@@ -182,6 +185,7 @@ func (m *delivery) RetryWithData(ctx context.Context, content []byte, contentTyp
 		return fmt.Errorf("retrying message: %w", err)
 	}
 
+	zstats.FromContext(ctx).Count("delivery.retry", 1)
 	zlog.FromContext(ctx).Info("Message retried")
 
 	return nil
@@ -206,6 +210,7 @@ func (m *delivery) RetryDelayedWithData(ctx context.Context, delay time.Duration
 		return fmt.Errorf("retrying message with delay: %w", err)
 	}
 
+	zstats.FromContext(ctx).WithTag("delay", delay.String()).Count("delivery.retry", 1)
 	zlog.FromContext(ctx).Infof("Message queued for retry in %s", delay)
 
 	return nil
@@ -225,6 +230,7 @@ func (m *delivery) Fatal(ctx context.Context) error {
 		return fmt.Errorf("retrying message with delay: %w", err)
 	}
 
+	zstats.FromContext(ctx).Count("delivery.fatal", 1)
 	zlog.FromContext(ctx).Infof("Message fataled")
 
 	return nil

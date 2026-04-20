@@ -186,7 +186,7 @@ func makeConsumeChannel(conn Connection, concurrency int) (Channel, error) {
 }
 
 func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliveries chan Delivery) {
-	stats := zstats.FromContext(ctx).WithTag("queue", c.queueName)
+	stats := zstats.FromContext(ctx)
 	logger := zlog.FromContext(ctx)
 	for {
 		select {
