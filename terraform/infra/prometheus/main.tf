@@ -24,3 +24,11 @@ resource "helm_release" "prometheus" {
     })
   ]
 }
+
+output "service" {
+  value = {
+    name      = helm_release.prometheus.name
+    namespace = helm_release.prometheus.namespace
+    port      = 9090
+  }
+}
