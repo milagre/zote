@@ -1,0 +1,383 @@
+// Package container is the container-backed implementation of the mysql
+// backend interface defined in the parent mysql package. It provisions a
+// single-writer StatefulSet with a PersistentVolumeClaim, a headless-by-
+// label ClusterIP Service, and the configmaps/secrets needed to seed a
+// fresh instance.
+//
+// The init-container trick that drives primary vs. replica configuration
+// from the pod ordinal is preserved so the same manifest topology can be
+// scaled to multiple replicas without re-templating.
+package container
+
+import (
+	"fmt"
+	"math"
+
+	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"
+	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
+	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
+	"github.com/pulumi/pulumi-random/sdk/v4/go/random"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+
+	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/tokens"
+	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/stringdata"
+)
+
+const (
+	mysqlPort = 3306
+	storage   = "10Gi"
+
+	imageMysql = "mysql"
+	imageInit  = "bash:5"
+)
+
+var typeToken = tokens.Token("database", "MysqlContainer")
+
+// randomPasswordIgnoredArgs freezes the RandomPassword generation knobs after
+// the resource exists so imported passwords (whose generator args may not
+// match the live `result`) don't get rotated by a benign args diff.
+var randomPasswordIgnoredArgs = []string{
+	"length", "special", "upper", "lower", "numeric",
+	"minLower", "minUpper", "minNumeric", "minSpecial", "overrideSpecial",
+}
+
+// Args is the caller-facing configuration for a container-backed mysql.
+// The parent mysql component fills in the instance identity
+// (Name/Namespace); per-role resource profiles, the MySQL image version,
+// and the default database/user are user-supplied.
+type Args struct {
+	// Env is the deploy environment (RotateSecrets drives optional RandomPassword keepers).
+	Env env.Env
+	// Namespace is the target Kubernetes namespace.
+	Namespace string
+	// Name is the logical mysql instance name (used to derive the
+	// release name "mysql-<Name>").
+	Name string
+	// Version is the MySQL image tag (e.g. "8.0").
+	Version string
+	// Primary is the validated resource profile for the writer pod;
+	// also drives the replica profile's innodb_buffer_pool_size because
+	// replicas mirror writer sizing in the default single-node config.
+	Primary profile.Profile
+	// Replica is the validated resource profile applied when the
+	// StatefulSet is scaled beyond one replica.
+	Replica profile.Profile
+	// Database is the initial schema name to create on first boot.
+	Database string
+	// Username is the non-root user seeded with access to Database.
+	Username string
+}
+
+// Container provisions mysql as an in-cluster StatefulSet and exposes
+// the connection details the parent component wires into its shared
+// ConfigMap/Secret.
+type Container struct {
+	pulumi.ResourceState
+
+	username pulumi.StringOutput
+	hostname pulumi.StringOutput
+	port     pulumi.StringOutput
+	password pulumi.StringOutput
+}
+
+// New registers the container backend as a child component of the
+// parent mysql facade.
+func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.ResourceOption) (*Container, error) {
+	if args == nil {
+		return nil, fmt.Errorf("%s: args is required", typeToken)
+	}
+	if args.Name == "" {
+		return nil, fmt.Errorf("%s: Name is required", typeToken)
+	}
+	if args.Namespace == "" {
+		return nil, fmt.Errorf("%s: Namespace is required", typeToken)
+	}
+	if args.Version == "" {
+		return nil, fmt.Errorf("%s: Version is required", typeToken)
+	}
+	if args.Database == "" {
+		return nil, fmt.Errorf("%s: Database is required", typeToken)
+	}
+	if args.Username == "" {
+		return nil, fmt.Errorf("%s: Username is required", typeToken)
+	}
+	if err := args.Env.Validate(); err != nil {
+		return nil, fmt.Errorf("%s: env: %w", typeToken, err)
+	}
+
+	comp := &Container{}
+	if err := ctx.RegisterComponentResource(typeToken, parentName, comp, opts...); err != nil {
+		return nil, fmt.Errorf("registering %s: %w", typeToken, err)
+	}
+
+	releaseName := args.Name
+	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
+
+	password, err := random.NewRandomPassword(ctx, parentName+"-password", &random.RandomPasswordArgs{
+		Length:          pulumi.Int(64),
+		Numeric:         pulumi.Bool(true),
+		Upper:           pulumi.Bool(true),
+		Lower:           pulumi.Bool(true),
+		Special:         pulumi.Bool(false),
+		MinNumeric:      pulumi.Int(8),
+		MinLower:        pulumi.Int(8),
+		MinUpper:        pulumi.Int(8),
+		OverrideSpecial: pulumi.String("$%&*()-_=+[]{}<>:?"),
+		Keepers:         args.Env.RandomKeepers(nil),
+	},
+		pulumi.Parent(comp),
+		pulumi.IgnoreChanges(randomPasswordIgnoredArgs),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%s: generating password: %w", typeToken, err)
+	}
+
+	cfgName := "cfg-" + releaseName
+	patchForce := pulumi.StringMap{"pulumi.com/patchForce": pulumi.String("true")}
+	cfgCM, err := corev1.NewConfigMap(ctx, parentName+"-config", &corev1.ConfigMapArgs{
+		Metadata: &metav1.ObjectMetaArgs{
+			Name:        pulumi.String(cfgName),
+			Namespace:   pulumi.String(args.Namespace),
+			Labels:      labels,
+			Annotations: patchForce,
+		},
+		Data: pulumi.StringMap{
+			"primary.cnf": pulumi.String(primaryCnf(args.Primary)),
+			"replica.cnf": pulumi.String(replicaCnf(args.Primary)),
+		},
+	}, pulumi.Parent(comp))
+	if err != nil {
+		return nil, fmt.Errorf("%s: config configmap: %w", typeToken, err)
+	}
+
+	passwordSecret, err := corev1.NewSecret(ctx, parentName+"-password", &corev1.SecretArgs{
+		Metadata: &metav1.ObjectMetaArgs{
+			Name:        pulumi.String(cfgName),
+			Namespace:   pulumi.String(args.Namespace),
+			Labels:      labels,
+			Annotations: patchForce,
+		},
+		Type: pulumi.String("Opaque"),
+		Data: stringdata.SecretData(map[string]pulumi.StringOutput{
+			"MYSQL_PASSWORD": password.Result,
+		}),
+	}, pulumi.Parent(comp))
+	if err != nil {
+		return nil, fmt.Errorf("%s: password secret: %w", typeToken, err)
+	}
+
+	if _, err := corev1.NewService(ctx, parentName, &corev1.ServiceArgs{
+		Metadata: &metav1.ObjectMetaArgs{
+			Name:      pulumi.String(releaseName),
+			Namespace: pulumi.String(args.Namespace),
+			Labels:    labels,
+		},
+		Spec: &corev1.ServiceSpecArgs{
+			Selector: labels,
+			Ports: corev1.ServicePortArray{
+				&corev1.ServicePortArgs{
+					Name: pulumi.String("mysql"),
+					Port: pulumi.Int(mysqlPort),
+				},
+			},
+		},
+	}, pulumi.Parent(comp)); err != nil {
+		return nil, fmt.Errorf("%s: service: %w", typeToken, err)
+	}
+
+	if _, err := appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
+		Metadata: &metav1.ObjectMetaArgs{
+			Name:      pulumi.String(releaseName),
+			Namespace: pulumi.String(args.Namespace),
+		},
+		Spec: &appsv1.StatefulSetSpecArgs{
+			ServiceName: pulumi.String(releaseName),
+			Replicas:    pulumi.Int(1),
+			Selector: &metav1.LabelSelectorArgs{
+				MatchLabels: labels,
+			},
+			Template: &corev1.PodTemplateSpecArgs{
+				Metadata: &metav1.ObjectMetaArgs{
+					Labels: labels,
+				},
+				Spec: podSpec(args, cfgCM, passwordSecret),
+			},
+			VolumeClaimTemplates: corev1.PersistentVolumeClaimTypeArray{
+				&corev1.PersistentVolumeClaimTypeArgs{
+					Metadata: &metav1.ObjectMetaArgs{
+						Name: pulumi.String("data"),
+					},
+					Spec: &corev1.PersistentVolumeClaimSpecArgs{
+						AccessModes: pulumi.StringArray{pulumi.String("ReadWriteOnce")},
+						Resources: &corev1.VolumeResourceRequirementsArgs{
+							Requests: pulumi.StringMap{"storage": pulumi.String(storage)},
+						},
+					},
+				},
+			},
+		},
+	}, pulumi.Parent(comp)); err != nil {
+		return nil, fmt.Errorf("%s: statefulset: %w", typeToken, err)
+	}
+
+	comp.username = pulumi.String(args.Username).ToStringOutput()
+	comp.hostname = pulumi.String(releaseName + "." + args.Namespace + ".svc.cluster.local").ToStringOutput()
+	comp.port = pulumi.Sprintf("%d", mysqlPort).ToStringOutput()
+	comp.password = password.Result
+
+	if err := ctx.RegisterResourceOutputs(comp, pulumi.Map{}); err != nil {
+		return nil, fmt.Errorf("%s: registering outputs: %w", typeToken, err)
+	}
+
+	return comp, nil
+}
+
+// Username returns the non-root user seeded on first boot.
+func (c *Container) Username() pulumi.StringOutput { return c.username }
+
+// Hostname returns the in-cluster DNS name for the mysql service.
+func (c *Container) Hostname() pulumi.StringOutput { return c.hostname }
+
+// Port returns the mysql service port as a string.
+func (c *Container) Port() pulumi.StringOutput { return c.port }
+
+// Password returns the generated password for the seeded user. It is
+// derived from a random.RandomPassword resource, so its value is
+// stable across Pulumi runs and visible in state.
+func (c *Container) Password() pulumi.StringOutput { return c.password }
+
+// podSpec assembles the full pod spec (init container + main container
+// + volumes). It is a function of Args plus the ConfigMap/Secret names
+// so the StatefulSet registration stays readable.
+func podSpec(args *Args, cfgCM *corev1.ConfigMap, passwordSecret *corev1.Secret) *corev1.PodSpecArgs {
+	return &corev1.PodSpecArgs{
+		Volumes: corev1.VolumeArray{
+			&corev1.VolumeArgs{
+				Name:     pulumi.String("conf"),
+				EmptyDir: &corev1.EmptyDirVolumeSourceArgs{},
+			},
+			&corev1.VolumeArgs{
+				Name: pulumi.String("config-map"),
+				ConfigMap: &corev1.ConfigMapVolumeSourceArgs{
+					Name: cfgCM.Metadata.Name(),
+				},
+			},
+		},
+		InitContainers: corev1.ContainerArray{
+			&corev1.ContainerArgs{
+				Name:    pulumi.String("init-mysql"),
+				Image:   pulumi.String(imageInit),
+				Command: pulumi.StringArray{pulumi.String("bash"), pulumi.String("-c"), pulumi.String(initScript)},
+				VolumeMounts: corev1.VolumeMountArray{
+					&corev1.VolumeMountArgs{
+						Name:      pulumi.String("conf"),
+						MountPath: pulumi.String("/mnt/conf.d"),
+					},
+					&corev1.VolumeMountArgs{
+						Name:      pulumi.String("config-map"),
+						MountPath: pulumi.String("/mnt/config-map"),
+					},
+				},
+			},
+		},
+		Containers: corev1.ContainerArray{
+			&corev1.ContainerArgs{
+				Name:  pulumi.String("mysql"),
+				Image: pulumi.String(imageMysql + ":" + args.Version),
+				Ports: corev1.ContainerPortArray{
+					&corev1.ContainerPortArgs{
+						Name:          pulumi.String("mysql"),
+						ContainerPort: pulumi.Int(mysqlPort),
+					},
+				},
+				Env: corev1.EnvVarArray{
+					&corev1.EnvVarArgs{Name: pulumi.String("MYSQL_ALLOW_EMPTY_PASSWORD"), Value: pulumi.String("yes")},
+					&corev1.EnvVarArgs{Name: pulumi.String("MYSQL_ROOT_HOST"), Value: pulumi.String("127.0.0.1")},
+					&corev1.EnvVarArgs{Name: pulumi.String("MYSQL_DATABASE"), Value: pulumi.String(args.Database)},
+					&corev1.EnvVarArgs{Name: pulumi.String("MYSQL_USER"), Value: pulumi.String(args.Username)},
+				},
+				EnvFrom: corev1.EnvFromSourceArray{
+					&corev1.EnvFromSourceArgs{
+						SecretRef: &corev1.SecretEnvSourceArgs{
+							Name: passwordSecret.Metadata.Name(),
+						},
+					},
+				},
+				Resources: &corev1.ResourceRequirementsArgs{
+					Requests: pulumi.StringMap{
+						"cpu":    pulumi.Sprintf("%g", args.Primary.CPUCores.Min),
+						"memory": pulumi.Sprintf("%dM", args.Primary.MemMB.Min),
+					},
+					Limits: pulumi.StringMap{
+						"cpu":    pulumi.Sprintf("%g", args.Primary.CPUCores.Max),
+						"memory": pulumi.Sprintf("%dM", args.Primary.MemMB.Max),
+					},
+				},
+				VolumeMounts: corev1.VolumeMountArray{
+					&corev1.VolumeMountArgs{
+						Name:      pulumi.String("data"),
+						MountPath: pulumi.String("/var/lib/mysql"),
+						SubPath:   pulumi.String("mysql"),
+					},
+					&corev1.VolumeMountArgs{
+						Name:      pulumi.String("conf"),
+						MountPath: pulumi.String("/etc/mysql/conf.d"),
+					},
+				},
+				LivenessProbe: &corev1.ProbeArgs{
+					Exec: &corev1.ExecActionArgs{
+						Command: pulumi.StringArray{pulumi.String("mysqladmin"), pulumi.String("ping")},
+					},
+					InitialDelaySeconds: pulumi.Int(30),
+					TimeoutSeconds:      pulumi.Int(5),
+					PeriodSeconds:       pulumi.Int(10),
+				},
+				ReadinessProbe: &corev1.ProbeArgs{
+					Exec: &corev1.ExecActionArgs{
+						Command: pulumi.StringArray{pulumi.String("mysqladmin"), pulumi.String("ping")},
+					},
+					InitialDelaySeconds: pulumi.Int(5),
+					TimeoutSeconds:      pulumi.Int(1),
+					PeriodSeconds:       pulumi.Int(2),
+				},
+			},
+		},
+	}
+}
+
+// primaryCnf renders /etc/mysql/conf.d/primary.cnf. innodb_buffer_pool_size
+// is sized at half of the writer's memory limit, the canonical starting
+// point for a dedicated MySQL server.
+func primaryCnf(p profile.Profile) string {
+	return fmt.Sprintf("[mysqld]\nlog-bin\nmax_connections=100\ninnodb_buffer_pool_size=%dM\n",
+		int(math.Floor(float64(p.MemMB.Max)*0.5)))
+}
+
+// replicaCnf renders /etc/mysql/conf.d/replica.cnf. super-read-only on
+// non-primary pods prevents accidental writes, and the buffer pool is
+// sized against the primary profile so a promoted replica fits its
+// workload without reconfiguration.
+func replicaCnf(p profile.Profile) string {
+	return fmt.Sprintf("[mysqld]\nsuper-read-only\nmax_connections=100\ninnodb_buffer_pool_size=%dM\n",
+		int(math.Floor(float64(p.MemMB.Max)*0.5)))
+}
+
+// initScript seeds per-pod MySQL configuration before the main
+// container starts: it derives a stable server-id from the pod ordinal
+// and copies either primary.cnf or replica.cnf into /etc/mysql/conf.d
+// depending on whether this is pod 0.
+const initScript = `set -ex
+
+[[ ` + "`" + `hostname` + "`" + ` =~ -([0-9]+)$ ]] || exit 1
+ordinal=${BASH_REMATCH[1]}
+echo [mysqld] > /mnt/conf.d/server-id.cnf
+echo server-id=$((100 + $ordinal)) >> /mnt/conf.d/server-id.cnf
+
+if [[ $ordinal -eq 0 ]]; then
+    cp /mnt/config-map/primary.cnf /mnt/conf.d/
+else
+    cp /mnt/config-map/replica.cnf /mnt/conf.d/
+fi
+`

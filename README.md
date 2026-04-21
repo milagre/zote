@@ -53,9 +53,9 @@ The framework consists of ~20 independent modules, each providing specific funct
 - **[zfunc](go/zfunc)** - Functional programming constructs missing from the std library (maps, slices)
 - **[zreflect](go/zreflect)** - Reflection helpers
 
-## Terraform Library
+## Pulumi Library
 
-The `terraform/` directory provides reusable infrastructure modules for kubernetes-based deployments designed to support development environments very closely mirroring production ones, and a standardized deployment style designed to play well with zcmd. A pluggable cloud provider setup decouples provider-specific configuration from core system design.
+The `pulumi/` directory provides reusable infrastructure modules for kubernetes-based deployments designed to support development environments very closely mirroring production ones, and a standardized deployment style designed to play well with zcmd. A pluggable cloud provider setup decouples provider-specific configuration from core system design.
 
 **Cloud Providers:**
 
@@ -70,5 +70,5 @@ The `terraform/` directory provides reusable infrastructure modules for kubernet
 
 **Database Modules:**
 
-- `database/mysql` - MySQL deployment supporting both containerized (Kubernetes) and cloud (DigitalOcean) modes
+- `database/mysql` - MySQL deployment supporting both containerized (Kubernetes) and cloud modes
   - Outputs ConfigMap and Secret for client configuration

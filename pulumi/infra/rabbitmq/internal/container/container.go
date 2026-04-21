@@ -1,0 +1,216 @@
+// Package container is the in-cluster implementation of the rabbitmq
+// backend interface defined in the parent rabbitmq package. It provisions
+// a RabbitMQ cluster (StatefulSet + services + RBAC + bootstrap
+// ConfigMap/Secret) with k8s peer discovery.
+package container
+
+import (
+	"fmt"
+
+	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"
+	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
+	"github.com/pulumi/pulumi-random/sdk/v4/go/random"
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+
+	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/tokens"
+	"github.com/milagre/zote/pulumi/profile"
+)
+
+var typeToken = tokens.Token("infra", "RabbitmqContainer")
+
+// randomPasswordIgnoredArgs freezes the RandomPassword generation knobs after
+// the resource exists so imported passwords (whose generator args may not
+// match the live `result`) don't get rotated by a benign args diff.
+var randomPasswordIgnoredArgs = []string{
+	"length", "special", "upper", "lower", "numeric",
+	"minLower", "minUpper", "minNumeric", "minSpecial", "overrideSpecial",
+}
+
+// User describes a rabbitmq user to seed via definitions.json.
+type User struct {
+	Name string
+	Tags []string
+}
+
+// Vhost describes a rabbitmq virtual host and the list of user names that
+// should be granted full permissions on it.
+type Vhost struct {
+	Name  string
+	Users []string
+}
+
+// Setup is the per-instance rabbitmq topology the container will bootstrap
+// on first boot via definitions.json.
+type Setup struct {
+	Users  []User
+	Vhosts []Vhost
+}
+
+// Args is the caller-facing configuration for a container-backed rabbitmq.
+type Args struct {
+	// Env is the deploy environment (RotateSecrets drives optional RandomPassword keepers).
+	Env env.Env
+	// Namespace is the target Kubernetes namespace.
+	Namespace string
+	// Name is the instance name (release name "rabbitmq-<Name>").
+	Name string
+	// Version is the rabbitmq container image tag.
+	Version string
+	// Profile is the validated resource profile (CPU, memory, replica count).
+	Profile profile.Profile
+	// Setup declares the users and vhosts the cluster should boot with.
+	Setup Setup
+}
+
+// Container is the container-backed implementation of the rabbitmq backend.
+type Container struct {
+	pulumi.ResourceState
+
+	StatefulSet     *appsv1.StatefulSet
+	ClientService   *corev1.Service
+	HeadlessService *corev1.Service
+
+	hostname      pulumi.StringOutput
+	port          pulumi.StringOutput
+	adminHostname pulumi.StringOutput
+	adminPort     pulumi.StringOutput
+
+	passwords map[string]pulumi.StringOutput
+	users     []string
+}
+
+// New registers the container backend and every resource it owns.
+func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.ResourceOption) (*Container, error) {
+	if args == nil {
+		return nil, fmt.Errorf("%s: args is required", typeToken)
+	}
+	if args.Name == "" {
+		return nil, fmt.Errorf("%s: Name is required", typeToken)
+	}
+	if args.Namespace == "" {
+		return nil, fmt.Errorf("%s: Namespace is required", typeToken)
+	}
+	if args.Version == "" {
+		return nil, fmt.Errorf("%s: Version is required", typeToken)
+	}
+	if err := args.Env.Validate(); err != nil {
+		return nil, fmt.Errorf("%s: env: %w", typeToken, err)
+	}
+
+	comp := &Container{}
+	if err := ctx.RegisterComponentResource(typeToken, parentName, comp, opts...); err != nil {
+		return nil, fmt.Errorf("registering %s: %w", typeToken, err)
+	}
+
+	releaseName := fmt.Sprintf("rabbitmq-%s", args.Name)
+	// Synthetic admin is always present regardless of caller setup so
+	// operators always have a management-scope user to log into.
+	allUsers := make([]User, 0, len(args.Setup.Users)+1)
+	allUsers = append(allUsers, args.Setup.Users...)
+	allUsers = append(allUsers, User{Name: adminUser, Tags: []string{"administrator", "management"}})
+
+	userNames := make([]string, 0, len(allUsers))
+	for _, u := range allUsers {
+		userNames = append(userNames, u.Name)
+	}
+
+	creds, err := registerCreds(ctx, parentName, comp, userNames, args.Env)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", typeToken, err)
+	}
+
+	defaultPassword, err := random.NewRandomPassword(ctx, parentName+"-default-password", &random.RandomPasswordArgs{
+		Length:   pulumi.Int(32),
+		Numeric:  pulumi.Bool(true),
+		Upper:    pulumi.Bool(true),
+		Lower:    pulumi.Bool(true),
+		Special:  pulumi.Bool(false),
+		Keepers:  args.Env.RandomKeepers(nil),
+	},
+		pulumi.Parent(comp),
+		pulumi.IgnoreChanges(randomPasswordIgnoredArgs),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%s: default password: %w", typeToken, err)
+	}
+	erlangCookie, err := random.NewRandomPassword(ctx, parentName+"-erlang-cookie", &random.RandomPasswordArgs{
+		Length:   pulumi.Int(32),
+		Numeric:  pulumi.Bool(true),
+		Upper:    pulumi.Bool(true),
+		Lower:    pulumi.Bool(true),
+		Special:  pulumi.Bool(false),
+		Keepers:  args.Env.RandomKeepers(nil),
+	},
+		pulumi.Parent(comp),
+		pulumi.IgnoreChanges(randomPasswordIgnoredArgs),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%s: erlang cookie: %w", typeToken, err)
+	}
+
+	sa, err := registerRBAC(ctx, parentName, comp, args.Namespace, releaseName)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", typeToken, err)
+	}
+
+	cfgCM, cfgSecret, err := configResources(
+		ctx, parentName, comp,
+		args.Namespace, releaseName,
+		creds, allUsers, args.Setup.Vhosts,
+		erlangCookie, defaultPassword,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", typeToken, err)
+	}
+
+	sts, client, headless, err := registerWorkload(
+		ctx, parentName, comp,
+		args.Namespace, releaseName, args.Version,
+		args.Profile, cfgCM, cfgSecret, sa,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", typeToken, err)
+	}
+
+	comp.StatefulSet = sts
+	comp.ClientService = client
+	comp.HeadlessService = headless
+
+	fqdn := pulumi.String(fmt.Sprintf("%s.%s.svc.cluster.local", releaseName, args.Namespace)).ToStringOutput()
+
+	comp.hostname = fqdn
+	comp.port = pulumi.Sprintf("%d", portAMQP).ToStringOutput()
+	comp.adminHostname = fqdn
+	comp.adminPort = pulumi.Sprintf("%d", portManagement).ToStringOutput()
+
+	// Expose only the caller-supplied users (admin is internal) — same as
+	// the legacy module's `passwords` output.
+	comp.passwords = make(map[string]pulumi.StringOutput, len(args.Setup.Users))
+	for _, u := range args.Setup.Users {
+		comp.passwords[u.Name] = creds[u.Name].password.Result
+	}
+	comp.users = userNames
+
+	if err := ctx.RegisterResourceOutputs(comp, pulumi.Map{}); err != nil {
+		return nil, fmt.Errorf("%s: registering outputs: %w", typeToken, err)
+	}
+
+	return comp, nil
+}
+
+// Hostname returns the AMQP FQDN inside the cluster.
+func (c *Container) Hostname() pulumi.StringOutput { return c.hostname }
+
+// Port returns the AMQP port as a string.
+func (c *Container) Port() pulumi.StringOutput { return c.port }
+
+// AdminHostname returns the management/API FQDN inside the cluster.
+func (c *Container) AdminHostname() pulumi.StringOutput { return c.adminHostname }
+
+// AdminPort returns the management port as a string.
+func (c *Container) AdminPort() pulumi.StringOutput { return c.adminPort }
+
+// Passwords returns the map of caller-configured user names to their
+// generated passwords.
+func (c *Container) Passwords() map[string]pulumi.StringOutput { return c.passwords }

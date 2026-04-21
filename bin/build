@@ -4,11 +4,12 @@ set -e
 DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 PROJ=$( cd -- "${DIR}/.." &> /dev/null && pwd )
 
-pushd $PROJ/terraform
-tflint --recursive --disable-rule=terraform_typed_variables
+pushd $PROJ/go
+go mod tidy && go mod vendor
+go test ./...
 popd
 
-pushd $PROJ/go
+pushd $PROJ/pulumi
 go mod tidy && go mod vendor
 go test ./...
 popd
