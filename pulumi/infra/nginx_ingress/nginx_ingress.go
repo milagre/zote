@@ -18,8 +18,8 @@ import (
 
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/internal/helm"
-	"github.com/milagre/zote/pulumi/tokens"
 	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/tokens"
 )
 
 var spec = helm.ChartSpec{

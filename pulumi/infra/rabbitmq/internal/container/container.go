@@ -13,8 +13,8 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/tokens"
 	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/tokens"
 )
 
 var typeToken = tokens.Token("infra", "RabbitmqContainer")
@@ -121,12 +121,12 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	}
 
 	defaultPassword, err := random.NewRandomPassword(ctx, parentName+"-default-password", &random.RandomPasswordArgs{
-		Length:   pulumi.Int(32),
-		Numeric:  pulumi.Bool(true),
-		Upper:    pulumi.Bool(true),
-		Lower:    pulumi.Bool(true),
-		Special:  pulumi.Bool(false),
-		Keepers:  args.Env.RandomKeepers(nil),
+		Length:  pulumi.Int(32),
+		Numeric: pulumi.Bool(true),
+		Upper:   pulumi.Bool(true),
+		Lower:   pulumi.Bool(true),
+		Special: pulumi.Bool(false),
+		Keepers: args.Env.RandomKeepers(nil),
 	},
 		pulumi.Parent(comp),
 		pulumi.IgnoreChanges(randomPasswordIgnoredArgs),
@@ -135,12 +135,12 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 		return nil, fmt.Errorf("%s: default password: %w", typeToken, err)
 	}
 	erlangCookie, err := random.NewRandomPassword(ctx, parentName+"-erlang-cookie", &random.RandomPasswordArgs{
-		Length:   pulumi.Int(32),
-		Numeric:  pulumi.Bool(true),
-		Upper:    pulumi.Bool(true),
-		Lower:    pulumi.Bool(true),
-		Special:  pulumi.Bool(false),
-		Keepers:  args.Env.RandomKeepers(nil),
+		Length:  pulumi.Int(32),
+		Numeric: pulumi.Bool(true),
+		Upper:   pulumi.Bool(true),
+		Lower:   pulumi.Bool(true),
+		Special: pulumi.Bool(false),
+		Keepers: args.Env.RandomKeepers(nil),
 	},
 		pulumi.Parent(comp),
 		pulumi.IgnoreChanges(randomPasswordIgnoredArgs),

@@ -14,11 +14,11 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/tokens"
 	"github.com/milagre/zote/pulumi/k8s/deployment/http"
 	"github.com/milagre/zote/pulumi/k8s/deployment/proc"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/tokens"
 )
 
 var typeToken = tokens.Token("k8s", "Deployment")

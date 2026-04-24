@@ -40,7 +40,7 @@ a: from-name
 nested:
   z: 300
 `)},
-		"env/local/dev/username/5.info.yaml": {Data: []byte(`info: env-${env.name}`)},
+		"env/local/dev/username/5.info.yaml":     {Data: []byte(`info: env-${env.name}`)},
 		"env/local/dev/username/_9.secrets.yaml": {Data: []byte(`ignored: yes`)},
 	}
 

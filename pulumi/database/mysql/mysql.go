@@ -21,8 +21,8 @@ import (
 	"github.com/milagre/zote/pulumi/database/mysql/internal/container"
 	"github.com/milagre/zote/pulumi/database/mysql/internal/digitalocean"
 	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/tokens"
 	"github.com/milagre/zote/pulumi/stringdata"
+	"github.com/milagre/zote/pulumi/tokens"
 )
 
 var typeToken = tokens.Token("database", "Mysql")

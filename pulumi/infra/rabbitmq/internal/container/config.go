@@ -51,12 +51,12 @@ func registerCreds(ctx *pulumi.Context, parentName string, comp pulumi.Resource,
 		}
 
 		password, err := random.NewRandomPassword(ctx, fmt.Sprintf("%s-password-%s", parentName, u), &random.RandomPasswordArgs{
-			Length:   pulumi.Int(32),
-			Numeric:  pulumi.Bool(true),
-			Upper:    pulumi.Bool(true),
-			Lower:    pulumi.Bool(true),
-			Special:  pulumi.Bool(false),
-			Keepers:  e.RandomKeepers(nil),
+			Length:  pulumi.Int(32),
+			Numeric: pulumi.Bool(true),
+			Upper:   pulumi.Bool(true),
+			Lower:   pulumi.Bool(true),
+			Special: pulumi.Bool(false),
+			Keepers: e.RandomKeepers(nil),
 		},
 			pulumi.Parent(comp),
 			pulumi.IgnoreChanges(randomPasswordIgnoredArgs),

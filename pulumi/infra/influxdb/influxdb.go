@@ -18,8 +18,8 @@ import (
 
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra/influxdb/internal/container"
-	"github.com/milagre/zote/pulumi/tokens"
 	"github.com/milagre/zote/pulumi/stringdata"
+	"github.com/milagre/zote/pulumi/tokens"
 )
 
 var typeToken = tokens.Token("infra", "Influxdb")
