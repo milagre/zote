@@ -53,3 +53,14 @@ func Select[T any](list []T, cb func(T) bool) []T {
 	}
 	return result
 }
+
+func Find[T any](list []T, cb func(T) bool) (T, bool) {
+	for _, elem := range list {
+		if cb(elem) {
+			return elem, true
+		}
+	}
+
+	var zero T
+	return zero, false
+}
