@@ -19,6 +19,7 @@ import (
 
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/k8s/deployment/internal/body"
+	"github.com/milagre/zote/pulumi/k8s/internal/annotations"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/profile"
 	"github.com/milagre/zote/pulumi/tokens"
@@ -198,8 +199,9 @@ func (a *Args) validate() error {
 func registerService(ctx *pulumi.Context, name string, args *Args, parent pulumi.Resource) (*corev1.Service, error) {
 	svc, err := corev1.NewService(ctx, name, &corev1.ServiceArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:      pulumi.String(args.Name),
-			Namespace: pulumi.String(args.Namespace),
+			Name:        pulumi.String(args.Name),
+			Namespace:   pulumi.String(args.Namespace),
+			Annotations: annotations.Managed(),
 		},
 		Spec: &corev1.ServiceSpecArgs{
 			Type: pulumi.String("ClusterIP"),
@@ -234,6 +236,7 @@ func registerPrivateIngress(ctx *pulumi.Context, name string, args *Args, svc *c
 			Name:      pulumi.String(args.Name + "-nginx-private"),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey:      pulumi.String("true"),
 				"kubernetes.io/ingress.class": pulumi.String("nginx"),
 			},
 		},
@@ -287,6 +290,7 @@ func registerPublicIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 			Name:      pulumi.String(args.Name + "-nginx-public"),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey:         pulumi.String("true"),
 				"kubernetes.io/ingress.class":    pulumi.String("nginx"),
 				"cert-manager.io/cluster-issuer": pulumi.String("letsencrypt-http01"),
 			},
@@ -315,6 +319,7 @@ func registerTunnelIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 			Name:      pulumi.String(args.Name + "-tunnel"),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey:      pulumi.String("true"),
 				"kubernetes.io/ingress.class": pulumi.String("cloudflare-tunnel"),
 			},
 		},

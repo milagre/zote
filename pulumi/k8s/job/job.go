@@ -14,6 +14,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/k8s/internal/annotations"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/profile"
 	"github.com/milagre/zote/pulumi/tokens"
@@ -100,9 +101,9 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 
 	labels := pulumi.StringMap{"app": pulumi.String(args.Name)}
 
-	var annotations pulumi.StringMap
+	var metaAnnotations pulumi.StringMap
 	if !args.Wait {
-		annotations = pulumi.StringMap{"pulumi.com/skipAwait": pulumi.String("true")}
+		metaAnnotations = annotations.Managed()
 	}
 
 	if _, err := batchv1.NewJob(ctx, resourceName, &batchv1.JobArgs{
@@ -110,7 +111,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			Name:        pulumi.String(args.Name),
 			Namespace:   pulumi.String(args.Namespace),
 			Labels:      labels,
-			Annotations: annotations,
+			Annotations: metaAnnotations,
 		},
 		Spec: &batchv1.JobSpecArgs{
 			BackoffLimit: pulumi.Int(backoff),

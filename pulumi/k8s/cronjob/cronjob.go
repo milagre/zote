@@ -14,6 +14,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/k8s/internal/annotations"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/profile"
 	"github.com/milagre/zote/pulumi/tokens"
@@ -104,9 +105,10 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 
 	if _, err := batchv1.NewCronJob(ctx, resourceName, &batchv1.CronJobArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:      pulumi.String(args.Name),
-			Namespace: pulumi.String(args.Namespace),
-			Labels:    labels,
+			Name:        pulumi.String(args.Name),
+			Namespace:   pulumi.String(args.Namespace),
+			Labels:      labels,
+			Annotations: annotations.Managed(),
 		},
 		Spec: &batchv1.CronJobSpecArgs{
 			Schedule:                   pulumi.String(args.Schedule),

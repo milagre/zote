@@ -19,6 +19,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/k8s/internal/annotations"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/profile"
 )
@@ -103,9 +104,10 @@ func Register(
 	ns := pulumi.String(args.Namespace)
 	dep, err := appsv1.NewDeployment(ctx, name, &appsv1.DeploymentArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:      pulumi.String(args.Name),
-			Namespace: ns,
-			Labels:    labels,
+			Name:        pulumi.String(args.Name),
+			Namespace:   ns,
+			Labels:      labels,
+			Annotations: annotations.Managed(),
 		},
 		Spec: &appsv1.DeploymentSpecArgs{
 			Replicas: pulumi.Int(args.Profile.Num.Min),
@@ -175,6 +177,7 @@ func registerPodMonitor(
 			Labels: pulumi.StringMap{
 				"app": pulumi.String(args.Name),
 			},
+			Annotations: annotations.Managed(),
 		},
 		OtherFields: kubernetes.UntypedArgs{
 			"spec": pulumi.Map{
