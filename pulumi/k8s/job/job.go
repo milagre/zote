@@ -123,7 +123,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 				Spec: spec,
 			},
 		},
-	}, pulumi.Parent(comp)); err != nil {
+	}, pulumi.Parent(comp), pulumi.DeleteBeforeReplace(true)); err != nil {
 		return nil, fmt.Errorf("%s: job: %w", typeToken, err)
 	}
 
