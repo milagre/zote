@@ -1,6 +1,4 @@
-// Package profile describes a workload's resource profile (CPU, memory,
-// replica count). Input is the same string shape used by Kubernetes manifests
-// ("100m" / "512M"); validated numeric values are exposed for consumers.
+// Package profile parses CPU/memory ("100m", "512M") and optional replica bounds into numeric ranges.
 package profile
 
 import (
@@ -16,7 +14,6 @@ var (
 	memPattern = regexp.MustCompile(`^[0-9]+M$`)
 )
 
-// Raw is the YAML-shaped input form of a profile.
 type Raw struct {
 	CPU RawRange  `yaml:"cpu"`
 	Mem RawRange  `yaml:"mem"`
@@ -38,15 +35,12 @@ type FloatRange struct {
 	Max float64
 }
 
-// Profile is a validated, numeric resource profile.
 type Profile struct {
 	CPUCores FloatRange
 	MemMB    IntRange
 	Num      *IntRange
 }
 
-// New validates raw input and returns a numeric profile. CPU must be "Nm",
-// memory must be "NM", and max must be >= min for every range.
 func New(raw Raw) (Profile, error) {
 	cpuMin, err := parseMillis(raw.CPU.Min)
 	if err != nil {
@@ -88,31 +82,18 @@ func New(raw Raw) (Profile, error) {
 	return p, nil
 }
 
-// MinCoresMilli returns the minimum CPU request as a Kubernetes
-// millicore string ("Nm"). CPU values round-trip cleanly from their
-// "Nm" input form; the rounding guards against float representation
-// drift only.
 func (p Profile) MinCoresMilli() string {
 	return fmt.Sprintf("%dm", cpuToMilli(p.CPUCores.Min))
 }
 
-// MaxCoresMilli returns the maximum CPU limit as a Kubernetes
-// millicore string ("Nm").
 func (p Profile) MaxCoresMilli() string {
 	return fmt.Sprintf("%dm", cpuToMilli(p.CPUCores.Max))
 }
 
-// MinMemMiB returns the minimum memory request as a Kubernetes
-// mebibyte string ("NMi"). The profile's memory value is carried as
-// MemMB but is rendered in mebibyte units to match the convention
-// every zote chart wrapper and Kubernetes manifest in the library
-// uses.
 func (p Profile) MinMemMiB() string {
 	return fmt.Sprintf("%dMi", p.MemMB.Min)
 }
 
-// MaxMemMiB returns the maximum memory limit as a Kubernetes
-// mebibyte string ("NMi").
 func (p Profile) MaxMemMiB() string {
 	return fmt.Sprintf("%dMi", p.MemMB.Max)
 }

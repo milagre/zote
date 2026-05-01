@@ -1,9 +1,4 @@
-// Package podspec builds the Kubernetes PodSpec that is shared across the
-// workload types (Deployment, Job, CronJob). All three need the same
-// container body: image, resources derived from a profile, ambient stats
-// env vars, configmap/secret environment, literal env values, and
-// configmap-backed file mounts. Centralizing that here keeps each
-// workload wrapper a thin shell around its Kubernetes parent resource.
+// Package podspec builds the shared PodSpec for Deployment, Job, and CronJob.
 package podspec
 
 import (
@@ -20,58 +15,29 @@ import (
 	"github.com/milagre/zote/pulumi/profile"
 )
 
-// Conf is the non-file configuration a workload consumes at runtime.
-// ConfigMaps and Secrets are the names of objects in the target namespace
-// whose entire set of keys is injected as environment variables via
-// envFrom. Values is an inline map of additional literal env vars that
-// are applied last (and therefore override any keys from the referenced
-// ConfigMaps/Secrets that collide).
 type Conf struct {
 	ConfigMaps []string
 	Secrets    []string
 	Values     map[string]string
 }
 
-// Files mounts configmap data into the container filesystem.
-//
-// ConfigMaps maps an in-container mount path to a configmap reference.
-// Each value is one of:
-//
-//   - "<configMapName>": mount every key of the ConfigMap into the path
-//     as a directory of files.
-//   - "<configMapName>/<key>": mount a single key of the ConfigMap at
-//     the path using the Kubernetes subPath mechanism.
-//
-// Both forms share a single volume per ConfigMap, so the same
-// ConfigMap can be mounted multiple times (as a directory and/or as
-// individual keys) without defining multiple volumes.
+// Files: map mount path → "<cm>" (whole CM) or "<cm>/<key>" (subPath); one volume per CM.
 type Files struct {
 	ConfigMaps map[string]string
 }
 
-// Port is a container port declaration. Protocol is a Kubernetes port
-// protocol (e.g. "TCP", "UDP", "SCTP").
 type Port struct {
 	Name          string
 	ContainerPort int
 	Protocol      string
 }
 
-// HTTPLivenessProbe configures an HTTP liveness probe for the container.
-// Freq, when positive, is the probe period in seconds; zero selects the
-// 15 second default.
 type HTTPLivenessProbe struct {
 	Path string
 	Port int
 	Freq int
 }
 
-// Args is the full set of inputs needed to construct a PodSpec.
-//
-// The pod's labels must be managed by the caller (Deployments/Jobs own
-// both the selector and the template labels, and those must agree), so
-// Args only handles the body inside the template. The ambient stats env
-// vars are derived from Env, Namespace, and Name.
 type Args struct {
 	Env       env.Env
 	Name      string
@@ -91,18 +57,9 @@ type Args struct {
 
 	HTTPLivenessProbe *HTTPLivenessProbe
 
-	// EncourageColocation, when true, disables the preferred
-	// podAntiAffinity that would otherwise steer pods with the same
-	// `app=<Name>` label onto distinct nodes. The default (false)
-	// applies the spread affinity to every workload built through
-	// this package.
-	EncourageColocation bool
+	EncourageColocation bool // true: skip preferred anti-affinity on app=<Name>
 }
 
-// Build assembles a *corev1.PodSpecArgs from the resolved inputs. The
-// caller is responsible for wrapping it in the appropriate
-// PodTemplateSpec and attaching selectors/labels, since those vary by
-// parent kind.
 func Build(a Args) (*corev1.PodSpecArgs, error) {
 	if a.Name == "" {
 		return nil, fmt.Errorf("podspec: Name is required")
@@ -187,9 +144,6 @@ func resources(p profile.Profile) *corev1.ResourceRequirementsArgs {
 	}
 }
 
-// statsEnv emits the ambient stats/telemetry env vars every workload
-// inherits. The names are prefixed with Env.Prefix so the same process
-// image can be scheduled into multiple environments without collision.
 func statsEnv(a Args) corev1.EnvVarArray {
 	prefix := a.Env.Prefix
 	statsPrefix := fmt.Sprintf(
@@ -288,10 +242,6 @@ func livenessProbe(p *HTTPLivenessProbe) *corev1.ProbeArgs {
 	}
 }
 
-// fileMounts resolves Files into matching VolumeMounts and Volumes.
-// A single Volume is emitted per referenced ConfigMap regardless of how
-// many mounts reference it, so each configmap appears exactly once in
-// the pod spec.
 func fileMounts(files Files) (corev1.VolumeMountArray, corev1.VolumeArray) {
 	if len(files.ConfigMaps) == 0 {
 		return nil, nil
@@ -347,10 +297,6 @@ func splitMount(spec string) (name, subPath string, hasSubPath bool) {
 	return spec[:idx], spec[idx+1:], true
 }
 
-// spreadAcrossNodes produces a soft podAntiAffinity rule that encourages
-// the scheduler to place replicas on distinct nodes. It is a preference,
-// not a requirement, so single-node clusters (e.g. local) still schedule
-// the pod successfully.
 func spreadAcrossNodes(name string) *corev1.AffinityArgs {
 	return &corev1.AffinityArgs{
 		PodAntiAffinity: &corev1.PodAntiAffinityArgs{

@@ -1,7 +1,4 @@
-// Package container is the container-backed implementation of the
-// timescaledb backend interface defined in the parent timescaledb package.
-// It provisions a single-replica StatefulSet with a PersistentVolumeClaim,
-// a ClusterIP Service, and a standard libpq-style Secret alongside.
+// Package container is in-cluster TimescaleDB (StatefulSet, Service, libpq-style secret).
 package container
 
 import (
@@ -26,38 +23,20 @@ const (
 
 var typeToken = tokens.Token("infra", "TimescaledbContainer")
 
-// randomPasswordIgnoredArgs freezes the RandomPassword generation knobs after
-// the resource exists so imported passwords (whose generator args may not
-// match the live `result`) don't get rotated by a benign args diff.
 var randomPasswordIgnoredArgs = []string{
 	"length", "special", "upper", "lower", "numeric",
 	"minLower", "minUpper", "minNumeric", "minSpecial", "overrideSpecial",
 }
 
-// Args is the caller-facing configuration for a container-backed timescaledb.
-// Namespace, Name, User, and Database are filled by the parent timescaledb
-// component before this backend is registered; the parent resolves the
-// admin user / database defaults so the backend always receives concrete
-// values.
 type Args struct {
-	// Env is the deploy environment (RotateSecrets drives optional RandomPassword keepers).
-	Env env.Env
-	// Namespace is the target Kubernetes namespace. Filled by the parent.
+	Env       env.Env
 	Namespace string
-	// Name is the timescaledb instance name (release name
-	// "timescaledb-<Name>"). Filled by the parent.
-	Name string
-	// Profile is the validated resource profile (CPU and memory).
-	Profile profile.Profile
-	// User is the postgres admin username. Filled by the parent.
-	User string
-	// Database is the initial postgres database name. Filled by the
-	// parent.
-	Database string
+	Name      string
+	Profile   profile.Profile
+	User      string
+	Database  string
 }
 
-// Container provisions timescaledb as an in-cluster StatefulSet and exposes
-// the connection details the parent component wires into its ConfigMap.
 type Container struct {
 	pulumi.ResourceState
 
@@ -74,7 +53,6 @@ type Container struct {
 	database pulumi.StringOutput
 }
 
-// New registers the container backend as a child component.
 func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.ResourceOption) (*Container, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
@@ -273,20 +251,9 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	return comp, nil
 }
 
-// Scheme returns the URL scheme ("postgresql").
-func (c *Container) Scheme() pulumi.StringOutput { return c.scheme }
-
-// Host returns the in-cluster service hostname.
-func (c *Container) Host() pulumi.StringOutput { return c.host }
-
-// Port returns the service port as a string.
-func (c *Container) Port() pulumi.StringOutput { return c.port }
-
-// User returns the configured postgres user.
-func (c *Container) User() pulumi.StringOutput { return c.user }
-
-// Pass returns the generated postgres password.
-func (c *Container) Pass() pulumi.StringOutput { return c.pass }
-
-// Database returns the configured database name.
+func (c *Container) Scheme() pulumi.StringOutput   { return c.scheme }
+func (c *Container) Host() pulumi.StringOutput     { return c.host }
+func (c *Container) Port() pulumi.StringOutput     { return c.port }
+func (c *Container) User() pulumi.StringOutput     { return c.user }
+func (c *Container) Pass() pulumi.StringOutput     { return c.pass }
 func (c *Container) Database() pulumi.StringOutput { return c.database }

@@ -1,11 +1,4 @@
-// Package body is the shared Deployment + PodMonitor assembly that the
-// http and proc workload wrappers both rely on.
-//
-// The body owns the Kubernetes Deployment resource and its PodSpec, the
-// label convention (`app=<Name>`, `deploy=<Type>`), and the adjacent
-// PodMonitor that is emitted automatically when a port named "metrics"
-// is declared. Wrappers attach a Service/Ingress layer on top and never
-// reach into the Deployment's internals.
+// Package body is the shared Deployment (+ PodMonitor when a "metrics" port exists); labels app=<Name>, deploy=<Type>.
 package body
 
 import (
@@ -26,16 +19,11 @@ import (
 
 const metricsPortName = "metrics"
 
-// Args is the input set for the body. Type selects the value of the
-// `deploy` label (e.g. "http", "proc"); it does not alter the resources
-// that are created, but downstream Services use it to narrow their
-// selectors so that a namespace can host multiple workloads with
-// distinct deploy types on the same app name.
 type Args struct {
 	Env       env.Env
 	Name      string
 	Namespace string
-	Type      string
+	Type      string // deploy label; narrows Service selectors vs same app name
 
 	Image   string
 	Tag     string
@@ -49,11 +37,7 @@ type Args struct {
 	HTTPLivenessProbe *podspec.HTTPLivenessProbe
 }
 
-// Register creates the Deployment (and, when a "metrics" port is
-// declared, the companion PodMonitor) as children of parent. The
-// Deployment is returned so wrappers can express explicit dependencies
-// on it (e.g. ordering a Service creation after the Deployment); no
-// fields of the returned resource are part of the wrappers' public API.
+// Register creates the Deployment (and PodMonitor if a "metrics" port exists).
 func Register(
 	ctx *pulumi.Context,
 	name string,

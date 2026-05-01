@@ -6,17 +6,7 @@ import (
 	"fmt"
 )
 
-// rabbitPasswordHashSHA512 computes a RabbitMQ password hash in the
-// "rabbit_password_hashing_sha512" format that `definitions.json` expects.
-// The algorithm, per the upstream docs and the legacy pwhash.sh that this
-// replaces, is:
-//
-//  1. decode the base64 salt (4 raw bytes),
-//  2. sha512(salt || password),
-//  3. base64(salt || digest).
-//
-// The salt is generated separately (via random.RandomBytes) and lives in
-// the parent caller.
+// rabbitPasswordHashSHA512 is rabbit_password_hashing_sha512 for definitions.json: base64(salt || sha512(salt||password)); salt is 4 raw bytes base64-encoded.
 func rabbitPasswordHashSHA512(saltBase64, password string) (string, error) {
 	salt, err := base64.StdEncoding.DecodeString(saltBase64)
 	if err != nil {

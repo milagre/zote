@@ -1,6 +1,4 @@
-// Package cert_manager installs the upstream cert-manager Helm chart
-// together with a letsencrypt-http01 ClusterIssuer that every ingress
-// in the cluster delegates TLS issuance to.
+// Package cert_manager installs cert-manager plus a letsencrypt-http01 ClusterIssuer.
 package cert_manager
 
 import (
@@ -14,8 +12,6 @@ import (
 	"github.com/milagre/zote/pulumi/tokens"
 )
 
-// ClusterIssuerName is the name of the ClusterIssuer this component
-// creates. Exported so ingress annotations can reference it by name.
 const ClusterIssuerName = "letsencrypt-http01"
 
 var spec = helm.ChartSpec{
@@ -25,29 +21,15 @@ var spec = helm.ChartSpec{
 	DefaultVersion: "1.13.1",
 }
 
-// Args are the caller-supplied inputs. The ClusterIssuer's
-// contact email is the only value that varies between deployments.
 type Args struct {
-	// Namespace is the target namespace. Required.
 	Namespace string
-
-	// AcmeEmail is the contact address Let's Encrypt uses for
-	// expiring-cert notifications. Required.
 	AcmeEmail string
-
-	// Version overrides DefaultVersion. Optional.
-	Version *string
+	Version   *string
 }
 
-// CertManager wraps the chart and the ClusterIssuer as a single
-// ComponentResource so callers can express pulumi.DependsOn against
-// the whole install, not just one of its pieces.
 type CertManager struct {
 	helm.ChartComponent
 
-	// ClusterIssuer is the cert-manager.io/v1 ClusterIssuer this
-	// component creates, exposed so callers can attach explicit
-	// ordering edges if needed.
 	ClusterIssuer *apiextensions.CustomResource
 }
 

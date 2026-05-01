@@ -31,15 +31,11 @@ var enabledPlugins = []string{
 
 var randomBytesIgnoredArgs = []string{"length"}
 
-// userCreds pairs a per-user random salt with its random password so the
-// password-hash computation can use both as a single Apply input.
 type userCreds struct {
 	salt     *random.RandomBytes
 	password *random.RandomPassword
 }
 
-// registerCreds generates a RandomBytes salt and a RandomPassword for each
-// user (including the synthetic admin). Returned map is keyed by user name.
 func registerCreds(ctx *pulumi.Context, parentName string, comp pulumi.Resource, users []string, e env.Env) (map[string]userCreds, error) {
 	creds := make(map[string]userCreds, len(users))
 	for _, u := range users {
@@ -71,10 +67,6 @@ func registerCreds(ctx *pulumi.Context, parentName string, comp pulumi.Resource,
 	return creds, nil
 }
 
-// definitionsJSON returns a StringOutput that resolves to the JSON-encoded
-// `definitions.json` body for importing permissions/users/vhosts on boot.
-// It uses pulumi.All to wait on every user's salt+password output before
-// computing each password hash in-process.
 func definitionsJSON(users []User, vhosts []Vhost, creds map[string]userCreds) pulumi.StringOutput {
 	inputs := make([]interface{}, 0, 2*len(users))
 	order := make([]string, 0, len(users))
@@ -165,9 +157,6 @@ func definitionsJSON(users []User, vhosts []Vhost, creds map[string]userCreds) p
 	}).(pulumi.StringOutput)
 }
 
-// rabbitmqConf renders the static/dynamic rabbitmq.conf body. The admin
-// password flows through because the stanza "default_pass = ..." needs it
-// cleartext at config-load time.
 func rabbitmqConf(releaseName string, adminPassword pulumi.StringOutput) pulumi.StringOutput {
 	return adminPassword.ApplyT(func(p string) string {
 		return strings.Join([]string{
@@ -195,15 +184,10 @@ func rabbitmqConf(releaseName string, adminPassword pulumi.StringOutput) pulumi.
 	}).(pulumi.StringOutput)
 }
 
-// enabledPluginsContents returns the contents of the enabled_plugins file
-// (an Erlang-style list literal).
 func enabledPluginsContents() string {
 	return "[" + strings.Join(enabledPlugins, ",") + "].\n"
 }
 
-// configResources creates the cluster-wide ConfigMap (enabled_plugins,
-// rabbitmq.conf, definitions.json, username) and Secret (admin password,
-// erlang cookie).
 func configResources(
 	ctx *pulumi.Context,
 	parentName string,

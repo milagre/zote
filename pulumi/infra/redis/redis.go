@@ -1,9 +1,4 @@
-// Package redis provides a ComponentResource that deploys a redis cluster
-// and exposes its connection details (host + port) via a ConfigMap.
-//
-// The component is backend-polymorphic: today only the container backend
-// is implemented, but the shape of Args leaves room for managed-cloud
-// backends to be added without changing the client-facing resources.
+// Package redis deploys Redis; host/port in a ConfigMap. Container backend only for now.
 package redis
 
 import (
@@ -21,42 +16,25 @@ import (
 
 var typeToken = tokens.Token("infra", "Redis")
 
-// ContainerArgs is the caller-facing configuration for the in-cluster
-// container backend. It is a type alias over the internal implementation
-// type so callers can populate it without importing the internal package.
 type ContainerArgs = container.Args
 
-// Args configures a new Redis instance. Exactly one backend pointer
-// must be non-nil (currently just Container).
 type Args struct {
 	Env       env.Env
 	Namespace string
 	Name      string
-
-	// Container selects the in-cluster container backend. Mutually
-	// exclusive with future cloud-backend pointers.
 	Container *ContainerArgs
 }
 
-// K8s holds the names of the Kubernetes resources the component creates
-// in the target namespace. Grouping the names under a struct (rather than
-// flattening them onto the component) makes it obvious at the call site
-// that the strings are in-cluster resource names, not arbitrary
-// configuration values.
 type K8s struct {
 	ConfigMap pulumi.StringOutput
 }
 
-// Redis is the component resource. Connection details are not exposed
-// directly; they live in the ConfigMap named by K8s and are consumed by
-// mounting that resource into dependent workloads.
 type Redis struct {
 	pulumi.ResourceState
 
 	K8s K8s
 }
 
-// New registers the Redis component and its chosen backend.
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*Redis, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
@@ -134,9 +112,6 @@ func selectBackend(ctx *pulumi.Context, name string, args *Args, parent pulumi.R
 	return c, nil
 }
 
-// cfgNameKey renders a redis instance name as an environment-variable key
-// fragment: upper-cased with dashes converted to underscores so the
-// result is a valid shell identifier.
 func cfgNameKey(name string) string {
 	return strings.ReplaceAll(strings.ToUpper(name), "-", "_")
 }

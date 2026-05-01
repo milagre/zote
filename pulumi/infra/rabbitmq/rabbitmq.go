@@ -1,10 +1,4 @@
-// Package rabbitmq provides a ComponentResource that deploys a rabbitmq
-// cluster and exposes its connection details (AMQP + management API) via
-// ConfigMaps and per-user Secrets.
-//
-// The component is backend-polymorphic: today only the container backend
-// is implemented, but the shape of Args leaves room for managed-cloud
-// backends to be added without changing the client-facing resources.
+// Package rabbitmq deploys RabbitMQ; AMQP/API ConfigMaps and per-user Secrets. Container backend only for now.
 package rabbitmq
 
 import (
@@ -24,9 +18,6 @@ import (
 
 var typeToken = tokens.Token("infra", "Rabbitmq")
 
-// Caller-facing aliases for the in-cluster container backend. They are
-// re-exports of the internal implementation types so callers can populate
-// them without importing the internal package.
 type (
 	ContainerArgs  = container.Args
 	ContainerSetup = container.Setup
@@ -34,59 +25,34 @@ type (
 	ContainerVhost = container.Vhost
 )
 
-// Args configures a new Rabbitmq instance. Exactly one backend pointer
-// must be non-nil (currently just Container).
 type Args struct {
 	Env       env.Env
 	Namespace string
 	Name      string
-
-	// Container selects the in-cluster container backend. Mutually
-	// exclusive with future cloud-backend pointers.
 	Container *ContainerArgs
 }
 
-// Endpoint is a host/port pair for a network listener.
 type Endpoint struct {
 	Host pulumi.StringOutput
 	Port pulumi.StringOutput
 }
 
-// K8sConfigMap is a single-ConfigMap grouping used for the non-user-scoped
-// Kubernetes resources (management/API listener, AMQP listener). It is an
-// object type rather than a bare string so sibling fields (e.g. a
-// secret) can be added later without changing its position in the
-// component's exposed surface.
 type K8sConfigMap struct {
 	ConfigMap pulumi.StringOutput
 }
 
-// K8sUser is the per-user client ConfigMap/Secret pair.
 type K8sUser struct {
 	ConfigMap pulumi.StringOutput
 	Secret    pulumi.StringOutput
 }
 
-// K8s holds the names of the Kubernetes resources the component creates
-// in the target namespace. Grouping the names under a struct (rather
-// than flattening them onto the component) makes it obvious at the call
-// site that the strings are in-cluster resource names, not arbitrary
-// configuration values.
 type K8s struct {
 	Rabbitmq K8sConfigMap
 	AMQP     K8sConfigMap
 	Users    map[string]K8sUser
 }
 
-// Rabbitmq is the component resource. Its exposed surface is:
-//
-//   - K8s — names of the Kubernetes resources the component creates in
-//     the target namespace.
-//   - AMQP — AMQP listener endpoint (host/port).
-//   - API — management API endpoint (host/port).
-//   - Users — generated plaintext passwords keyed by username. Sensitive;
-//     callers should pass these through Pulumi Secret wrappers when
-//     persisting them.
+// Rabbitmq: K8s resource names; AMQP/API endpoints; Users map is plaintext passwords (treat as secret).
 type Rabbitmq struct {
 	pulumi.ResourceState
 
@@ -96,7 +62,6 @@ type Rabbitmq struct {
 	Users map[string]pulumi.StringOutput
 }
 
-// New registers the Rabbitmq component and its chosen backend.
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*Rabbitmq, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
@@ -241,8 +206,6 @@ func selectBackend(ctx *pulumi.Context, name string, args *Args, parent pulumi.R
 	return c, nil
 }
 
-// sortedUsers returns the user names in a deterministic order so the
-// resource registration order is stable across Pulumi runs.
 func sortedUsers(users []container.User) []string {
 	out := make([]string, 0, len(users))
 	for _, u := range users {

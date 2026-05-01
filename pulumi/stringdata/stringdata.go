@@ -1,11 +1,5 @@
-// Package stringdata builds kubernetes Secret Data maps from sensitive
-// outputs without nesting bare outputs inside pulumi.StringMap (which can
-// reach the API as empty values).
-//
-// Use SecretData with corev1.SecretArgs.Data, not StringData: the API
-// never returns stringData on read (only base64 data), so using StringData
-// causes perpetual preview diffs against state while applies are often
-// no-ops when the cluster already holds the same bytes.
+// Package stringdata builds Secret .data (base64) from [pulumi.StringOutput] values.
+// Prefer Data over stringData: reads round-trip as data only, so stringData tends to churn in preview.
 package stringdata
 
 import (
@@ -15,9 +9,6 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-// SecretData merges keyed pulumi.StringOutput values into one
-// StringMapOutput suitable for corev1.SecretArgs.Data. Each value is
-// RFC4648 base64-encoded as required by the Kubernetes API.
 func SecretData(pairs map[string]pulumi.StringOutput) pulumi.StringMapOutput {
 	keys := make([]string, 0, len(pairs))
 	for k := range pairs {

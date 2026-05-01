@@ -1,7 +1,4 @@
-// Package cloudflare_tunnel installs the strrl.dev cloudflare-tunnel
-// ingress-controller Helm chart. The tunnel's three identifying
-// inputs — account id, api token, tunnel name — are the only thing
-// that varies between deployments.
+// Package cloudflare_tunnel installs strrl.dev cloudflare-tunnel-ingress-controller.
 package cloudflare_tunnel
 
 import (
@@ -19,44 +16,19 @@ var spec = helm.ChartSpec{
 	Repository: "https://helm.strrl.dev/",
 }
 
-// IngressClassName is the name of the IngressClass resource the
-// upstream chart registers and that Ingress objects need to reference
-// (via spec.ingressClassName or kubernetes.io/ingress.class) to route
-// through the tunnel. The chart hardcodes this name, so it's exposed
-// as a constant rather than plumbed through as a chart value.
-const IngressClassName = "cloudflare-tunnel"
+const IngressClassName = "cloudflare-tunnel" // chart-fixed IngressClass
 
-// Args are the caller-supplied inputs.
 type Args struct {
-	// Namespace is the target namespace. Required.
-	Namespace string
-
-	// AccountID is the Cloudflare account the tunnel lives under.
-	// Required.
-	AccountID string
-
-	// APIToken authorises the controller to manage the tunnel.
-	// Required. The caller is responsible for sourcing it out of
-	// encrypted stack config; once in hand it is a plain string
-	// here.
-	APIToken string
-
-	// TunnelName is the Cloudflare tunnel to attach to. The
-	// controller will create it if absent. Required.
+	Namespace  string
+	AccountID  string
+	APIToken   string
 	TunnelName string
-
-	// Version overrides the chart's pinned version. Optional.
-	Version *string
+	Version    *string
 }
 
-// CloudflareTunnel is the chart install as a ComponentResource.
 type CloudflareTunnel struct {
 	helm.ChartComponent
 
-	// IngressClassName is the name of the IngressClassName Ingress resources
-	// must reference to route through the tunnel. Surfaced as an
-	// Output so consumers can thread it into ingress specs without
-	// rediscovering the chart's contract.
 	IngressClassName pulumi.StringOutput
 }
 

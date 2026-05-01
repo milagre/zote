@@ -1,8 +1,4 @@
-// Package proc defines a long-running process ComponentResource: a
-// Deployment with no HTTP ingress surface and a headless ClusterIP
-// Service in front of its pods. The Service exists so dependents can
-// DNS-resolve pod endpoints individually when needed, even though the
-// process itself isn't addressable over HTTP.
+// Package proc is a non-HTTP Deployment plus headless ClusterIP for per-pod DNS.
 package proc
 
 import (
@@ -22,14 +18,9 @@ import (
 
 var typeToken = tokens.Token("k8s", "ProcDeployment")
 
-// Conf is the set of in-cluster ConfigMap/Secret references and literal
-// env values injected into the workload container.
 type Conf = podspec.Conf
-
-// Files mounts configmap data onto the container filesystem.
 type Files = podspec.Files
 
-// Args configures a background process workload.
 type Args struct {
 	Env       env.Env
 	Namespace string
@@ -47,12 +38,10 @@ type Args struct {
 	PrometheusMonitored bool
 }
 
-// Deployment is the component resource; no outputs are exposed.
 type Deployment struct {
 	pulumi.ResourceState
 }
 
-// New registers a proc workload and the headless Service that fronts it.
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*Deployment, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)

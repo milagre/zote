@@ -1,7 +1,4 @@
-// Package config loads and merges the per-environment YAML configuration
-// tree that downstream components consume. The load algorithm is: walk
-// env-specific folders in order, glob for [0-9].*.yaml, render
-// ${env.<field>} placeholders, and deep-merge.
+// Package config loads merged per-env YAML: walk env/<type>/<tier>/<name>, glob [0-9].*.yaml, template ${env.*}, deep-merge.
 package config
 
 import (
@@ -18,41 +15,22 @@ import (
 	"github.com/milagre/zote/pulumi/env"
 )
 
-// fileGlob matches configuration files at each env tier: a single digit,
-// a dot, any name, and a .yaml suffix. The leading digit is used purely as
-// a lexicographic merge-order hint (lower digit wins base, higher digits
-// layer on).
+// Leading digit in filenames sets merge order (see tests).
 var fileGlob = regexp.MustCompile(`^[0-9]\..*\.yaml$`)
 
-// Config is the output of loading a single environment's config tree.
 type Config struct {
-	// Sources are the paths (relative to the root) of every YAML file that
-	// contributed, in merge order. Kept so callers can surface provenance.
 	Sources []string
-
-	// Raw is the per-file decoded YAML, in the same order as Sources.
-	Raw []map[string]any
-
-	// Data is the deep-merged union of Raw.
-	Data map[string]any
-
-	// EnvVars is pass-through data the caller surfaces alongside the
-	// merged YAML — typically the ambient WM_* environment variables every
-	// workload inherits.
+	Raw     []map[string]any
+	Data    map[string]any
 	EnvVars map[string]string
 }
 
-// Loader reads env-specific YAML files from a filesystem and merges them.
 type Loader struct {
-	// FS is the filesystem to read from. Nil means os.DirFS(Env.Root).
-	FS fs.FS
-	// Env selects which folders are read.
-	Env env.Env
-	// EnvVars is pass-through data exposed in the output.
+	FS      fs.FS // nil → os.DirFS(Env.Root)
+	Env     env.Env
 	EnvVars map[string]string
 }
 
-// Load reads the tier folders in order, renders templates, and deep-merges.
 func (l *Loader) Load() (*Config, error) {
 	if err := l.Env.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid env: %w", err)
@@ -142,9 +120,6 @@ func listConfigFiles(fsys fs.FS, folder string) ([]string, error) {
 	return out, nil
 }
 
-// deepMerge merges src into dst in place. Maps merge recursively, with the
-// later source (src) winning for scalar and list values. Fixture-driven
-// tests pin the exact semantics we care about.
 func deepMerge(dst, src map[string]any) {
 	for k, srcVal := range src {
 		dstVal, ok := dst[k]

@@ -1,11 +1,4 @@
-// Package timescaledb provides a ComponentResource that deploys a
-// timescaledb instance and exposes its connection details via a ConfigMap
-// and Secret in the target namespace.
-//
-// The component is backend-polymorphic: today only the container backend is
-// implemented (as an in-cluster StatefulSet), but the shape of Args leaves
-// room for additional backends (managed cloud postgres, etc.) to be added
-// without changing the client-facing resources.
+// Package timescaledb deploys TimescaleDB; ConfigMap + Secret. Container backend only for now.
 package timescaledb
 
 import (
@@ -24,58 +17,34 @@ import (
 
 var typeToken = tokens.Token("infra", "Timescaledb")
 
-// Default admin user and database, applied when the caller leaves
-// Args.User / Args.Database empty. Both are postgres/timescaledb concepts
-// rather than container-backend concepts, so the defaults live with the
-// parent component and the backend always receives resolved values.
 const (
 	defaultUser     = "timescaledb"
 	defaultDatabase = "timescaledb"
 )
 
-// ContainerArgs is the caller-facing configuration for the in-cluster
-// container backend. It is a type alias over the internal implementation
-// type so callers can populate it without importing the internal package.
 type ContainerArgs = container.Args
 
-// Args configures a new Timescaledb instance. Exactly one backend pointer
-// must be non-nil (currently just Container).
+// Args: Container required. Empty User/Database → defaults below.
 type Args struct {
 	Env       env.Env
 	Namespace string
 	Name      string
-	// User is the postgres admin username. Empty falls back to
-	// defaultUser.
-	User string
-	// Database is the initial postgres database name. Empty falls back
-	// to defaultDatabase.
-	Database string
-
-	// Container selects the in-cluster container backend. Mutually
-	// exclusive with future cloud-backend pointers.
+	User      string
+	Database  string
 	Container *ContainerArgs
 }
 
-// K8s holds the names of the Kubernetes resources the component creates
-// in the target namespace. Grouping the names under a struct (rather than
-// flattening them onto the component) makes it obvious at the call site
-// that the strings are in-cluster resource names, not arbitrary
-// configuration values.
 type K8s struct {
 	ConfigMap pulumi.StringOutput
 	Secret    pulumi.StringOutput
 }
 
-// Timescaledb is the component resource. Connection details are not
-// exposed directly; they live in the ConfigMap and Secret named by K8s
-// and are consumed by mounting those resources into dependent workloads.
 type Timescaledb struct {
 	pulumi.ResourceState
 
 	K8s K8s
 }
 
-// New registers the Timescaledb component and its chosen backend.
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*Timescaledb, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)

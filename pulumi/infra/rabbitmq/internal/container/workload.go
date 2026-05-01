@@ -20,8 +20,6 @@ const (
 	dataStorageSize = "2Gi"
 )
 
-// registerWorkload creates the StatefulSet, client Service and headless
-// Service that define the rabbitmq cluster.
 func registerWorkload(
 	ctx *pulumi.Context,
 	parentName string,

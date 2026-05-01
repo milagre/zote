@@ -1,5 +1,4 @@
-// Package grafana installs the upstream grafana Helm chart with the
-// chart's default value tree.
+// Package grafana installs upstream grafana (default chart values).
 package grafana
 
 import (
@@ -18,20 +17,11 @@ var spec = helm.ChartSpec{
 	DefaultVersion: "12.1.1",
 }
 
-// Args are the caller-supplied inputs. The chart's value tree is left at
-// the upstream default; callers compose access-layer resources (ingress,
-// grafana API objects) alongside the component.
 type Args struct {
-	// Namespace is the target namespace. Required.
 	Namespace string
-
-	// Version overrides DefaultVersion. Optional.
-	Version *string
+	Version   *string
 }
 
-// Grafana is the installed chart, wrapped as a ComponentResource so
-// callers can express pulumi.DependsOn against it when staging
-// downstream resources (datasource wiring, ingress, etc.).
 type Grafana struct {
 	helm.ChartComponent
 }

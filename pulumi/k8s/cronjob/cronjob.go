@@ -1,8 +1,4 @@
-// Package cronjob provides a ComponentResource that schedules a
-// containerized task as a Kubernetes CronJob. The pod body is produced
-// through the shared podspec builder so its env wiring, configmap/secret
-// mounts, and resource profile match every other workload in the
-// library.
+// Package cronjob is a CronJob built with the shared podspec.
 package cronjob
 
 import (
@@ -22,18 +18,9 @@ import (
 
 var typeToken = tokens.Token("k8s", "CronJob")
 
-// Conf is the env-var and envFrom surface, re-exported from the shared
-// pod-spec layer to keep k8s/internal/* off the caller's import list.
 type Conf = podspec.Conf
-
-// Files mounts configmap data into the container filesystem.
 type Files = podspec.Files
 
-// Args configures a CronJob workload.
-//
-// Schedule is in the standard cron syntax the Kubernetes API accepts.
-// Timezone, if empty, defaults to "Etc/UTC" to avoid surprise shifts
-// when the cluster's timezone is changed.
 type Args struct {
 	Env       env.Env
 	Namespace string
@@ -45,7 +32,7 @@ type Args struct {
 	Args    []string
 	Profile profile.Profile
 
-	Schedule string
+	Schedule string // k8s cron syntax; empty Timezone → Etc/UTC
 	Timezone string
 	Suspend  bool
 
@@ -53,14 +40,10 @@ type Args struct {
 	Files Files
 }
 
-// CronJob is the component resource. No outputs are exposed: callers
-// can address the resulting Kubernetes CronJob by the input Name.
 type CronJob struct {
 	pulumi.ResourceState
 }
 
-// New registers a CronJob (and the accompanying PodSpec that defines
-// its containers) as a single component.
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*CronJob, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)

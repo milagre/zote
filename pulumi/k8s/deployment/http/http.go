@@ -1,12 +1,4 @@
-// Package http defines an HTTP workload ComponentResource: a Deployment
-// running an HTTP process, a ClusterIP Service in front of it, and the
-// ingress resources that expose it to the cluster (private nginx) and
-// optionally the public internet (public nginx + cloudflare-tunnel in
-// local environments).
-//
-// The component takes hostnames verbatim from its caller; no domain or
-// tenant naming is synthesized here, keeping the library independent of
-// any downstream product.
+// Package http is an HTTP Deployment, Service, and nginx ingress (private + optional public); hostnames from Args.Internal.
 package http
 
 import (
@@ -27,38 +19,21 @@ import (
 
 var typeToken = tokens.Token("k8s", "HttpDeployment")
 
-// Conf is the set of in-cluster ConfigMap/Secret references and literal
-// env values injected into the workload container.
 type Conf = podspec.Conf
-
-// Files mounts configmap data onto the container filesystem.
 type Files = podspec.Files
 
-// Options describes how the HTTP process is reached and monitored:
-// Port is the container port the application listens on, Health is the
-// HTTP path used for the liveness probe, and Freq is the probe period in
-// seconds (0 uses a sensible default).
 type Options struct {
 	Port   int
 	Health string
 	Freq   int
 }
 
-// Internal collects the hostnames the HTTP workload is reachable at.
-//
-// PublicHostnames is the set of externally routed hostnames served via
-// the public ingress (with ACME-issued TLS when the environment is not
-// local); PrivateHostname is the single in-cluster name the private
-// ingress responds to; VeneerHostnames are additional hostnames that
-// should be served off the public ingress without generating public
-// certificates for them (useful for internal aliases).
 type Internal struct {
 	PublicHostnames []string
 	PrivateHostname string
 	VeneerHostnames []string
 }
 
-// Args is the full set of inputs for an HTTP workload.
 type Args struct {
 	Env       env.Env
 	Namespace string
@@ -78,15 +53,10 @@ type Args struct {
 	Internal            Internal
 }
 
-// Deployment is the component resource. No outputs are exposed: hostnames are
-// supplied by the caller (so it already has them), and the Kubernetes
-// resources are identified by well-known names (Name, Name+"-nginx-private",
-// etc.) that the caller can reference directly if needed.
 type Deployment struct {
 	pulumi.ResourceState
 }
 
-// New registers an HTTP workload and all of its supporting resources.
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*Deployment, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)

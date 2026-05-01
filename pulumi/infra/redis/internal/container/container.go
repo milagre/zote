@@ -1,7 +1,4 @@
-// Package container is the in-cluster implementation of the redis backend
-// interface defined in the parent redis package. It provisions a redis
-// cluster StatefulSet, headless service, config/script ConfigMaps, and a
-// bootstrap Job that forms the cluster after the pods are ready.
+// Package container is Redis cluster in-cluster (StatefulSet, headless svc, configmaps, bootstrap Job).
 package container
 
 import (
@@ -23,25 +20,15 @@ const (
 
 var typeToken = tokens.Token("infra", "RedisContainer")
 
-// Args is the caller-facing configuration for a container-backed redis.
 type Args struct {
-	// Namespace is the target Kubernetes namespace.
 	Namespace string
-	// Name is the instance name (release name "redis-<Name>").
-	Name string
-	// Version is the redis container image tag.
-	Version string
-	// Profile is the validated resource profile (CPU, memory). Storage is
-	// sized from mem.max * 1.1.
-	Profile profile.Profile
-	// Shards is the number of master shards to form.
-	Shards int
-	// Replicas is the number of replicas per master. Total pods in the
-	// StatefulSet equal Shards * (Replicas + 1).
-	Replicas int
+	Name      string
+	Version   string
+	Profile   profile.Profile
+	Shards    int
+	Replicas  int // StatefulSet size = Shards * (Replicas + 1)
 }
 
-// Container is the container-backed implementation of the redis backend.
 type Container struct {
 	pulumi.ResourceState
 
@@ -55,7 +42,6 @@ type Container struct {
 	port     pulumi.StringOutput
 }
 
-// New registers the container backend and every resource it owns.
 func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.ResourceOption) (*Container, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
@@ -119,8 +105,5 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	return comp, nil
 }
 
-// Hostname returns the headless service FQDN.
 func (c *Container) Hostname() pulumi.StringOutput { return c.hostname }
-
-// Port returns the client port as a string.
-func (c *Container) Port() pulumi.StringOutput { return c.port }
+func (c *Container) Port() pulumi.StringOutput     { return c.port }

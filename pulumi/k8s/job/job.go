@@ -1,8 +1,4 @@
-// Package job provides a ComponentResource that runs a one-shot
-// containerized task as a Kubernetes Job. The pod body is produced
-// through the shared podspec builder so environment wiring, configmap/
-// secret mounts, and the resource profile match every other workload in
-// the library.
+// Package job is a Job built with the shared podspec.
 package job
 
 import (
@@ -22,20 +18,11 @@ import (
 
 var typeToken = tokens.Token("k8s", "Job")
 
-// defaultBackoffLimit is the backoff limit used when the caller does
-// not specify one. It is intentionally large because Jobs in this
-// library are typically idempotent retries we expect to eventually
-// succeed rather than fail-fast tasks.
 const defaultBackoffLimit = 100000
 
-// Conf is re-exported from the shared pod-spec layer.
 type Conf = podspec.Conf
-
-// Files mounts configmap data into the container filesystem.
 type Files = podspec.Files
 
-// Args configures a Job. Attempts, when nil, selects
-// defaultBackoffLimit; setting it explicitly overrides that.
 type Args struct {
 	Env       env.Env
 	Namespace string
@@ -47,19 +34,17 @@ type Args struct {
 	Args    []string
 	Profile profile.Profile
 
-	Attempts *int
+	Attempts *int // nil → defaultBackoffLimit
 	Wait     bool
 
 	Conf  Conf
 	Files Files
 }
 
-// Job is the component resource. No outputs are exposed.
 type Job struct {
 	pulumi.ResourceState
 }
 
-// New registers a Job and its PodSpec as a single component.
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*Job, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)

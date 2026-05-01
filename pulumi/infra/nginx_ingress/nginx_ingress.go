@@ -1,14 +1,4 @@
-// Package nginx_ingress installs ingress-nginx with a product-neutral
-// set of production defaults: autoscaling enabled, pod anti-affinity that
-// spreads controllers across nodes, and — on clusters without a
-// LoadBalancer provisioner (local minikube/kind) — a NodePort Service so
-// the chart doesn't sit Pending forever.
-//
-// Sizing (CPU/memory requests and limits, and the replica count band the
-// autoscaler works against) is caller-supplied via a validated
-// profile.Profile. Everything else chart-specific is owned here;
-// extending the schema (bespoke annotations, for example) is a deliberate
-// change to this package, not an ad-hoc override at each call site.
+// Package nginx_ingress installs ingress-nginx with fleet defaults (HPA, spread); local env uses NodePort. Sizing via [profile.Profile] only.
 package nginx_ingress
 
 import (
@@ -29,33 +19,13 @@ var spec = helm.ChartSpec{
 	DefaultVersion: "4.7.2",
 }
 
-// Args are the caller-supplied inputs. Values is intentionally absent:
-// the chart's value tree is fully owned by this package so every
-// cluster in the fleet gets the same battle-tested defaults for
-// everything except sizing, which Profile drives.
 type Args struct {
-	// Namespace is the target namespace. Required.
 	Namespace string
-
-	// Env determines cluster-type-dependent behavior — specifically
-	// whether the controller Service has to be NodePort (local) or
-	// can accept the chart default (LoadBalancer, remote).
-	Env env.Env
-
-	// Profile sizes the controller pods. CPUCores and MemMB become
-	// resources.requests/limits on the pod spec; Num (when non-nil)
-	// sets autoscaling.minReplicas / maxReplicas and the initial
-	// replicaCount. When Num is nil, the upstream chart's default
-	// replica/autoscaler band is used.
-	Profile profile.Profile
-
-	// Version overrides DefaultVersion. Optional.
-	Version *string
+	Env       env.Env
+	Profile   profile.Profile
+	Version   *string
 }
 
-// NginxIngress is the installed chart, wrapped as a ComponentResource
-// so callers can express pulumi.DependsOn against it when their own
-// ingresses need to come up after the controller.
 type NginxIngress struct {
 	helm.ChartComponent
 }
@@ -80,10 +50,6 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
-// values renders the chart Values tree. The shape tracks the upstream
-// ingress-nginx chart's Values schema; see
-// https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx
-// for the authoritative reference.
 func values(e env.Env, p profile.Profile) pulumi.Map {
 	autoscaling := map[string]any{
 		"enabled":                           true,

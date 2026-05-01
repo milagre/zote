@@ -10,12 +10,8 @@ import (
 	dbdo "github.com/milagre/zote/pulumi/database/digitalocean"
 )
 
-// compile-time check: digitalocean.Cloud satisfies cloud.Cloud.
-var _ cloud.Cloud = (*digitalocean.Cloud)(nil)
-
-// compile-time check: the value returned by ForDatabase satisfies the
-// per-instance database interface.
-var _ dbdo.Cloud = (*digitalocean.DatabaseCloud)(nil)
+var _ cloud.Cloud = (*digitalocean.Cloud)(nil)        // interface satisfaction
+var _ dbdo.Cloud = (*digitalocean.DatabaseCloud)(nil) // interface satisfaction
 
 func TestCloud_publicLoadBalancerAnnotations(t *testing.T) {
 	t.Parallel()

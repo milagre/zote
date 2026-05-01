@@ -1,8 +1,5 @@
-// Package env describes the deploy environment the rest of the library is
-// being composed for. Core identity fields are plain Go values; Env.RandomKeepers
-// and WithRotateSecretsFromPulumi are the Pulumi-aware helpers so callers can
-// wire RandomPassword keepers and stack config without importing pulumi at
-// every component.
+// Package env is deploy identity (type, tier, name, …) plus helpers for
+// RandomPassword keepers and stack config ([WithRotateSecretsFromPulumi]).
 package env
 
 import (
@@ -12,11 +9,7 @@ import (
 	pulumiconfig "github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
-// RotateSecretsKeeperKey is the keepers map key zote components use when
-// Env.RotateSecrets is non-empty. The program injects RotateSecrets from its
-// own configuration (e.g. Pulumi stack key zote:rotateSecrets); bumping that
-// value forces replacement of random:index/randomPassword resources that
-// merge this keeper.
+// RotateSecretsKeeperKey is merged into RandomPassword keepers when [Env.RotateSecrets] is set.
 const RotateSecretsKeeperKey = "zote.rotateSecrets"
 
 type Env struct {
@@ -25,24 +18,16 @@ type Env struct {
 	Name   string
 	Root   string
 	Prefix string
-	// RotateSecrets is an opaque string (e.g. from Pulumi stack config via
-	// WithRotateSecretsFromPulumi, or WithRotateSecrets for tests). When
-	// non-empty, components that own RandomPassword resources merge it into
-	// keepers under RotateSecretsKeeperKey so changing the value triggers
-	// replacement — e.g. recovering empty result after a bad import.
+	// Opaque stack bump string (e.g. zote:rotateSecrets); merged into random keepers when non-empty.
 	RotateSecrets string
 }
 
-// Option configures optional Env fields after the required identity tuple.
 type Option func(*Env)
 
-// WithRotateSecrets sets Env.RotateSecrets (see Env.RotateSecrets).
 func WithRotateSecrets(v string) Option {
 	return func(e *Env) { e.RotateSecrets = v }
 }
 
-// WithRotateSecretsFromPulumi reads the current stack's Pulumi config key
-// zote:rotateSecrets and assigns it to Env.RotateSecrets (empty when unset).
 func WithRotateSecretsFromPulumi(ctx *pulumi.Context) Option {
 	return func(e *Env) {
 		e.RotateSecrets = pulumiconfig.New(ctx, "zote").Get("rotateSecrets")
@@ -111,20 +96,14 @@ type randomKeepersOpts struct {
 	supportsRotation bool
 }
 
-// SupportsRotation controls whether [Env.RotateSecrets] is merged into the
-// keepers map (when non-empty). It defaults to true. Set to false for
-// credentials that must not be replaced when zote:rotateSecrets changes
-// (e.g. InfluxDB admin material that cannot be realigned from Pulumi alone).
+// SupportsRotation: when false, [Env.RotateSecrets] is not merged into keepers (default true).
 func SupportsRotation(v bool) RandomKeepersOption {
 	return func(o *randomKeepersOpts) {
 		o.supportsRotation = v
 	}
 }
 
-// RandomKeepers returns base unchanged when RotateSecrets is empty or when
-// [SupportsRotation](false) is passed. Otherwise it returns a new StringMap
-// with every entry from base plus RotateSecretsKeeperKey → RotateSecrets
-// (base may be nil).
+// RandomKeepers returns base plus RotateSecretsKeeperKey when rotation is enabled and [Env.RotateSecrets] is set.
 func (e Env) RandomKeepers(base pulumi.StringMap, opts ...RandomKeepersOption) pulumi.StringMapInput {
 	cfg := randomKeepersOpts{supportsRotation: true}
 	for _, o := range opts {

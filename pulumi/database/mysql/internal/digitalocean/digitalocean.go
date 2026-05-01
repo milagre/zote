@@ -1,11 +1,4 @@
-// Package digitalocean is the DigitalOcean-managed implementation of
-// the mysql backend interface defined in the parent mysql package. It
-// provisions a managed DatabaseCluster (engine "mysql"), a firewall
-// restricting access to the cluster's VPC, a seeded database, and any
-// requested read-replicas.
-//
-// The cluster is marked protected at the Pulumi level: destroying a
-// database through Pulumi is always an explicit, out-of-band action.
+// Package digitalocean is DO managed MySQL (cluster, firewall, DB, replicas). Cluster is Pulumi-protected.
 package digitalocean
 
 import (
@@ -21,10 +14,6 @@ import (
 
 var typeToken = tokens.Token("database", "MysqlDigitalocean")
 
-// sqlMode is the set of MySQL modes the managed config forces on the
-// cluster. Mirrors the strictness the container backend inherits from
-// modern mysql defaults so migrations between backends don't trip over
-// previously-tolerated queries.
 var sqlMode = strings.Join([]string{
 	"ANSI_QUOTES",
 	"ERROR_FOR_DIVISION_BY_ZERO",
@@ -37,53 +26,26 @@ var sqlMode = strings.Join([]string{
 	"REAL_AS_FLOAT",
 }, ",")
 
-// Primary configures the single writer node.
 type Primary struct {
-	// Class is the DigitalOcean size slug (e.g. "db-s-1vcpu-1gb").
 	Class string
 }
 
-// Replicas configures the read-replica fleet. Num=0 skips all replicas.
 type Replicas struct {
 	Num   int
 	Class string
 }
 
-// Args is the caller-facing configuration for a DigitalOcean-managed
-// mysql instance. The parent mysql component fills in the instance
-// identity (Name/Namespace); the caller supplies engine settings,
-// sizing, and a per-instance Cloud handle (typically obtained via
-// cloud/digitalocean.Cloud.ForDatabase) that resolves the VPC and
-// project the cluster should live in.
+// Args: Cloud from cloud/digitalocean.Cloud.ForDatabase; Namespace disambiguates cluster name in the DO project.
 type Args struct {
-	// Namespace is the Kubernetes namespace this instance serves. It
-	// is baked into the cluster's human-readable name so two mysql
-	// instances that share a Name but live in different namespaces
-	// produce distinct cluster names — DigitalOcean cluster names are
-	// unique per project, not per VPC/subnet/label, so namespacing is
-	// the only free disambiguator.
 	Namespace string
-	// Name is the logical mysql instance name; also used to derive the
-	// cluster's human-readable name via VPCName + "-" + Namespace +
-	// "-" + Name.
-	Name string
-	// Database is the schema name created inside the cluster.
-	Database string
-	// Version is the MySQL version slug accepted by the DO API (e.g. "8").
-	Version string
-	// Cloud resolves the VPC/project this specific database instance
-	// belongs to. Two databases with different VPCs are expected to
-	// receive two different Cloud values.
-	Cloud dbdo.Cloud
-	// Primary is the writer node sizing.
-	Primary Primary
-	// Replicas is the read-replica fleet sizing.
-	Replicas Replicas
+	Name      string
+	Database  string
+	Version   string
+	Cloud     dbdo.Cloud
+	Primary   Primary
+	Replicas  Replicas
 }
 
-// Digitalocean provisions a managed MySQL cluster and exposes the
-// connection details the parent component wires into its shared
-// ConfigMap/Secret.
 type Digitalocean struct {
 	pulumi.ResourceState
 
@@ -93,18 +55,7 @@ type Digitalocean struct {
 	password pulumi.StringOutput
 }
 
-// New registers the DigitalOcean backend as a child component of the
-// parent mysql facade.
-//
-// The VPC + project IDs this instance should live in are consumed as
-// pulumi.StringInput from args.Cloud, which means they may be
-// unresolved Outputs of cloud resources that the same Pulumi program
-// creates earlier in the stack. Every piece of downstream work that
-// depends on those IDs is therefore issued through the *Output
-// variants of the DigitalOcean data sources (LookupVpcOutput,
-// LookupProjectOutput), which accept StringInputs and return outputs
-// Pulumi resolves in dependency order at apply time. No call in this
-// function reads a Go-level string from the Cloud handle.
+// New wires DO data sources via Output APIs because VPC/project IDs come from [dbdo.Cloud] as [pulumi.StringInput].
 func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.ResourceOption) (*Digitalocean, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)

@@ -9,8 +9,6 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-// registerRBAC creates the ServiceAccount, Role, and RoleBinding required
-// by rabbitmq_peer_discovery_k8s (`get` on endpoints, `create` on events).
 func registerRBAC(
 	ctx *pulumi.Context,
 	parentName string,

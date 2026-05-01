@@ -1,7 +1,4 @@
-// Package container is the in-cluster implementation of the rabbitmq
-// backend interface defined in the parent rabbitmq package. It provisions
-// a RabbitMQ cluster (StatefulSet + services + RBAC + bootstrap
-// ConfigMap/Secret) with k8s peer discovery.
+// Package container is in-cluster RabbitMQ (StatefulSet, services, RBAC, k8s peer discovery).
 package container
 
 import (
@@ -19,51 +16,35 @@ import (
 
 var typeToken = tokens.Token("infra", "RabbitmqContainer")
 
-// randomPasswordIgnoredArgs freezes the RandomPassword generation knobs after
-// the resource exists so imported passwords (whose generator args may not
-// match the live `result`) don't get rotated by a benign args diff.
 var randomPasswordIgnoredArgs = []string{
 	"length", "special", "upper", "lower", "numeric",
 	"minLower", "minUpper", "minNumeric", "minSpecial", "overrideSpecial",
 }
 
-// User describes a rabbitmq user to seed via definitions.json.
 type User struct {
 	Name string
 	Tags []string
 }
 
-// Vhost describes a rabbitmq virtual host and the list of user names that
-// should be granted full permissions on it.
 type Vhost struct {
 	Name  string
 	Users []string
 }
 
-// Setup is the per-instance rabbitmq topology the container will bootstrap
-// on first boot via definitions.json.
 type Setup struct {
 	Users  []User
 	Vhosts []Vhost
 }
 
-// Args is the caller-facing configuration for a container-backed rabbitmq.
 type Args struct {
-	// Env is the deploy environment (RotateSecrets drives optional RandomPassword keepers).
-	Env env.Env
-	// Namespace is the target Kubernetes namespace.
+	Env       env.Env
 	Namespace string
-	// Name is the instance name (release name "rabbitmq-<Name>").
-	Name string
-	// Version is the rabbitmq container image tag.
-	Version string
-	// Profile is the validated resource profile (CPU, memory, replica count).
-	Profile profile.Profile
-	// Setup declares the users and vhosts the cluster should boot with.
-	Setup Setup
+	Name      string
+	Version   string
+	Profile   profile.Profile
+	Setup     Setup
 }
 
-// Container is the container-backed implementation of the rabbitmq backend.
 type Container struct {
 	pulumi.ResourceState
 
@@ -80,7 +61,6 @@ type Container struct {
 	users     []string
 }
 
-// New registers the container backend and every resource it owns.
 func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.ResourceOption) (*Container, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
@@ -199,18 +179,8 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	return comp, nil
 }
 
-// Hostname returns the AMQP FQDN inside the cluster.
-func (c *Container) Hostname() pulumi.StringOutput { return c.hostname }
-
-// Port returns the AMQP port as a string.
-func (c *Container) Port() pulumi.StringOutput { return c.port }
-
-// AdminHostname returns the management/API FQDN inside the cluster.
-func (c *Container) AdminHostname() pulumi.StringOutput { return c.adminHostname }
-
-// AdminPort returns the management port as a string.
-func (c *Container) AdminPort() pulumi.StringOutput { return c.adminPort }
-
-// Passwords returns the map of caller-configured user names to their
-// generated passwords.
+func (c *Container) Hostname() pulumi.StringOutput             { return c.hostname }
+func (c *Container) Port() pulumi.StringOutput                 { return c.port }
+func (c *Container) AdminHostname() pulumi.StringOutput        { return c.adminHostname }
+func (c *Container) AdminPort() pulumi.StringOutput            { return c.adminPort }
 func (c *Container) Passwords() map[string]pulumi.StringOutput { return c.passwords }

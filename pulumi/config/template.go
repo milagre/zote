@@ -8,18 +8,9 @@ import (
 	"github.com/milagre/zote/pulumi/env"
 )
 
-// envRefPattern captures ${env.<field>} placeholders in YAML values.
-// Escape sequences like $${env.name} are passed through as the literal
-// `${env.name}`.
 var envRefPattern = regexp.MustCompile(`\$\{env\.([a-zA-Z_][a-zA-Z0-9_]*)\}`)
-
-// escapedEnvRef matches $${...}, the escape sequence that emits a literal
-// `${...}` in the rendered value.
 var escapedEnvRef = regexp.MustCompile(`\$\$\{`)
 
-// renderTemplate substitutes ${env.<field>} placeholders in src against
-// the given env, and collapses $${...} escapes to `${...}`. Unknown fields
-// are an error so typos fail loudly rather than producing empty strings.
 func renderTemplate(src string, e env.Env) (string, error) {
 	const sentinel = "\x00ZOTE_ESCAPED_DOLLAR\x00"
 	work := escapedEnvRef.ReplaceAllString(src, sentinel)

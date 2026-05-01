@@ -1,5 +1,4 @@
-// Package metrics_server installs the upstream kubernetes-sigs
-// metrics-server Helm chart with the chart's default value tree.
+// Package metrics_server installs upstream metrics-server (default chart values).
 package metrics_server
 
 import (
@@ -18,19 +17,11 @@ var spec = helm.ChartSpec{
 	DefaultVersion: "3.11.0",
 }
 
-// Args are the caller-supplied inputs. No chart values are exposed; the
-// upstream default tree is installed as-is.
 type Args struct {
-	// Namespace is the target namespace. Required.
 	Namespace string
-
-	// Version overrides DefaultVersion. Optional.
-	Version *string
+	Version   *string
 }
 
-// MetricsServer is the installed chart, wrapped as a ComponentResource
-// so callers can express pulumi.DependsOn against it when a downstream
-// resource (an HPA, for example) needs the metrics API to be online.
 type MetricsServer struct {
 	helm.ChartComponent
 }

@@ -1,13 +1,4 @@
-// Package mysql provides a ComponentResource that deploys a mysql
-// instance and exposes its connection details via a ConfigMap and
-// Secret in the target namespace.
-//
-// The component is backend-polymorphic: a caller chooses between an
-// in-cluster container backend (StatefulSet + PVC) and a managed
-// DigitalOcean DatabaseCluster by supplying exactly one of Args.Container
-// or Args.DigitalOcean. The set of client-facing Kubernetes resources
-// the component emits is identical in both cases, so dependent workloads
-// don't have to know which backend is live.
+// Package mysql deploys MySQL (in-cluster StatefulSet or DO managed cluster); same ConfigMap/Secret shape either way.
 package mysql
 
 import (
@@ -27,12 +18,6 @@ import (
 
 var typeToken = tokens.Token("database", "Mysql")
 
-// Caller-facing aliases for the backend argument types. They are
-// re-exports of the internal implementation types so callers can
-// populate them without importing the internal packages. The Cloud
-// field on DigitalOceanArgs is typed as database/digitalocean.Cloud;
-// callers obtain a value satisfying it by calling
-// cloud/digitalocean.Cloud.ForDatabase.
 type (
 	ContainerArgs        = container.Args
 	DigitalOceanArgs     = digitalocean.Args
@@ -40,59 +25,29 @@ type (
 	DigitalOceanReplicas = digitalocean.Replicas
 )
 
-// Args configures a new Mysql instance. Exactly one of Container or
-// DigitalOcean must be non-nil; the facade rejects configurations that
-// select zero or more than one backend so the choice is explicit at
-// the call site.
+// Args: exactly one of Container, DigitalOcean. Version is image tag (container) or DO engine version (managed).
 type Args struct {
-	// Env is the deploy environment (used to derive the ConfigMap/Secret
-	// key prefix).
-	Env env.Env
-	// Namespace is the target Kubernetes namespace for the shared
-	// ConfigMap/Secret.
-	Namespace string
-	// Name is the logical mysql instance name (also part of the
-	// ConfigMap/Secret key prefix).
-	Name string
-	// Version is the mysql engine version (backend-specific slug: an
-	// image tag for Container, an API-accepted version string for
-	// DigitalOcean).
-	Version string
-	// Database is the schema the instance is expected to host.
-	Database string
-	// Username is the non-root user seeded on the instance.
-	Username string
-
-	// Container selects the in-cluster StatefulSet backend. Mutually
-	// exclusive with DigitalOcean.
-	Container *ContainerArgs
-	// DigitalOcean selects the managed DigitalOcean DatabaseCluster
-	// backend. Mutually exclusive with Container. The caller populates
-	// DigitalOceanArgs.Cloud with a per-instance handle returned by
-	// cloud/digitalocean.Cloud.ForDatabase.
+	Env          env.Env
+	Namespace    string
+	Name         string
+	Version      string
+	Database     string
+	Username     string
+	Container    *ContainerArgs
 	DigitalOcean *DigitalOceanArgs
 }
 
-// K8s holds the names of the Kubernetes resources the component
-// creates in the target namespace. Grouping the names under a struct
-// (rather than flattening them onto the component) makes it obvious
-// at the call site that the strings are in-cluster resource names,
-// not arbitrary configuration values.
 type K8s struct {
 	ConfigMap pulumi.StringOutput
 	Secret    pulumi.StringOutput
 }
 
-// Mysql is the component resource. Connection details are not exposed
-// directly; they live in the ConfigMap and Secret named by K8s and are
-// consumed by mounting those resources into dependent workloads.
 type Mysql struct {
 	pulumi.ResourceState
 
 	K8s K8s
 }
 
-// New registers the Mysql component and its chosen backend.
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*Mysql, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
@@ -168,10 +123,6 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
-// backend is the internal contract every backend implementation
-// satisfies. Values flow directly into the shared ConfigMap/Secret, so
-// everything is exposed as string outputs — scalar types (int ports)
-// are stringified by the implementation.
 type backend interface {
 	Hostname() pulumi.StringOutput
 	Port() pulumi.StringOutput
