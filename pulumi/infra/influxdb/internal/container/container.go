@@ -1,6 +1,11 @@
-// Package container is the container-backed implementation of the influxdb
-// backend interface defined in the parent influxdb package. It installs the
-// upstream influxdb2 Helm chart and generates admin credentials.
+// Package container is the influxdb container backend: influxdb2 Helm chart
+// with admin password and token from RandomPasswords wired into chart values.
+//
+// Chart *-auth may not match those values after Helm's lookup()-based reuse
+// of an existing Secret, so the parent WM_* client Secret can diverge from *-auth.
+//
+// Admin RandomPasswords skip Env.RotateSecrets in keepers and use IgnoreChanges("*"):
+// replacing them from stack config alone would not realign Influx's persisted admin state.
 package container
 
 import (
@@ -24,42 +29,21 @@ const (
 
 var typeToken = tokens.Token("infra", "InfluxdbContainer")
 
-// randomPasswordIgnoredArgs freezes the RandomPassword generation knobs after
-// the resource exists so imported passwords (whose generator args may not
-// match the live `result`) don't get rotated by a benign args diff.
-var randomPasswordIgnoredArgs = []string{
-	"length", "special", "upper", "lower", "numeric",
-	"minLower", "minUpper", "minNumeric", "minSpecial", "overrideSpecial",
-}
+// Freezes admin RandomPassword inputs after create; see package doc.
+var adminRandomPasswordIgnoreChanges = []string{"*"}
 
-// Args is the caller-facing configuration for a container-backed influxdb.
-// Fields the parent influxdb component fills in on the caller's behalf
-// (instance identity, admin identity) are marked below; everything else
-// is user-supplied.
+// Args configures the container backend; parent fills Namespace, Name, Org, User.
 type Args struct {
-	// Env is the deploy environment (RotateSecrets drives optional RandomPassword keepers).
-	Env env.Env
-	// Namespace is the target Kubernetes namespace. Filled by the parent.
-	Namespace string
-	// Name is the influxdb instance name (used to derive the release name
-	// "influxdb-<Name>"). Filled by the parent.
-	Name string
-	// Version is the influxdb image tag (without the "-alpine" suffix that
-	// this component appends).
-	Version string
-	// Profile is the validated resource profile (CPU and memory).
-	Profile profile.Profile
-	// Organization is the influxdb admin organization (also used as the
-	// default bucket name). Filled by the parent, which applies its own
-	// fallback if the caller leaves it empty.
+	Env          env.Env
+	Namespace    string
+	Name         string
+	Version      string
+	Profile      profile.Profile
 	Organization string
-	// User is the influxdb admin username. Filled by the parent, which
-	// applies its own fallback if the caller leaves it empty.
-	User string
+	User         string
 }
 
-// Container installs influxdb via Helm and exposes the connection details
-// required by the parent's ConfigMap and Secret wiring.
+// Container is the Helm influxdb2 backend; outputs feed the parent ConfigMap/Secret.
 type Container struct {
 	pulumi.ResourceState
 
@@ -73,10 +57,7 @@ type Container struct {
 	token  pulumi.StringOutput
 }
 
-// New registers the container backend as a child component. parentName is
-// the parent influxdb component's logical name; child resources are named
-// uniformly off of it. influxParent is the outer Influxdb component; the
-// Helm release is registered as its direct child alongside this component.
+// New registers this component; the Helm release is also a child of influxParent.
 func New(ctx *pulumi.Context, parentName string, args *Args, influxParent pulumi.Resource) (*Container, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
@@ -117,10 +98,10 @@ func New(ctx *pulumi.Context, parentName string, args *Args, influxParent pulumi
 		MinLower:        pulumi.Int(8),
 		MinUpper:        pulumi.Int(8),
 		OverrideSpecial: pulumi.String("$%&*()-_=+[]{}<>:?"),
-		Keepers:         args.Env.RandomKeepers(nil),
+		Keepers:         args.Env.RandomKeepers(nil, env.SupportsRotation(false)),
 	},
 		pulumi.Parent(comp),
-		pulumi.IgnoreChanges(randomPasswordIgnoredArgs),
+		pulumi.IgnoreChanges(adminRandomPasswordIgnoreChanges),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: generating admin password: %w", typeToken, err)
@@ -136,10 +117,10 @@ func New(ctx *pulumi.Context, parentName string, args *Args, influxParent pulumi
 		MinLower:        pulumi.Int(8),
 		MinUpper:        pulumi.Int(8),
 		OverrideSpecial: pulumi.String("$%&*()-_=+[]{}<>:?"),
-		Keepers:         args.Env.RandomKeepers(nil),
+		Keepers:         args.Env.RandomKeepers(nil, env.SupportsRotation(false)),
 	},
 		pulumi.Parent(comp),
-		pulumi.IgnoreChanges(randomPasswordIgnoredArgs),
+		pulumi.IgnoreChanges(adminRandomPasswordIgnoreChanges),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: generating admin token: %w", typeToken, err)
@@ -228,28 +209,11 @@ func New(ctx *pulumi.Context, parentName string, args *Args, influxParent pulumi
 	return comp, nil
 }
 
-// Scheme returns the URL scheme (always "http" for the container backend).
 func (c *Container) Scheme() pulumi.StringOutput { return c.scheme }
-
-// Host returns the in-cluster service hostname exposing influxdb.
-func (c *Container) Host() pulumi.StringOutput { return c.host }
-
-// Port returns the service port as a string.
-func (c *Container) Port() pulumi.StringOutput { return c.port }
-
-// Org returns the configured influxdb organization.
-func (c *Container) Org() pulumi.StringOutput { return c.org }
-
-// Bucket returns the default influxdb bucket to use. The container
-// backend provisions a single bucket named after the organization so
-// that a fresh install has one valid write target out of the box.
+func (c *Container) Host() pulumi.StringOutput   { return c.host }
+func (c *Container) Port() pulumi.StringOutput   { return c.port }
+func (c *Container) Org() pulumi.StringOutput    { return c.org }
 func (c *Container) Bucket() pulumi.StringOutput { return c.bucket }
-
-// User returns the configured admin username.
-func (c *Container) User() pulumi.StringOutput { return c.user }
-
-// Pass returns the generated admin password.
-func (c *Container) Pass() pulumi.StringOutput { return c.pass }
-
-// Token returns the generated admin API token.
-func (c *Container) Token() pulumi.StringOutput { return c.token }
+func (c *Container) User() pulumi.StringOutput   { return c.user }
+func (c *Container) Pass() pulumi.StringOutput   { return c.pass }
+func (c *Container) Token() pulumi.StringOutput  { return c.token }

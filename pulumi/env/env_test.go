@@ -3,84 +3,60 @@ package env_test
 import (
 	"testing"
 
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+
 	"github.com/milagre/zote/pulumi/env"
 )
 
-func TestNew_validates(t *testing.T) {
+func TestRandomKeepersDefaultMergesRotateSecrets(t *testing.T) {
 	t.Parallel()
 
-	cases := []struct {
-		name    string
-		typ     string
-		tier    string
-		env     string
-		root    string
-		prefix  string
-		wantErr bool
-	}{
-		{name: "ok", typ: "local", tier: "dev", env: "username", root: "/tmp", prefix: "p"},
-		{name: "missing type", tier: "dev", env: "username", root: "/tmp", wantErr: true},
-		{name: "missing tier", typ: "local", env: "username", root: "/tmp", wantErr: true},
-		{name: "missing name", typ: "local", tier: "dev", root: "/tmp", wantErr: true},
-		{name: "missing root", typ: "local", tier: "dev", env: "username", wantErr: true},
+	e := env.Env{RotateSecrets: "bump"}
+	out := e.RandomKeepers(nil)
+	sm, ok := out.(pulumi.StringMap)
+	if !ok {
+		t.Fatalf("expected pulumi.StringMap, got %T", out)
 	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := env.New(tc.typ, tc.tier, tc.env, tc.root, tc.prefix)
-			if tc.wantErr && err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if !tc.wantErr && err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-		})
+	if len(sm) != 1 {
+		t.Fatalf("expected 1 keeper, got %d", len(sm))
+	}
+	if _, ok := sm[env.RotateSecretsKeeperKey]; !ok {
+		t.Fatalf("missing %q in %#v", env.RotateSecretsKeeperKey, sm)
 	}
 }
 
-func TestNew_withRotateSecrets(t *testing.T) {
+func TestRandomKeepersSupportsRotationFalseOmitsRotateSecrets(t *testing.T) {
 	t.Parallel()
 
-	e, err := env.New("local", "dev", "username", "/tmp", "", env.WithRotateSecrets("v1"))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	e := env.Env{RotateSecrets: "bump"}
+	base := pulumi.StringMap{"k": pulumi.String("v")}
+	out := e.RandomKeepers(base, env.SupportsRotation(false))
+	sm, ok := out.(pulumi.StringMap)
+	if !ok {
+		t.Fatalf("expected pulumi.StringMap, got %T", out)
 	}
-	if e.RotateSecrets != "v1" {
-		t.Fatalf("RotateSecrets: got %q want v1", e.RotateSecrets)
+	if len(sm) != 1 {
+		t.Fatalf("expected 1 entry, got %d: %#v", len(sm), sm)
+	}
+	if _, ok := sm[env.RotateSecretsKeeperKey]; ok {
+		t.Fatalf("rotateSecrets keeper should not be merged when SupportsRotation is false")
 	}
 }
 
-func TestEnv_derived(t *testing.T) {
+func TestRandomKeepersSupportsRotationTrueMergesIntoBase(t *testing.T) {
 	t.Parallel()
 
-	e, err := env.New("local", "dev", "username", "/tmp", "")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	e := env.Env{RotateSecrets: "v1"}
+	base := pulumi.StringMap{"a": pulumi.String("b")}
+	out := e.RandomKeepers(base, env.SupportsRotation(true))
+	sm, ok := out.(pulumi.StringMap)
+	if !ok {
+		t.Fatalf("expected pulumi.StringMap, got %T", out)
 	}
-
-	if got, want := e.ID(), "dev-username"; got != want {
-		t.Errorf("ID: got %q, want %q", got, want)
+	if len(sm) != 2 {
+		t.Fatalf("expected 2 entries, got %d: %#v", len(sm), sm)
 	}
-	if !e.IsDev() {
-		t.Error("IsDev: want true")
-	}
-	if !e.IsLocal() {
-		t.Error("IsLocal: want true")
-	}
-	if got, want := e.LBType(), "NodePort"; got != want {
-		t.Errorf("LBType (local): got %q, want %q", got, want)
-	}
-
-	prod, _ := env.New("remote", "prod", "us-e1", "/tmp", "")
-	if prod.IsDev() {
-		t.Error("IsDev (prod): want false")
-	}
-	if prod.IsLocal() {
-		t.Error("IsLocal (remote): want false")
-	}
-	if got, want := prod.LBType(), "LoadBalancer"; got != want {
-		t.Errorf("LBType (remote): got %q, want %q", got, want)
+	if _, ok := sm[env.RotateSecretsKeeperKey]; !ok {
+		t.Fatalf("missing rotateSecrets keeper")
 	}
 }

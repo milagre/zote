@@ -1,11 +1,6 @@
-// Package influxdb provides a ComponentResource that deploys an influxdb
-// instance and exposes its connection details via a ConfigMap and Secret
-// in the target namespace.
-//
-// The component is backend-polymorphic: today only the container backend is
-// implemented (via an in-cluster Helm chart), but the shape of Args leaves
-// room for additional backends (e.g. managed cloud InfluxDB) to be added
-// without changing the client-facing resources.
+// Package influxdb deploys influxdb and publishes connection details in a
+// ConfigMap and Secret. Only the container (Helm) backend is implemented; Args
+// is shaped for additional backends later.
 package influxdb
 
 import (
@@ -24,59 +19,32 @@ import (
 
 var typeToken = tokens.Token("infra", "Influxdb")
 
-// Default admin organization and username, applied when the caller leaves
-// Args.Organization / Args.User empty. Both are influxdb concepts rather
-// than container-backend concepts, so the defaults live with the parent
-// component and the backend always receives resolved values.
 const (
 	defaultOrg  = "influxdb"
 	defaultUser = "admin"
 )
 
-// ContainerArgs is the caller-facing configuration for the in-cluster
-// container backend. It is a type alias over the internal implementation
-// type so callers can populate it without importing the internal package.
+// ContainerArgs is an alias for [container.Args] (avoids importing internal).
 type ContainerArgs = container.Args
 
-// Args configures a new Influxdb instance.
-//
-// Exactly one of the backend pointer fields (currently just Container) must
-// be non-nil. Setting none or more than one is rejected at construction
-// time so the choice of backend is explicit in the call site and so no
-// in-cluster resources are created when a managed backend is selected.
+// Args configures Influxdb. Container is required today. Env supplies WM_* key prefix;
+// empty Organization/User use defaults.
 type Args struct {
-	// Env is the deploy environment (used to derive the ConfigMap/Secret
-	// key prefix).
-	Env env.Env
-	// Namespace is the target Kubernetes namespace for all resources.
-	Namespace string
-	// Name is the logical influxdb instance name; used both as the release
-	// name and as part of the ConfigMap/Secret key prefix.
-	Name string
-	// Organization is the influxdb admin organization (and default bucket
-	// name). Empty falls back to defaultOrg.
+	Env          env.Env
+	Namespace    string
+	Name         string
 	Organization string
-	// User is the influxdb admin username. Empty falls back to defaultUser.
-	User string
-
-	// Container selects the in-cluster container backend. Mutually
-	// exclusive with future cloud-backend pointers.
-	Container *ContainerArgs
+	User         string
+	Container    *ContainerArgs
 }
 
-// K8s holds the names of the Kubernetes resources the component creates
-// in the target namespace. Grouping the names under a struct (rather than
-// flattening them onto the component) makes it obvious at the call site
-// that the strings are in-cluster resource names, not arbitrary
-// configuration values.
+// K8s names the ConfigMap and Secret created in the target namespace.
 type K8s struct {
 	ConfigMap pulumi.StringOutput
 	Secret    pulumi.StringOutput
 }
 
-// Influxdb is the component resource. Connection details are not exposed
-// directly; they live in the ConfigMap and Secret named by K8s and are
-// consumed by mounting those resources into dependent workloads.
+// Influxdb is the component resource; connection details are in K8s only.
 type Influxdb struct {
 	pulumi.ResourceState
 
@@ -168,10 +136,6 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
-// backend is the internal contract every backend implementation satisfies.
-// Values flow directly into the shared ConfigMap/Secret, so everything is
-// exposed as string outputs — scalar types (int ports) are stringified by
-// the implementation.
 type backend interface {
 	Scheme() pulumi.StringOutput
 	Host() pulumi.StringOutput

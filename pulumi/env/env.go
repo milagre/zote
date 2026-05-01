@@ -1,5 +1,5 @@
 // Package env describes the deploy environment the rest of the library is
-// being composed for. Core identity fields are plain Go values; RandomKeepers
+// being composed for. Core identity fields are plain Go values; Env.RandomKeepers
 // and WithRotateSecretsFromPulumi are the Pulumi-aware helpers so callers can
 // wire RandomPassword keepers and stack config without importing pulumi at
 // every component.
@@ -104,10 +104,37 @@ func (e Env) LBType() string {
 	return "LoadBalancer"
 }
 
-// RandomKeepers returns base unchanged when RotateSecrets is empty. Otherwise
-// it returns a new StringMap with every entry from base plus
-// RotateSecretsKeeperKey → RotateSecrets (base may be nil).
-func (e Env) RandomKeepers(base pulumi.StringMap) pulumi.StringMapInput {
+// RandomKeepersOption configures [Env.RandomKeepers].
+type RandomKeepersOption func(*randomKeepersOpts)
+
+type randomKeepersOpts struct {
+	supportsRotation bool
+}
+
+// SupportsRotation controls whether [Env.RotateSecrets] is merged into the
+// keepers map (when non-empty). It defaults to true. Set to false for
+// credentials that must not be replaced when zote:rotateSecrets changes
+// (e.g. InfluxDB admin material that cannot be realigned from Pulumi alone).
+func SupportsRotation(v bool) RandomKeepersOption {
+	return func(o *randomKeepersOpts) {
+		o.supportsRotation = v
+	}
+}
+
+// RandomKeepers returns base unchanged when RotateSecrets is empty or when
+// [SupportsRotation](false) is passed. Otherwise it returns a new StringMap
+// with every entry from base plus RotateSecretsKeeperKey → RotateSecrets
+// (base may be nil).
+func (e Env) RandomKeepers(base pulumi.StringMap, opts ...RandomKeepersOption) pulumi.StringMapInput {
+	cfg := randomKeepersOpts{supportsRotation: true}
+	for _, o := range opts {
+		o(&cfg)
+	}
+
+	if !cfg.supportsRotation {
+		return base
+	}
+
 	if e.RotateSecrets == "" {
 		return base
 	}
