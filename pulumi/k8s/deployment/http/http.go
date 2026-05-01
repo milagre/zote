@@ -19,8 +19,10 @@ import (
 
 var typeToken = tokens.Token("k8s", "HttpDeployment")
 
-type Conf = podspec.Conf
-type Files = podspec.Files
+type (
+	Conf  = podspec.Conf
+	Files = podspec.Files
+)
 
 type Options struct {
 	Port   int
@@ -205,10 +207,9 @@ func registerPrivateIngress(ctx *pulumi.Context, name string, args *Args, svc *c
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(args.Name + "-nginx-private"),
 			Namespace: pulumi.String(args.Namespace),
-			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey:      pulumi.String("true"),
+			Annotations: annotations.ManagedWith(pulumi.StringMap{
 				"kubernetes.io/ingress.class": pulumi.String("nginx"),
-			},
+			}),
 		},
 		Spec: &networkingv1.IngressSpecArgs{
 			IngressClassName: pulumi.String("nginx"),
@@ -259,11 +260,10 @@ func registerPublicIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(args.Name + "-nginx-public"),
 			Namespace: pulumi.String(args.Namespace),
-			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey:         pulumi.String("true"),
+			Annotations: annotations.ManagedWith(pulumi.StringMap{
 				"kubernetes.io/ingress.class":    pulumi.String("nginx"),
 				"cert-manager.io/cluster-issuer": pulumi.String("letsencrypt-http01"),
-			},
+			}),
 		},
 		Spec: spec,
 	}, pulumi.Parent(parent))
@@ -288,10 +288,9 @@ func registerTunnelIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(args.Name + "-tunnel"),
 			Namespace: pulumi.String(args.Namespace),
-			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey:      pulumi.String("true"),
+			Annotations: annotations.ManagedWith(pulumi.StringMap{
 				"kubernetes.io/ingress.class": pulumi.String("cloudflare-tunnel"),
-			},
+			}),
 		},
 		Spec: &networkingv1.IngressSpecArgs{
 			IngressClassName: pulumi.String("cloudflare-tunnel"),
