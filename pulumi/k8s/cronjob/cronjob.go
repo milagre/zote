@@ -91,7 +91,9 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			Name:        pulumi.String(args.Name),
 			Namespace:   pulumi.String(args.Namespace),
 			Labels:      labels,
-			Annotations: annotations.Managed(),
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueReady),
+			},
 		},
 		Spec: &batchv1.CronJobSpecArgs{
 			Schedule:                   pulumi.String(args.Schedule),

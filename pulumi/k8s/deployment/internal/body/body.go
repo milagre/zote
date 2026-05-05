@@ -91,7 +91,9 @@ func Register(
 			Name:        pulumi.String(args.Name),
 			Namespace:   ns,
 			Labels:      labels,
-			Annotations: annotations.Managed(),
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueReady),
+			},
 		},
 		Spec: &appsv1.DeploymentSpecArgs{
 			Replicas: pulumi.Int(args.Profile.Num.Min),
@@ -161,7 +163,9 @@ func registerPodMonitor(
 			Labels: pulumi.StringMap{
 				"app": pulumi.String(args.Name),
 			},
-			Annotations: annotations.Managed(),
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueReady),
+			},
 		},
 		OtherFields: kubernetes.UntypedArgs{
 			"spec": pulumi.Map{

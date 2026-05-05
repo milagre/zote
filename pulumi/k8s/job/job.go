@@ -88,7 +88,9 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 
 	var metaAnnotations pulumi.StringMap
 	if !args.Wait {
-		metaAnnotations = annotations.Managed()
+		metaAnnotations = pulumi.StringMap{
+			annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+		}
 	}
 
 	if _, err := batchv1.NewJob(ctx, resourceName, &batchv1.JobArgs{

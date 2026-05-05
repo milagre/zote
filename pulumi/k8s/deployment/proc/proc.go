@@ -124,7 +124,9 @@ func registerService(ctx *pulumi.Context, name string, args *Args, parent pulumi
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:        pulumi.String(args.Name),
 			Namespace:   pulumi.String(args.Namespace),
-			Annotations: annotations.Managed(),
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueReady),
+			},
 		},
 		Spec: &corev1.ServiceSpecArgs{
 			ClusterIP: pulumi.String("None"),

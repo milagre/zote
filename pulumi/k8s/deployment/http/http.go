@@ -173,7 +173,9 @@ func registerService(ctx *pulumi.Context, name string, args *Args, parent pulumi
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:        pulumi.String(args.Name),
 			Namespace:   pulumi.String(args.Namespace),
-			Annotations: annotations.Managed(),
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueReady),
+			},
 		},
 		Spec: &corev1.ServiceSpecArgs{
 			Type: pulumi.String("ClusterIP"),
@@ -207,9 +209,10 @@ func registerPrivateIngress(ctx *pulumi.Context, name string, args *Args, svc *c
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(args.Name + "-nginx-private"),
 			Namespace: pulumi.String(args.Namespace),
-			Annotations: annotations.ManagedWith(pulumi.StringMap{
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey:        pulumi.String(annotations.SkipAwaitValueReady),
 				"kubernetes.io/ingress.class": pulumi.String("nginx"),
-			}),
+			},
 		},
 		Spec: &networkingv1.IngressSpecArgs{
 			IngressClassName: pulumi.String("nginx"),
@@ -260,10 +263,11 @@ func registerPublicIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(args.Name + "-nginx-public"),
 			Namespace: pulumi.String(args.Namespace),
-			Annotations: annotations.ManagedWith(pulumi.StringMap{
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey:         pulumi.String(annotations.SkipAwaitValueReady),
 				"kubernetes.io/ingress.class":    pulumi.String("nginx"),
 				"cert-manager.io/cluster-issuer": pulumi.String("letsencrypt-http01"),
-			}),
+			},
 		},
 		Spec: spec,
 	}, pulumi.Parent(parent))
@@ -288,9 +292,10 @@ func registerTunnelIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(args.Name + "-tunnel"),
 			Namespace: pulumi.String(args.Namespace),
-			Annotations: annotations.ManagedWith(pulumi.StringMap{
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey:        pulumi.String(annotations.SkipAwaitValueReady),
 				"kubernetes.io/ingress.class": pulumi.String("cloudflare-tunnel"),
-			}),
+			},
 		},
 		Spec: &networkingv1.IngressSpecArgs{
 			IngressClassName: pulumi.String("cloudflare-tunnel"),
