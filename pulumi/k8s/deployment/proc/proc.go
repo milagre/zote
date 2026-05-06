@@ -125,7 +125,7 @@ func registerService(ctx *pulumi.Context, name string, args *Args, parent pulumi
 			Name:        pulumi.String(args.Name),
 			Namespace:   pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueReady),
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
 			},
 		},
 		Spec: &corev1.ServiceSpecArgs{

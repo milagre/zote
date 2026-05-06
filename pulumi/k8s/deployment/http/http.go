@@ -174,7 +174,7 @@ func registerService(ctx *pulumi.Context, name string, args *Args, parent pulumi
 			Name:        pulumi.String(args.Name),
 			Namespace:   pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueReady),
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
 			},
 		},
 		Spec: &corev1.ServiceSpecArgs{
@@ -210,7 +210,7 @@ func registerPrivateIngress(ctx *pulumi.Context, name string, args *Args, svc *c
 			Name:      pulumi.String(args.Name + "-nginx-private"),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey:        pulumi.String(annotations.SkipAwaitValueReady),
+				annotations.SkipAwaitKey:        pulumi.String(annotations.SkipAwaitValueAll),
 				"kubernetes.io/ingress.class": pulumi.String("nginx"),
 			},
 		},
@@ -264,7 +264,7 @@ func registerPublicIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 			Name:      pulumi.String(args.Name + "-nginx-public"),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey:         pulumi.String(annotations.SkipAwaitValueReady),
+				annotations.SkipAwaitKey:         pulumi.String(annotations.SkipAwaitValueAll),
 				"kubernetes.io/ingress.class":    pulumi.String("nginx"),
 				"cert-manager.io/cluster-issuer": pulumi.String("letsencrypt-http01"),
 			},
@@ -293,7 +293,7 @@ func registerTunnelIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 			Name:      pulumi.String(args.Name + "-tunnel"),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey:        pulumi.String(annotations.SkipAwaitValueReady),
+				annotations.SkipAwaitKey:        pulumi.String(annotations.SkipAwaitValueAll),
 				"kubernetes.io/ingress.class": pulumi.String("cloudflare-tunnel"),
 			},
 		},

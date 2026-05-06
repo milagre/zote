@@ -20,8 +20,10 @@ var typeToken = tokens.Token("k8s", "Job")
 
 const defaultBackoffLimit = 100000
 
-type Conf = podspec.Conf
-type Files = podspec.Files
+type (
+	Conf  = podspec.Conf
+	Files = podspec.Files
+)
 
 type Args struct {
 	Env       env.Env
@@ -86,10 +88,18 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 
 	labels := pulumi.StringMap{"app": pulumi.String(args.Name)}
 
+	// When Wait is false we want to skip the builtin "wait for Job to Succeed"
+	// awaiter while *still* awaiting delete on replace — Job spec is largely
+	// immutable so any template change replaces, and delete-await keeps the
+	// new POST from racing the old object's tombstone (AlreadyExists).
+	// pulumi.com/skipAwait="true" can't be used here: for batch/v1.Job the
+	// provider treats it as skip-create-AND-skip-delete (allowsSkipAwaitWithDelete).
+	// pulumi.com/waitFor with a trivially-satisfied JSONPath bypasses only the
+	// per-kind awaiter (custom=true in ReadyCondition).
 	var metaAnnotations pulumi.StringMap
 	if !args.Wait {
 		metaAnnotations = pulumi.StringMap{
-			annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+			annotations.WaitForKey: pulumi.String(annotations.WaitForValueImmediate),
 		}
 	}
 
