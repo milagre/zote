@@ -2,7 +2,7 @@
 // with admin password and token from RandomPasswords wired into chart values.
 //
 // Chart *-auth may not match those values after Helm's lookup()-based reuse
-// of an existing Secret, so the parent WM_* client Secret can diverge from *-auth.
+// of an existing Secret, so the parent client Secret (keys under Env.Prefix) can diverge from *-auth.
 //
 // Admin RandomPasswords skip Env.RotateSecrets in keepers and use IgnoreChanges("*"):
 // replacing them from stack config alone would not realign Influx's persisted admin state.

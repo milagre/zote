@@ -22,8 +22,8 @@ var spec = helm.ChartSpec{
 type Args struct {
 	Namespace string
 	Env       env.Env
-	Profile   profile.Profile
-	Version   *string
+
+	Config Config
 }
 
 type NginxIngress struct {
@@ -37,12 +37,16 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if args.Namespace == "" {
 		return nil, fmt.Errorf("nginx_ingress: Namespace is required")
 	}
+	prof, err := args.Config.ResourceProfile()
+	if err != nil {
+		return nil, fmt.Errorf("nginx_ingress: config: %w", err)
+	}
 
 	comp := &NginxIngress{}
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
-		Version:   args.Version,
-		Values:    values(args.Env, args.Profile),
+		Version:   helm.OptionalChartVersion(args.Config.Version),
+		Values:    values(args.Env, prof),
 	}, &comp.ChartComponent, opts...); err != nil {
 		return nil, err
 	}

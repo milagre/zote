@@ -5,18 +5,22 @@ import (
 
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/cloud"
 	"github.com/milagre/zote/pulumi/cloud/digitalocean"
 	dbdo "github.com/milagre/zote/pulumi/database/digitalocean"
+	osdo "github.com/milagre/zote/pulumi/infra/objectstorage/digitalocean"
 )
 
-var _ cloud.Cloud = (*digitalocean.Cloud)(nil)        // interface satisfaction
-var _ dbdo.Cloud = (*digitalocean.DatabaseCloud)(nil) // interface satisfaction
+var _ dbdo.Cloud = (*digitalocean.DatabaseCloud)(nil)
+var _ osdo.Cloud = (*digitalocean.ObjectStorageCloud)(nil)
+
+func newCloud(vpc, proj string) *digitalocean.Cloud {
+	return digitalocean.New(pulumi.String(vpc), pulumi.String(proj))
+}
 
 func TestCloud_publicLoadBalancerAnnotations(t *testing.T) {
 	t.Parallel()
 
-	got := digitalocean.New().PublicLoadBalancerAnnotations()
+	got := newCloud("vpc", "proj").PublicLoadBalancerAnnotations()
 
 	if got["service.beta.kubernetes.io/do-loadbalancer-tls-ports"] != "443" {
 		t.Errorf("missing DO TLS ports annotation: %+v", got)
@@ -29,76 +33,58 @@ func TestCloud_publicLoadBalancerAnnotations(t *testing.T) {
 func TestCloud_privateLoadBalancerAnnotations_isEmpty(t *testing.T) {
 	t.Parallel()
 
-	if got := digitalocean.New().PrivateLoadBalancerAnnotations(); len(got) != 0 {
+	if got := newCloud("vpc", "proj").PrivateLoadBalancerAnnotations(); len(got) != 0 {
 		t.Errorf("expected no private annotations, got %+v", got)
 	}
 }
 
-func TestCloud_forDatabase_returnsConfiguredIDs(t *testing.T) {
+func TestCloud_forDatabase_propagatesIDs(t *testing.T) {
 	t.Parallel()
 
-	// Raw pulumi.String literals are the only shape of
-	// pulumi.StringInput whose concrete value can be inspected
-	// synchronously; StringOutput values must be resolved via Apply at
-	// runtime. Passing literals exercises the happy-path identity of
-	// the stored input without spinning up a Pulumi program.
-	d := digitalocean.New().ForDatabase(pulumi.String("vpc-123"), pulumi.String("proj-456"))
+	d := newCloud("vpc-123", "proj-456").ForDatabase()
 
-	vpc, ok := d.VPCID().(pulumi.String)
-	if !ok {
-		t.Fatalf("VPCID: expected pulumi.String, got %T", d.VPCID())
-	}
-	if string(vpc) != "vpc-123" {
-		t.Errorf("VPCID: got %q, want %q", vpc, "vpc-123")
-	}
+	assertStringInput(t, "VPCID", d.VPCID(), "vpc-123")
+	assertStringInput(t, "ProjectID", d.ProjectID(), "proj-456")
+}
 
-	proj, ok := d.ProjectID().(pulumi.String)
-	if !ok {
-		t.Fatalf("ProjectID: expected pulumi.String, got %T", d.ProjectID())
-	}
-	if string(proj) != "proj-456" {
-		t.Errorf("ProjectID: got %q, want %q", proj, "proj-456")
+func TestCloud_forObjectStorage_propagatesIDs(t *testing.T) {
+	t.Parallel()
+
+	o := newCloud("vpc-789", "proj-321").ForObjectStorage()
+
+	assertStringInput(t, "VPCID", o.VPCID(), "vpc-789")
+	assertStringInput(t, "ProjectID", o.ProjectID(), "proj-321")
+}
+
+// Each call must return a fresh handle so two callers don't end up
+// sharing pointer-equal state. Pointer-identity is the strongest check
+// available because the IDs are interface-typed and not comparable.
+func TestCloud_forDatabase_freshPerCall(t *testing.T) {
+	t.Parallel()
+
+	c := newCloud("vpc", "proj")
+	if c.ForDatabase() == c.ForDatabase() {
+		t.Errorf("expected independent DatabaseCloud values, got the same pointer")
 	}
 }
 
-func TestCloud_forDatabase_producesIndependentHandlesPerInstance(t *testing.T) {
+func TestCloud_forObjectStorage_freshPerCall(t *testing.T) {
 	t.Parallel()
 
-	c := digitalocean.New()
-	a := c.ForDatabase(pulumi.String("vpc-a"), pulumi.String("proj-a"))
-	b := c.ForDatabase(pulumi.String("vpc-b"), pulumi.String("proj-b"))
+	c := newCloud("vpc", "proj")
+	if c.ForObjectStorage() == c.ForObjectStorage() {
+		t.Errorf("expected independent ObjectStorageCloud values, got the same pointer")
+	}
+}
 
-	// Each ForDatabase call must return a fresh DatabaseCloud; a
-	// single shared handle would conflate two databases living in
-	// different networks when the caller only wanted one per
-	// instance. Pointer-identity is the strongest guarantee available
-	// here because the IDs are interface-typed and not comparable via
-	// `==` in the general case.
-	if a == b {
-		t.Errorf("expected independent DatabaseCloud values, got the same pointer")
-	}
+func assertStringInput(t *testing.T, name string, got pulumi.StringInput, want string) {
+	t.Helper()
 
-	aVPC, ok := a.VPCID().(pulumi.String)
+	s, ok := got.(pulumi.String)
 	if !ok {
-		t.Fatalf("a.VPCID: expected pulumi.String, got %T", a.VPCID())
+		t.Fatalf("%s: expected pulumi.String, got %T", name, got)
 	}
-	bVPC, ok := b.VPCID().(pulumi.String)
-	if !ok {
-		t.Fatalf("b.VPCID: expected pulumi.String, got %T", b.VPCID())
-	}
-	if aVPC == bVPC {
-		t.Errorf("expected independent VPCIDs, both were %q", aVPC)
-	}
-
-	aProj, ok := a.ProjectID().(pulumi.String)
-	if !ok {
-		t.Fatalf("a.ProjectID: expected pulumi.String, got %T", a.ProjectID())
-	}
-	bProj, ok := b.ProjectID().(pulumi.String)
-	if !ok {
-		t.Fatalf("b.ProjectID: expected pulumi.String, got %T", b.ProjectID())
-	}
-	if aProj == bProj {
-		t.Errorf("expected independent ProjectIDs, both were %q", aProj)
+	if string(s) != want {
+		t.Errorf("%s: got %q, want %q", name, s, want)
 	}
 }

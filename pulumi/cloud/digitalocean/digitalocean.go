@@ -1,14 +1,22 @@
-// Package digitalocean implements [cloud.Cloud] (LB Service annotations) and per-DB handles via [Cloud.ForDatabase].
+// Package digitalocean is the DO cloud-provider handle: LB Service annotations and per-resource scopes (database, object storage).
 package digitalocean
 
 import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-type Cloud struct{}
+// Cloud carries the VPC + project IDs every cloud-scoped DO resource
+// needs. ForDatabase / ForObjectStorage build per-resource handles
+// from these IDs without re-asking the caller.
+type Cloud struct {
+	vpcID     pulumi.StringInput
+	projectID pulumi.StringInput
+}
 
-func New() *Cloud {
-	return &Cloud{}
+// New takes [pulumi.StringInput] so VPC/project stack outputs are
+// allowed; the IDs are deferred to apply-scoped data-source invokes.
+func New(vpcID, projectID pulumi.StringInput) *Cloud {
+	return &Cloud{vpcID: vpcID, projectID: projectID}
 }
 
 func (*Cloud) PublicLoadBalancerAnnotations() map[string]string {
@@ -22,18 +30,16 @@ func (*Cloud) PrivateLoadBalancerAnnotations() map[string]string {
 	return map[string]string{}
 }
 
-// ForDatabase returns a per-DB handle; vpcID and projectID are [pulumi.StringInput] so stack outputs are allowed.
-func (c *Cloud) ForDatabase(vpcID, projectID pulumi.StringInput) *DatabaseCloud {
-	return &DatabaseCloud{
-		parent:    c,
-		vpcID:     vpcID,
-		projectID: projectID,
-	}
+func (c *Cloud) ForDatabase() *DatabaseCloud {
+	return &DatabaseCloud{vpcID: c.vpcID, projectID: c.projectID}
 }
 
-// DatabaseCloud implements database/digitalocean.Cloud for one VPC/project pair.
+func (c *Cloud) ForObjectStorage() *ObjectStorageCloud {
+	return &ObjectStorageCloud{vpcID: c.vpcID, projectID: c.projectID}
+}
+
+// DatabaseCloud satisfies database/digitalocean.Cloud.
 type DatabaseCloud struct {
-	parent    *Cloud
 	vpcID     pulumi.StringInput
 	projectID pulumi.StringInput
 }
@@ -41,3 +47,13 @@ type DatabaseCloud struct {
 func (d *DatabaseCloud) VPCID() pulumi.StringInput { return d.vpcID }
 
 func (d *DatabaseCloud) ProjectID() pulumi.StringInput { return d.projectID }
+
+// ObjectStorageCloud satisfies infra/objectstorage/digitalocean.Cloud.
+type ObjectStorageCloud struct {
+	vpcID     pulumi.StringInput
+	projectID pulumi.StringInput
+}
+
+func (o *ObjectStorageCloud) VPCID() pulumi.StringInput { return o.vpcID }
+
+func (o *ObjectStorageCloud) ProjectID() pulumi.StringInput { return o.projectID }

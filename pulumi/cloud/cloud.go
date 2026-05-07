@@ -1,7 +1,13 @@
-// Package cloud is the small shared contract for cloud-specific Service annotations.
+// Package cloud is the multi-provider container resources receive in
+// parallel with their YAML-decoded config. Provider fields are nil
+// when that provider isn't configured for the running environment;
+// resources read only the field(s) their config selected.
 package cloud
 
-type Cloud interface {
-	PublicLoadBalancerAnnotations() map[string]string
-	PrivateLoadBalancerAnnotations() map[string]string
+import (
+	"github.com/milagre/zote/pulumi/cloud/digitalocean"
+)
+
+type Cloud struct {
+	DigitalOcean *digitalocean.Cloud
 }

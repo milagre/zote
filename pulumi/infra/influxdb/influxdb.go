@@ -1,6 +1,5 @@
 // Package influxdb deploys influxdb and publishes connection details in a
-// ConfigMap and Secret. Only the container (Helm) backend is implemented; Args
-// is shaped for additional backends later.
+// ConfigMap and Secret. Only the container (Helm) backend is implemented.
 package influxdb
 
 import (
@@ -13,29 +12,20 @@ import (
 
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra/influxdb/internal/container"
+	"github.com/milagre/zote/pulumi/profile"
 	"github.com/milagre/zote/pulumi/stringdata"
 	"github.com/milagre/zote/pulumi/tokens"
 )
 
 var typeToken = tokens.Token("infra", "Influxdb")
 
-const (
-	defaultOrg  = "influxdb"
-	defaultUser = "admin"
-)
-
-// ContainerArgs is an alias for [container.Args] (avoids importing internal).
-type ContainerArgs = container.Args
-
-// Args configures Influxdb. Container is required today. Env supplies WM_* key prefix;
-// empty Organization/User use defaults.
+// Args configures Influxdb. [Env.Prefix] scopes generated Secret keys.
 type Args struct {
-	Env          env.Env
-	Namespace    string
-	Name         string
-	Organization string
-	User         string
-	Container    *ContainerArgs
+	Env       env.Env
+	Namespace string
+	Name      string
+
+	Config Config
 }
 
 // K8s names the ConfigMap and Secret created in the target namespace.
@@ -56,17 +46,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
 	}
-	if args.Name == "" {
-		return nil, fmt.Errorf("%s: Name is required", typeToken)
-	}
-	if args.Namespace == "" {
-		return nil, fmt.Errorf("%s: Namespace is required", typeToken)
-	}
-	if err := args.Env.Validate(); err != nil {
+	if err := args.validate(); err != nil {
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
-	}
-	if args.Container == nil {
-		return nil, fmt.Errorf("%s: a backend is required (currently only Container is implemented)", typeToken)
 	}
 
 	resourceName := tokens.Qualify(args.Namespace, name)
@@ -136,6 +117,23 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
+func (a *Args) validate() error {
+	if a.Name == "" {
+		return fmt.Errorf("Name is required")
+	}
+	if a.Namespace == "" {
+		return fmt.Errorf("Namespace is required")
+	}
+	if err := a.Env.Validate(); err != nil {
+		return fmt.Errorf("invalid env: %w", err)
+	}
+	if err := a.Config.Validate(); err != nil {
+		return fmt.Errorf("config: %w", err)
+	}
+
+	return nil
+}
+
 type backend interface {
 	Scheme() pulumi.StringOutput
 	Host() pulumi.StringOutput
@@ -148,21 +146,21 @@ type backend interface {
 }
 
 func selectBackend(ctx *pulumi.Context, name string, args *Args, parent pulumi.Resource) (backend, error) {
-	org := args.Organization
-	if org == "" {
-		org = defaultOrg
-	}
-	user := args.User
-	if user == "" {
-		user = defaultUser
+	prof, err := profile.New(args.Config.Container.Profile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: profile: %w", typeToken, err)
 	}
 
-	cArgs := *args.Container
-	cArgs.Env = args.Env
-	cArgs.Namespace = args.Namespace
-	cArgs.Name = args.Name
-	cArgs.Organization = org
-	cArgs.User = user
+	cArgs := container.Args{
+		Env:          args.Env,
+		Namespace:    args.Namespace,
+		Name:         args.Name,
+		Version:      args.Config.Version,
+		Profile:      prof,
+		Organization: args.Config.OrganizationOrDefault(),
+		User:         args.Config.UserOrDefault(),
+	}
+
 	c, err := container.New(ctx, name, &cArgs, parent)
 	if err != nil {
 		return nil, fmt.Errorf("%s: container backend: %w", typeToken, err)

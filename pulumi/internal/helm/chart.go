@@ -3,6 +3,7 @@ package helm
 
 import (
 	"fmt"
+	"strings"
 
 	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -21,6 +22,16 @@ type ChartArgs struct {
 	Namespace string
 	Version   *string // nil → ChartSpec.DefaultVersion
 	Values    pulumi.Map
+}
+
+// OptionalChartVersion yields nil when version is whitespace-only so RegisterChart picks [ChartSpec.DefaultVersion].
+func OptionalChartVersion(version string) *string {
+	v := strings.TrimSpace(version)
+	if v == "" {
+		return nil
+	}
+
+	return &v
 }
 
 // ChartComponent embeds the installed [helmv3.Release] for DependsOn from sibling resources.

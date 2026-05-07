@@ -9,6 +9,7 @@ import (
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
+	"github.com/milagre/zote/pulumi/cloud"
 	"github.com/milagre/zote/pulumi/database/mysql/internal/container"
 	"github.com/milagre/zote/pulumi/database/mysql/internal/digitalocean"
 	"github.com/milagre/zote/pulumi/env"
@@ -18,23 +19,19 @@ import (
 
 var typeToken = tokens.Token("database", "Mysql")
 
-type (
-	ContainerArgs        = container.Args
-	DigitalOceanArgs     = digitalocean.Args
-	DigitalOceanPrimary  = digitalocean.Primary
-	DigitalOceanReplicas = digitalocean.Replicas
-)
-
-// Args: exactly one of Container, DigitalOcean. Version is image tag (container) or DO engine version (managed).
+// Args bundles the YAML-decoded Config with the runtime identity
+// (Env, Namespace, Name, Database, Username) and the multi-provider
+// Cloud container. Cloud is consulted only when Config.Cloud is
+// populated; the provider field matching Config.Cloud must be non-nil.
 type Args struct {
-	Env          env.Env
-	Namespace    string
-	Name         string
-	Version      string
-	Database     string
-	Username     string
-	Container    *ContainerArgs
-	DigitalOcean *DigitalOceanArgs
+	Env       env.Env
+	Namespace string
+	Name      string
+	Database  string
+	Username  string
+
+	Config Config
+	Cloud  cloud.Cloud
 }
 
 type K8s struct {
@@ -132,28 +129,31 @@ type backend interface {
 
 func selectBackend(ctx *pulumi.Context, name string, args *Args, parent pulumi.Resource) (backend, error) {
 	switch {
-	case args.Container != nil:
-		cArgs := *args.Container
-		cArgs.Env = args.Env
-		cArgs.Namespace = args.Namespace
-		cArgs.Name = fmt.Sprintf("mysql-%s", args.Name)
-		cArgs.Version = args.Version
-		cArgs.Database = args.Database
-		cArgs.Username = args.Username
-		c, err := container.New(ctx, name, &cArgs, pulumi.Parent(parent))
+	case args.Config.Container != nil:
+		c, err := container.New(ctx, name, &container.Args{
+			Env:       args.Env,
+			Namespace: args.Namespace,
+			Name:      fmt.Sprintf("mysql-%s", args.Name),
+			Version:   args.Config.Version,
+			Container: args.Config.Container,
+			Database:  args.Database,
+			Username:  args.Username,
+		}, pulumi.Parent(parent))
 		if err != nil {
 			return nil, fmt.Errorf("%s: container backend: %w", typeToken, err)
 		}
 
 		return c, nil
 
-	case args.DigitalOcean != nil:
-		dArgs := *args.DigitalOcean
-		dArgs.Namespace = args.Namespace
-		dArgs.Name = fmt.Sprintf("mysql-%s", args.Name)
-		dArgs.Database = args.Database
-		dArgs.Version = args.Version
-		d, err := digitalocean.New(ctx, name, &dArgs, pulumi.Parent(parent))
+	case args.Config.Cloud != nil && args.Config.Cloud.DigitalOcean != nil:
+		d, err := digitalocean.New(ctx, name, &digitalocean.Args{
+			Namespace: args.Namespace,
+			Name:      fmt.Sprintf("mysql-%s", args.Name),
+			Database:  args.Database,
+			Version:   args.Config.Version,
+			Cloud:     args.Cloud,
+			Config:    args.Config.Cloud.DigitalOcean,
+		}, pulumi.Parent(parent))
 		if err != nil {
 			return nil, fmt.Errorf("%s: digitalocean backend: %w", typeToken, err)
 		}
@@ -171,9 +171,6 @@ func (a *Args) validate() error {
 	if a.Namespace == "" {
 		return fmt.Errorf("Namespace is required")
 	}
-	if a.Version == "" {
-		return fmt.Errorf("Version is required")
-	}
 	if a.Database == "" {
 		return fmt.Errorf("Database is required")
 	}
@@ -183,13 +180,13 @@ func (a *Args) validate() error {
 	if err := a.Env.Validate(); err != nil {
 		return fmt.Errorf("invalid env: %w", err)
 	}
+	if err := a.Config.Validate(); err != nil {
+		return fmt.Errorf("config: %w", err)
+	}
 
-	switch {
-	case a.Container != nil && a.DigitalOcean != nil:
-		return fmt.Errorf("Container and DigitalOcean are mutually exclusive")
-
-	case a.Container == nil && a.DigitalOcean == nil:
-		return fmt.Errorf("a backend is required (Container or DigitalOcean)")
+	if a.Config.Cloud != nil && a.Config.Cloud.DigitalOcean != nil &&
+		a.Cloud.DigitalOcean == nil {
+		return fmt.Errorf("Cloud.DigitalOcean is required when config.cloud.digitalocean is set")
 	}
 
 	return nil

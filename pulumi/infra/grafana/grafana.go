@@ -1,4 +1,4 @@
-// Package grafana installs upstream grafana (default chart values).
+// Package grafana installs upstream grafana
 package grafana
 
 import (

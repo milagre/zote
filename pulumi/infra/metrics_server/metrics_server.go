@@ -19,7 +19,8 @@ var spec = helm.ChartSpec{
 
 type Args struct {
 	Namespace string
-	Version   *string
+
+	Config Config
 }
 
 type MetricsServer struct {
@@ -33,11 +34,14 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if args.Namespace == "" {
 		return nil, fmt.Errorf("metrics_server: Namespace is required")
 	}
+	if err := args.Config.Validate(); err != nil {
+		return nil, fmt.Errorf("metrics_server: config: %w", err)
+	}
 
 	comp := &MetricsServer{}
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
-		Version:   args.Version,
+		Version:   helm.OptionalChartVersion(args.Config.Version),
 	}, &comp.ChartComponent, opts...); err != nil {
 		return nil, err
 	}

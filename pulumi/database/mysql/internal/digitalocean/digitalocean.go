@@ -1,4 +1,4 @@
-// Package digitalocean is DO managed MySQL (cluster, firewall, DB, replicas). Cluster is Pulumi-protected.
+// Package digitalocean: mysql YAML cloud.digitalocean (Spec), Primary and Replicas (shared by Spec and Args), and the managed MySQL stack. Cluster is Pulumi-protected.
 package digitalocean
 
 import (
@@ -8,7 +8,7 @@ import (
 	do "github.com/pulumi/pulumi-digitalocean/sdk/v4/go/digitalocean"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	dbdo "github.com/milagre/zote/pulumi/database/digitalocean"
+	"github.com/milagre/zote/pulumi/cloud"
 	"github.com/milagre/zote/pulumi/tokens"
 )
 
@@ -35,15 +35,17 @@ type Replicas struct {
 	Class string
 }
 
-// Args: Cloud from cloud/digitalocean.Cloud.ForDatabase; Namespace disambiguates cluster name in the DO project.
+// Args wires runtime identity, the multi-provider Cloud, and the YAML
+// DigitalOcean spec under config.cloud.digitalocean.
 type Args struct {
 	Namespace string
 	Name      string
 	Database  string
 	Version   string
-	Cloud     dbdo.Cloud
-	Primary   Primary
-	Replicas  Replicas
+	Cloud     cloud.Cloud
+
+	// Config is mysql.Config.Cloud.DigitalOcean (YAML); must be non-nil.
+	Config *Spec
 }
 
 type Digitalocean struct {
@@ -55,7 +57,7 @@ type Digitalocean struct {
 	password pulumi.StringOutput
 }
 
-// New wires DO data sources via Output APIs because VPC/project IDs come from [dbdo.Cloud] as [pulumi.StringInput].
+// New resolves the DO database handle via Cloud.DigitalOcean.ForDatabase.
 func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.ResourceOption) (*Digitalocean, error) {
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
@@ -69,8 +71,9 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 		return nil, fmt.Errorf("registering %s: %w", typeToken, err)
 	}
 
-	vpcIDOut := args.Cloud.VPCID().ToStringOutput().ToStringPtrOutput()
-	projectIDOut := args.Cloud.ProjectID().ToStringOutput().ToStringPtrOutput()
+	dbCloud := args.Cloud.DigitalOcean.ForDatabase()
+	vpcIDOut := dbCloud.VPCID().ToStringOutput().ToStringPtrOutput()
+	projectIDOut := dbCloud.ProjectID().ToStringOutput().ToStringPtrOutput()
 
 	vpc := do.LookupVpcOutput(ctx, do.LookupVpcOutputArgs{
 		Id: vpcIDOut,
@@ -104,7 +107,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 		Name:               clusterName,
 		Engine:             pulumi.String("mysql"),
 		Version:            pulumi.String(args.Version),
-		Size:               pulumi.String(args.Primary.Class),
+		Size:               pulumi.String(args.Config.Primary.Class),
 		Region:             vpc.Region(),
 		NodeCount:          pulumi.Int(1),
 		PrivateNetworkUuid: vpc.Id(),
@@ -155,7 +158,14 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	// which would otherwise emit every replica's name with the last
 	// index. The static `instanceName` and `namespace` are closed over
 	// directly because they do not change across iterations.
-	for i := 0; i < args.Replicas.Num; i++ {
+	replicaNum := 0
+	replicaClass := ""
+	if rp := args.Config.Replicas; rp != nil {
+		replicaNum = rp.Num
+		replicaClass = rp.Class
+	}
+
+	for i := 0; i < replicaNum; i++ {
 		idx := i
 		name := fmt.Sprintf("%s-replica-%d", parentName, idx)
 		replicaName := vpc.Name().ApplyT(func(vpcName string) string {
@@ -165,7 +175,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 		if _, err := do.NewDatabaseReplica(ctx, name, &do.DatabaseReplicaArgs{
 			ClusterId: cluster.ID().ToStringOutput(),
 			Name:      replicaName,
-			Size:      pulumi.String(args.Replicas.Class),
+			Size:      pulumi.String(replicaClass),
 			Region:    vpc.Region(),
 		}, pulumi.Parent(comp), pulumi.Protect(true), pulumi.IgnoreChanges([]string{"name"})); err != nil {
 			return nil, fmt.Errorf("%s: replica %d: %w", typeToken, idx, err)
@@ -213,28 +223,21 @@ func (a *Args) validate() error {
 	if a.Version == "" {
 		return fmt.Errorf("Version is required")
 	}
-	// Cloud is the only input that can meaningfully fail the
-	// type-level nil check here; VPCID() / ProjectID() return
-	// pulumi.StringInput which is an interface and may legitimately
-	// carry an unresolved pulumi.Output. An empty-string check would
-	// require blocking on the Output's value, which is exactly what the
-	// pulumi.StringInput signature exists to avoid. A downstream
-	// LookupVpc / LookupProject failure surfaces a clearer error at
-	// apply time if the ID ultimately resolves to something invalid.
-	if a.Cloud == nil {
-		return fmt.Errorf("Cloud is required")
+	if a.Config == nil {
+		return fmt.Errorf("cloud.digitalocean config is required")
 	}
-	if a.Cloud.VPCID() == nil {
-		return fmt.Errorf("Cloud.VPCID is nil")
+	if err := a.Config.Validate(); err != nil {
+		return fmt.Errorf("digitalocean config: %w", err)
 	}
-	if a.Cloud.ProjectID() == nil {
-		return fmt.Errorf("Cloud.ProjectID is nil")
+	if a.Cloud.DigitalOcean == nil {
+		return fmt.Errorf("Cloud.DigitalOcean is required")
 	}
-	if a.Primary.Class == "" {
-		return fmt.Errorf("Primary.Class is required")
+	dbCloud := a.Cloud.DigitalOcean.ForDatabase()
+	if dbCloud.VPCID() == nil {
+		return fmt.Errorf("Cloud.DigitalOcean ForDatabase VPCID is nil")
 	}
-	if a.Replicas.Num > 0 && a.Replicas.Class == "" {
-		return fmt.Errorf("Replicas.Class is required when Replicas.Num > 0")
+	if dbCloud.ProjectID() == nil {
+		return fmt.Errorf("Cloud.DigitalOcean ForDatabase ProjectID is nil")
 	}
 
 	return nil

@@ -21,7 +21,8 @@ var spec = helm.ChartSpec{
 
 type Args struct {
 	Namespace string
-	Version   *string
+
+	Config Config
 }
 
 type Service struct {
@@ -43,11 +44,14 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if args.Namespace == "" {
 		return nil, fmt.Errorf("prometheus: Namespace is required")
 	}
+	if err := args.Config.Validate(); err != nil {
+		return nil, fmt.Errorf("prometheus: config: %w", err)
+	}
 
 	comp := &Prometheus{}
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
-		Version:   args.Version,
+		Version:   helm.OptionalChartVersion(args.Config.Version),
 		Values: helm.Values(map[string]any{
 			"prometheus": map[string]any{
 				"prometheusSpec": map[string]any{

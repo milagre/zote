@@ -11,18 +11,18 @@ import (
 
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra/redis/internal/container"
+	"github.com/milagre/zote/pulumi/profile"
 	"github.com/milagre/zote/pulumi/tokens"
 )
 
 var typeToken = tokens.Token("infra", "Redis")
 
-type ContainerArgs = container.Args
-
 type Args struct {
 	Env       env.Env
 	Namespace string
 	Name      string
-	Container *ContainerArgs
+
+	Config Config
 }
 
 type K8s struct {
@@ -39,17 +39,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
 	}
-	if args.Name == "" {
-		return nil, fmt.Errorf("%s: Name is required", typeToken)
-	}
-	if args.Namespace == "" {
-		return nil, fmt.Errorf("%s: Namespace is required", typeToken)
-	}
-	if err := args.Env.Validate(); err != nil {
+	if err := args.validate(); err != nil {
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
-	}
-	if args.Container == nil {
-		return nil, fmt.Errorf("%s: a backend is required (currently only Container is implemented)", typeToken)
 	}
 
 	resourceName := tokens.Qualify(args.Namespace, name)
@@ -95,15 +86,43 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
+func (a *Args) validate() error {
+	if a.Name == "" {
+		return fmt.Errorf("Name is required")
+	}
+	if a.Namespace == "" {
+		return fmt.Errorf("Namespace is required")
+	}
+	if err := a.Env.Validate(); err != nil {
+		return fmt.Errorf("invalid env: %w", err)
+	}
+	if err := a.Config.Validate(); err != nil {
+		return fmt.Errorf("config: %w", err)
+	}
+
+	return nil
+}
+
 type backend interface {
 	Hostname() pulumi.StringOutput
 	Port() pulumi.StringOutput
 }
 
 func selectBackend(ctx *pulumi.Context, name string, args *Args, parent pulumi.Resource) (backend, error) {
-	cArgs := *args.Container
-	cArgs.Namespace = args.Namespace
-	cArgs.Name = args.Name
+	prof, err := profile.New(args.Config.Container.Profile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: profile: %w", typeToken, err)
+	}
+
+	cArgs := container.Args{
+		Namespace: args.Namespace,
+		Name:      args.Name,
+		Version:   args.Config.Version,
+		Profile:   prof,
+		Shards:    args.Config.Shards,
+		Replicas:  args.Config.Replicas,
+	}
+
 	c, err := container.New(ctx, name, &cArgs, pulumi.Parent(parent))
 	if err != nil {
 		return nil, fmt.Errorf("%s: container backend: %w", typeToken, err)

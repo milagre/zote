@@ -12,6 +12,7 @@ import (
 
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra/rabbitmq/internal/container"
+	"github.com/milagre/zote/pulumi/profile"
 	"github.com/milagre/zote/pulumi/stringdata"
 	"github.com/milagre/zote/pulumi/tokens"
 )
@@ -19,7 +20,7 @@ import (
 var typeToken = tokens.Token("infra", "Rabbitmq")
 
 type (
-	ContainerArgs  = container.Args
+	ContainerArgs  = container.Args // advanced / tests wiring container backend directly
 	ContainerSetup = container.Setup
 	ContainerUser  = container.User
 	ContainerVhost = container.Vhost
@@ -29,7 +30,11 @@ type Args struct {
 	Env       env.Env
 	Namespace string
 	Name      string
-	Container *ContainerArgs
+
+	Config Config
+
+	// Setup is the workload user/vhost topology (not YAML-decoded today).
+	Setup container.Setup
 }
 
 type Endpoint struct {
@@ -66,17 +71,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if args == nil {
 		return nil, fmt.Errorf("%s: args is required", typeToken)
 	}
-	if args.Name == "" {
-		return nil, fmt.Errorf("%s: Name is required", typeToken)
-	}
-	if args.Namespace == "" {
-		return nil, fmt.Errorf("%s: Namespace is required", typeToken)
-	}
-	if err := args.Env.Validate(); err != nil {
+	if err := args.validate(); err != nil {
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
-	}
-	if args.Container == nil {
-		return nil, fmt.Errorf("%s: a backend is required (currently only Container is implemented)", typeToken)
 	}
 
 	resourceName := tokens.Qualify(args.Namespace, name)
@@ -128,8 +124,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		return nil, fmt.Errorf("%s: rabbitmq configmap: %w", typeToken, err)
 	}
 
-	users := make(map[string]K8sUser, len(args.Container.Setup.Users))
-	for _, user := range sortedUsers(args.Container.Setup.Users) {
+	users := make(map[string]K8sUser, len(args.Setup.Users))
+	for _, user := range sortedUsers(args.Setup.Users) {
 		cm, err := corev1.NewConfigMap(ctx, resourceName+"-user-"+user, &corev1.ConfigMapArgs{
 			Metadata: &metav1.ObjectMetaArgs{
 				Name:        pulumi.String(nameAMQP + "-" + user),
@@ -185,6 +181,23 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
+func (a *Args) validate() error {
+	if a.Name == "" {
+		return fmt.Errorf("Name is required")
+	}
+	if a.Namespace == "" {
+		return fmt.Errorf("Namespace is required")
+	}
+	if err := a.Env.Validate(); err != nil {
+		return fmt.Errorf("invalid env: %w", err)
+	}
+	if err := a.Config.Validate(); err != nil {
+		return fmt.Errorf("config: %w", err)
+	}
+
+	return nil
+}
+
 type backend interface {
 	Hostname() pulumi.StringOutput
 	Port() pulumi.StringOutput
@@ -194,10 +207,20 @@ type backend interface {
 }
 
 func selectBackend(ctx *pulumi.Context, name string, args *Args, parent pulumi.Resource) (backend, error) {
-	cArgs := *args.Container
-	cArgs.Env = args.Env
-	cArgs.Namespace = args.Namespace
-	cArgs.Name = args.Name
+	prof, err := profile.New(args.Config.Container.Profile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: profile: %w", typeToken, err)
+	}
+
+	cArgs := container.Args{
+		Env:       args.Env,
+		Namespace: args.Namespace,
+		Name:      args.Name,
+		Version:   args.Config.Version,
+		Profile:   prof,
+		Setup:     args.Setup,
+	}
+
 	c, err := container.New(ctx, name, &cArgs, pulumi.Parent(parent))
 	if err != nil {
 		return nil, fmt.Errorf("%s: container backend: %w", typeToken, err)

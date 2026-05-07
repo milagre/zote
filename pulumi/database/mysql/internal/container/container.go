@@ -1,4 +1,4 @@
-// Package container is in-cluster MySQL (StatefulSet, PVC, services); ordinal-based primary/replica init.
+// Package container: mysql YAML container Spec and Tier profiles (shared by Spec and Args), plus in-cluster StatefulSet MySQL (ordinal primary/replica init).
 package container
 
 import (
@@ -37,8 +37,7 @@ type Args struct {
 	Namespace string
 	Name      string
 	Version   string
-	Primary   profile.Profile
-	Replica   profile.Profile
+	Container *Spec
 	Database  string
 	Username  string
 }
@@ -73,6 +72,18 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	}
 	if err := args.Env.Validate(); err != nil {
 		return nil, fmt.Errorf("%s: env: %w", typeToken, err)
+	}
+
+	if args.Container == nil {
+		return nil, fmt.Errorf("%s: container config is required", typeToken)
+	}
+	if err := args.Container.Validate(); err != nil {
+		return nil, fmt.Errorf("%s: container config: %w", typeToken, err)
+	}
+
+	primary, err := profile.New(args.Container.Primary.Profile)
+	if err != nil {
+		return nil, fmt.Errorf("%s: container.primary.profile: %w", typeToken, err)
 	}
 
 	comp := &Container{}
@@ -112,8 +123,8 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 			Annotations: patchForce,
 		},
 		Data: pulumi.StringMap{
-			"primary.cnf": pulumi.String(primaryCnf(args.Primary)),
-			"replica.cnf": pulumi.String(replicaCnf(args.Primary)),
+			"primary.cnf": pulumi.String(primaryCnf(primary)),
+			"replica.cnf": pulumi.String(replicaCnf(primary)),
 		},
 	}, pulumi.Parent(comp))
 	if err != nil {
@@ -170,7 +181,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 				Metadata: &metav1.ObjectMetaArgs{
 					Labels: labels,
 				},
-				Spec: podSpec(args, cfgCM, passwordSecret),
+				Spec: podSpec(primary, args, cfgCM, passwordSecret),
 			},
 			VolumeClaimTemplates: corev1.PersistentVolumeClaimTypeArray{
 				&corev1.PersistentVolumeClaimTypeArgs{
@@ -207,7 +218,7 @@ func (c *Container) Hostname() pulumi.StringOutput { return c.hostname }
 func (c *Container) Port() pulumi.StringOutput     { return c.port }
 func (c *Container) Password() pulumi.StringOutput { return c.password }
 
-func podSpec(args *Args, cfgCM *corev1.ConfigMap, passwordSecret *corev1.Secret) *corev1.PodSpecArgs {
+func podSpec(primary profile.Profile, args *Args, cfgCM *corev1.ConfigMap, passwordSecret *corev1.Secret) *corev1.PodSpecArgs {
 	return &corev1.PodSpecArgs{
 		Volumes: corev1.VolumeArray{
 			&corev1.VolumeArgs{
@@ -263,12 +274,12 @@ func podSpec(args *Args, cfgCM *corev1.ConfigMap, passwordSecret *corev1.Secret)
 				},
 				Resources: &corev1.ResourceRequirementsArgs{
 					Requests: pulumi.StringMap{
-						"cpu":    pulumi.Sprintf("%g", args.Primary.CPUCores.Min),
-						"memory": pulumi.Sprintf("%dM", args.Primary.MemMB.Min),
+						"cpu":    pulumi.Sprintf("%g", primary.CPUCores.Min),
+						"memory": pulumi.Sprintf("%dM", primary.MemMB.Min),
 					},
 					Limits: pulumi.StringMap{
-						"cpu":    pulumi.Sprintf("%g", args.Primary.CPUCores.Max),
-						"memory": pulumi.Sprintf("%dM", args.Primary.MemMB.Max),
+						"cpu":    pulumi.Sprintf("%g", primary.CPUCores.Max),
+						"memory": pulumi.Sprintf("%dM", primary.MemMB.Max),
 					},
 				},
 				VolumeMounts: corev1.VolumeMountArray{

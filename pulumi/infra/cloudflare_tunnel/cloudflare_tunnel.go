@@ -23,7 +23,8 @@ type Args struct {
 	AccountID  string
 	APIToken   string
 	TunnelName string
-	Version    *string
+
+	Config Config
 }
 
 type CloudflareTunnel struct {
@@ -42,11 +43,14 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if args.AccountID == "" || args.APIToken == "" || args.TunnelName == "" {
 		return nil, fmt.Errorf("cloudflare_tunnel: AccountID, APIToken, TunnelName are required")
 	}
+	if err := args.Config.Validate(); err != nil {
+		return nil, fmt.Errorf("cloudflare_tunnel: config: %w", err)
+	}
 
 	comp := &CloudflareTunnel{}
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
-		Version:   args.Version,
+		Version:   helm.OptionalChartVersion(args.Config.Version),
 		Values: pulumi.Map{
 			"cloudflare": pulumi.Map{
 				"apiToken":   pulumi.String(args.APIToken),

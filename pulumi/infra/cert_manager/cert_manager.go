@@ -24,7 +24,8 @@ var spec = helm.ChartSpec{
 type Args struct {
 	Namespace string
 	AcmeEmail string
-	Version   *string
+
+	Config Config
 }
 
 type CertManager struct {
@@ -43,11 +44,14 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if args.AcmeEmail == "" {
 		return nil, fmt.Errorf("cert_manager: AcmeEmail is required")
 	}
+	if err := args.Config.Validate(); err != nil {
+		return nil, fmt.Errorf("cert_manager: config: %w", err)
+	}
 
 	comp := &CertManager{}
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
-		Version:   args.Version,
+		Version:   helm.OptionalChartVersion(args.Config.Version),
 		Values: helm.Values(map[string]any{
 			"installCRDs": true,
 		}),
