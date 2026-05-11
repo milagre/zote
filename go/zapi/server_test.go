@@ -3,11 +3,15 @@ package zapi
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	"github.com/milagre/zote/go/zstats"
+	"github.com/milagre/zote/go/zstats/zprometheus"
 	"github.com/milagre/zote/go/ztrace"
 )
 
@@ -34,6 +38,59 @@ func TestIsParam(t *testing.T) {
 		})
 	}
 }
+
+func TestServeHTTP_PrometheusAfterNotFoundThenMatchedRoute(t *testing.T) {
+	ctx := context.Background()
+	prom := zprometheus.NewAdapter()
+	stats := zstats.NewStats(prom)
+	ctx = zstats.Context(ctx, stats)
+
+	root := testRoute{
+		name: "root",
+		path: "",
+		methods: Methods{
+			http.MethodGet: {
+				Handler: func(Request) ResponseBuilder {
+					return BasicResponse(http.StatusOK, nil, []byte(`ok`))
+				},
+			},
+		},
+	}
+	assets := testRoute{
+		name: "asset_list",
+		path: "/assets",
+		methods: Methods{
+			http.MethodPost: {
+				Handler: func(Request) ResponseBuilder {
+					return BasicResponse(http.StatusCreated, nil, []byte(`{}`))
+				},
+			},
+		},
+	}
+
+	srv, err := NewServer(ctx, []Route{&root, &assets})
+	require.NoError(t, err)
+
+	reqMissing := httptest.NewRequest(http.MethodGet, "/missing", nil)
+	reqMissing = reqMissing.WithContext(ctx)
+	recMissing := httptest.NewRecorder()
+	srv.handler.ServeHTTP(recMissing, reqMissing)
+
+	reqAssets := httptest.NewRequest(http.MethodPost, "/assets", nil)
+	reqAssets = reqAssets.WithContext(ctx)
+	recAssets := httptest.NewRecorder()
+	srv.handler.ServeHTTP(recAssets, reqAssets)
+}
+
+type testRoute struct {
+	name    string
+	path    string
+	methods Methods
+}
+
+func (r *testRoute) Name() string      { return r.name }
+func (r *testRoute) Path() string      { return r.path }
+func (r *testRoute) Methods() Methods { return r.methods }
 
 func TestContextWithTraceFromRequest(t *testing.T) {
 	t.Parallel()

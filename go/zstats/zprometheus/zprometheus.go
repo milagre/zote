@@ -98,6 +98,10 @@ func (a *Adapter) getOrCreateHistogramVec(name string, labelNames []string) *pro
 
 // getOrCreateVec is a generic helper that gets or creates a metric vector.
 // It tracks all unique label names seen for this metric and uses their union.
+//
+// Prometheus registers a metric name with a fixed label schema for process lifetime
+// (see prometheus.Registry dimHashesByName). Callers must emit a stable tag key set
+// per metric name; growing the union after first registration causes panics.
 func (a *Adapter) getOrCreateVec(info *metricVecInfo, name string, labelNames []string, createVec func([]string) prometheus.Collector) prometheus.Collector {
 	key := fmt.Sprintf("%s:%s", info.prefix, name)
 
@@ -244,6 +248,35 @@ func (a *Adapter) getLabelsForCanonicalSet(canonicalLabels []string, tags zstats
 	return labels
 }
 
+// vecOpPanicDetail formats context when prometheus.(*Vec).With panics (e.g. inconsistent label cardinality).
+func vecOpPanicDetail(op, zstatsName, promName string, canonical []string, labels prometheus.Labels, recovered any) string {
+	withKeys := make([]string, 0, len(labels))
+	for k := range labels {
+		withKeys = append(withKeys, k)
+	}
+	sort.Strings(withKeys)
+	return fmt.Sprintf(
+		"zprometheus %s: metric zstats=%q prometheus=%q: %v\n"+
+			"hint: Prometheus locks in label names per metric name at first registration; "+
+			"later observations cannot add new tag keys without conflicting with the existing vector.\n"+
+			"canonical_label_names (%d): %v\n"+
+			"prometheus.With label keys (%d): %v",
+		op, zstatsName, promName, recovered,
+		len(canonical), canonical,
+		len(withKeys), withKeys,
+	)
+}
+
+// doVecOp runs fn (typically vec.With(labels).Add/Set/Observe) and repanics with vecOpPanicDetail on recover.
+func doVecOp(op, zstatsName, promName string, canonical []string, labels prometheus.Labels, fn func()) {
+	defer func() {
+		if r := recover(); r != nil {
+			panic(vecOpPanicDetail(op, zstatsName, promName, canonical, labels, r))
+		}
+	}()
+	fn()
+}
+
 // getCanonicalLabels gets the canonical label names for a metric, or returns the current labels if not yet set.
 func (a *Adapter) getCanonicalLabels(info *metricVecInfo, name string, currentLabels []string) []string {
 	key := fmt.Sprintf("%s:%s", info.prefix, name)
@@ -259,7 +292,10 @@ func (a *Adapter) Count(name string, value float64, tags zstats.Tags) {
 	vec := a.getOrCreateCounterVec(name, labelNames)
 	canonicalLabels := a.getCanonicalLabels(a.counter, name, labelNames)
 	labels := a.getLabelsForCanonicalSet(canonicalLabels, tags)
-	vec.With(labels).Add(float64(value))
+	promName := a.prometheusName(name)
+	doVecOp("Count", name, promName, canonicalLabels, labels, func() {
+		vec.With(labels).Add(float64(value))
+	})
 }
 
 // Gauge implements zstats.Adapter.Gauge
@@ -268,7 +304,10 @@ func (a *Adapter) Gauge(name string, value float64, tags zstats.Tags) {
 	vec := a.getOrCreateGaugeVec(name, labelNames)
 	canonicalLabels := a.getCanonicalLabels(a.gauge, name, labelNames)
 	labels := a.getLabelsForCanonicalSet(canonicalLabels, tags)
-	vec.With(labels).Set(float64(value))
+	promName := a.prometheusName(name)
+	doVecOp("Gauge", name, promName, canonicalLabels, labels, func() {
+		vec.With(labels).Set(float64(value))
+	})
 }
 
 // Timer implements zstats.Adapter.Timer
@@ -280,7 +319,10 @@ func (a *Adapter) Timer(name string, cb func(), tags zstats.Tags) {
 		vec := a.getOrCreateHistogramVec(name, labelNames)
 		canonicalLabels := a.getCanonicalLabels(a.hist, name, labelNames)
 		labels := a.getLabelsForCanonicalSet(canonicalLabels, tags)
-		vec.With(labels).Observe(float64(duration))
+		promName := a.prometheusName(name)
+		doVecOp("Timer", name, promName, canonicalLabels, labels, func() {
+			vec.With(labels).Observe(float64(duration))
+		})
 	}()
 	cb()
 }

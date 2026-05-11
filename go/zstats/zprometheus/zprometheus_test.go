@@ -302,6 +302,42 @@ func TestGetLabelsForCanonicalSet(t *testing.T) {
 	assert.Equal(t, "value3", labels["label3"])
 }
 
+func TestDoVecOp_RepanicsWithDetail(t *testing.T) {
+	defer func() {
+		r := recover()
+		require.NotNil(t, r)
+		s := fmt.Sprint(r)
+		assert.Contains(t, s, "zprometheus Count")
+		assert.Contains(t, s, `metric zstats="my.metric"`)
+		assert.Contains(t, s, "original panic")
+	}()
+
+	doVecOp("Count", "my.metric", "my_metric",
+		[]string{"env"},
+		map[string]string{"env": "dev"},
+		func() {
+			panic("original panic")
+		},
+	)
+}
+
+func TestVecOpPanicDetail(t *testing.T) {
+	msg := vecOpPanicDetail(
+		"Count",
+		"zapi.responses",
+		"zapi_responses",
+		[]string{"env", "method", "namespace", "status"},
+		map[string]string{"env": "dev", "method": "POST", "namespace": "finance", "path": "/x", "route": "r", "service": "api", "status": "201"},
+		fmt.Errorf("inconsistent label cardinality: expected 4 label values but got 7"),
+	)
+	assert.Contains(t, msg, `metric zstats="zapi.responses"`)
+	assert.Contains(t, msg, `prometheus="zapi_responses"`)
+	assert.Contains(t, msg, "locks in label names")
+	assert.Contains(t, msg, "canonical_label_names (4)")
+	assert.Contains(t, msg, "prometheus.With label keys (7)")
+	assert.Contains(t, msg, "inconsistent label cardinality")
+}
+
 func TestConcurrentAccess(t *testing.T) {
 	adapter := NewAdapter()
 

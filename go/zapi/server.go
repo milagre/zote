@@ -150,8 +150,11 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	logger = logger.WithField("request", requestID)
 	requestContext = zlog.Context(requestContext, logger)
 
+	routeMetricTags := newRequestStatTags(r)
+
 	stats := zstats.FromContext(h.server.rootContext)
 	stats = stats.WithPrefix("zapi")
+	stats = stats.WithTags(routeMetricTags.tags())
 	requestContext = zstats.Context(requestContext, stats)
 
 	requestContext = contextWithCorrelationID(requestContext, r.Header)
@@ -199,11 +202,7 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			"route": targetRoute.Name(),
 		})
 		access.Info("Starting")
-		stats = stats.WithTags(zstats.Tags{
-			"method": r.Method,
-			"route":  targetRoute.Name(),
-			"path":   targetRoute.Path(),
-		})
+		stats = stats.WithTags(routeMetricTags.tagsWithMatchedRoute(targetRoute))
 
 		req := &request{
 			request: r,
