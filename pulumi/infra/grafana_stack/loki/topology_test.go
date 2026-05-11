@@ -33,3 +33,20 @@ func TestHelmTopology_remoteIsSimpleScalable(t *testing.T) {
 		t.Fatalf("got mode=%q write=%d read=%d backend=%d single=%d", mode, w, r, b, s)
 	}
 }
+
+func TestReplicationFactor(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		writeReplicas int
+		want          int
+	}{
+		{0, 1},
+		{1, 1},
+		{2, 2},
+	} {
+		if got := replicationFactor(tt.writeReplicas); got != tt.want {
+			t.Fatalf("replicationFactor(%d)=%d want %d", tt.writeReplicas, got, tt.want)
+		}
+	}
+}

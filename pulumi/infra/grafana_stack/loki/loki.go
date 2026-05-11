@@ -22,6 +22,9 @@ const (
 	defaultVersion = "7.0.0"
 )
 
+// Loki Helm defaults auth_enabled true, which requires a X-Scope-OrgID on every request.
+const authEnabled = false
+
 var typeToken = tokens.Token("infra", "Loki")
 
 // Args bundles the YAML-decoded Config with the multi-provider Cloud
@@ -152,6 +155,7 @@ func (a *Args) values() (pulumi.Map, []pulumi.Resource, error) {
 	}
 
 	lokiBlock := pulumi.Map{
+		"auth_enabled": pulumi.Bool(authEnabled),
 		"storage": pulumi.Map{
 			"type": pulumi.String("s3"),
 			"bucketNames": pulumi.Map{
@@ -183,10 +187,13 @@ func (a *Args) values() (pulumi.Map, []pulumi.Resource, error) {
 			},
 		},
 	}
+	// Helm default replication_factor is 3; unhealthy ring with fewer ingestors yields failed queries (often nginx 502 on the gateway).
+	writeReplicas := writeN
 	if a.Env.IsLocal() {
-		lokiBlock["commonConfig"] = pulumi.Map{
-			"replication_factor": pulumi.Int(1),
-		}
+		writeReplicas = singleN
+	}
+	lokiBlock["commonConfig"] = pulumi.Map{
+		"replication_factor": pulumi.Int(replicationFactor(writeReplicas)),
 	}
 
 	values := pulumi.Map{
@@ -232,6 +239,14 @@ func (a *Args) values() (pulumi.Map, []pulumi.Resource, error) {
 	}
 
 	return values, a.ObjectStorage.Deps, nil
+}
+
+func replicationFactor(writeReplicas int) int {
+	if writeReplicas < 1 {
+		return 1
+	}
+
+	return writeReplicas
 }
 
 // helmTopology selects Grafana chart deploymentMode and replica counts (see production/helm/loki/single-binary-values.yaml).

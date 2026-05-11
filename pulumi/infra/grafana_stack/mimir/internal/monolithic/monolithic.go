@@ -60,8 +60,19 @@ func Deploy(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*Result, erro
 
 	// Monolithic config: single bucket with separate prefixes.
 	// ObjectStorage bucket and credentials are passed via env expansion.
+	// Default Mimir replication factor is 3; this deployment runs one pod (replicas: 1). Without RF=1
+	// Grafana shows "too many unhealthy instances in the ring" while query-frontend logs 422/400 on label and metadata APIs
+	// (see grafana/mimir#8990, grafana/mimir#8253).
 	cfg := pulumi.Sprintf(`multitenancy_enabled: false
 target: all
+
+ingester:
+  ring:
+    replication_factor: 1
+
+store_gateway:
+  sharding_ring:
+    replication_factor: 1
 
 common:
   storage:
