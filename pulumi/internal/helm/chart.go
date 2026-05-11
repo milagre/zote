@@ -41,27 +41,74 @@ type ChartComponent struct {
 	Release *helmv3.Release
 }
 
-// RegisterChart registers comp, then installs spec.Chart; name is both [tokens.Qualify] prefix and Helm release name.
-func RegisterChart(
+// RegisterChartComponentNamed registers comp as a Pulumi component only (no Helm release),
+// using logicalName as the resource name segment (see [tokens.Qualify] for the usual pattern).
+func RegisterChartComponentNamed(
 	ctx *pulumi.Context,
-	name string,
+	logicalName string,
 	spec ChartSpec,
-	args *ChartArgs,
 	comp *ChartComponent,
 	opts ...pulumi.ResourceOption,
 ) error {
+	if ctx == nil {
+		return fmt.Errorf("%s: pulumi context is required", spec.TypeToken)
+	}
+	if logicalName == "" {
+		return fmt.Errorf("%s: component logical name is required", spec.TypeToken)
+	}
+	if comp == nil {
+		return fmt.Errorf("%s: comp is required", spec.TypeToken)
+	}
+
+	if err := ctx.RegisterComponentResource(spec.TypeToken, logicalName, comp, opts...); err != nil {
+		return fmt.Errorf("registering %s: %w", spec.TypeToken, err)
+	}
+
+	return nil
+}
+
+// RegisterChartComponent registers comp as a Pulumi component only (no Helm release).
+// Call this before creating other resources parented to comp (e.g. secrets) so the parent chain is valid.
+// The component logical name is [tokens.Qualify](namespace, name).
+func RegisterChartComponent(
+	ctx *pulumi.Context,
+	namespace, name string,
+	spec ChartSpec,
+	comp *ChartComponent,
+	opts ...pulumi.ResourceOption,
+) error {
+	if namespace == "" {
+		return fmt.Errorf("%s: Namespace is required", spec.TypeToken)
+	}
+
+	return RegisterChartComponentNamed(ctx, tokens.Qualify(namespace, name), spec, comp, opts...)
+}
+
+// InstallChart installs spec.Chart under comp. comp must already be registered (e.g. via [RegisterChartComponent]).
+func InstallChart(
+	ctx *pulumi.Context,
+	namespace, name string,
+	spec ChartSpec,
+	args *ChartArgs,
+	comp *ChartComponent,
+) error {
+	if ctx == nil {
+		return fmt.Errorf("%s: pulumi context is required", spec.TypeToken)
+	}
 	if args == nil {
 		return fmt.Errorf("%s: args is required", spec.TypeToken)
+	}
+	if comp == nil {
+		return fmt.Errorf("%s: comp is required", spec.TypeToken)
 	}
 	if args.Namespace == "" {
 		return fmt.Errorf("%s: Namespace is required", spec.TypeToken)
 	}
-
-	resourceName := tokens.Qualify(args.Namespace, name)
-
-	if err := ctx.RegisterComponentResource(spec.TypeToken, resourceName, comp, opts...); err != nil {
-		return fmt.Errorf("registering %s: %w", spec.TypeToken, err)
+	if args.Namespace != namespace {
+		return fmt.Errorf("%s: args.Namespace must match install namespace", spec.TypeToken)
 	}
+
+	resourceName := tokens.Qualify(namespace, name)
 
 	var version pulumi.StringPtrInput
 	switch {
@@ -96,4 +143,23 @@ func RegisterChart(
 	}
 
 	return nil
+}
+
+// RegisterChart registers comp, then installs spec.Chart; name is both [tokens.Qualify] prefix and Helm release name.
+func RegisterChart(
+	ctx *pulumi.Context,
+	name string,
+	spec ChartSpec,
+	args *ChartArgs,
+	comp *ChartComponent,
+	opts ...pulumi.ResourceOption,
+) error {
+	if args == nil {
+		return fmt.Errorf("%s: args is required", spec.TypeToken)
+	}
+	if err := RegisterChartComponent(ctx, args.Namespace, name, spec, comp, opts...); err != nil {
+		return err
+	}
+
+	return InstallChart(ctx, args.Namespace, name, spec, args, comp)
 }

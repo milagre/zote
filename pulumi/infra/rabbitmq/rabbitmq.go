@@ -20,7 +20,6 @@ import (
 var typeToken = tokens.Token("infra", "Rabbitmq")
 
 type (
-	ContainerArgs  = container.Args // advanced / tests wiring container backend directly
 	ContainerSetup = container.Setup
 	ContainerUser  = container.User
 	ContainerVhost = container.Vhost

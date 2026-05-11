@@ -11,7 +11,7 @@ import (
 
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/k8s/deployment/internal/body"
-	"github.com/milagre/zote/pulumi/k8s/internal/annotations"
+	"github.com/milagre/zote/pulumi/annotations"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/profile"
 	"github.com/milagre/zote/pulumi/tokens"

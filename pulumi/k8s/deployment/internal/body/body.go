@@ -12,7 +12,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/k8s/internal/annotations"
+	"github.com/milagre/zote/pulumi/annotations"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/profile"
 )
