@@ -1,4 +1,4 @@
-// Package container is Redis cluster in-cluster (StatefulSet, headless svc, configmaps, bootstrap Job).
+// Package container deploys Redis in-cluster: clustered mode or a single standard (non-cluster) node.
 package container
 
 import (
@@ -26,7 +26,9 @@ type Args struct {
 	Version   string
 	Profile   profile.Profile
 	Shards    int
-	Replicas  int // StatefulSet size = Shards * (Replicas + 1)
+	Replicas  int // Cluster mode: StatefulSet size = Shards * (Replicas + 1); ignored when Standard is true
+	// Standard runs one redis-server without cluster mode (Shards and Replicas must be 0).
+	Standard bool
 }
 
 type Container struct {
@@ -55,11 +57,17 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	if args.Version == "" {
 		return nil, fmt.Errorf("%s: Version is required", typeToken)
 	}
-	if args.Shards <= 0 {
-		return nil, fmt.Errorf("%s: Shards must be > 0", typeToken)
-	}
-	if args.Replicas < 0 {
-		return nil, fmt.Errorf("%s: Replicas must be >= 0", typeToken)
+	if args.Standard {
+		if args.Shards != 0 || args.Replicas != 0 {
+			return nil, fmt.Errorf("%s: Standard mode requires Shards and Replicas to be 0", typeToken)
+		}
+	} else {
+		if args.Shards <= 0 {
+			return nil, fmt.Errorf("%s: Shards must be > 0", typeToken)
+		}
+		if args.Replicas < 0 {
+			return nil, fmt.Errorf("%s: Replicas must be >= 0", typeToken)
+		}
 	}
 
 	comp := &Container{}
@@ -74,7 +82,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
 	}
 
-	cfg, scripts, err := registerConfig(ctx, parentName, comp, args.Namespace, releaseName)
+	cfg, scripts, err := registerConfig(ctx, parentName, comp, args.Namespace, releaseName, args.Standard)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
 	}
@@ -84,9 +92,12 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
 	}
 
-	job, err := registerBootstrapJob(ctx, parentName, comp, args, releaseName, scripts, sts)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", typeToken, err)
+	var job *batchv1.Job
+	if !args.Standard {
+		job, err = registerBootstrapJob(ctx, parentName, comp, args, releaseName, scripts, sts)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", typeToken, err)
+		}
 	}
 
 	comp.StatefulSet = sts

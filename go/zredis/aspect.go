@@ -9,39 +9,58 @@ import (
 	"github.com/milagre/zote/go/zcmd/zaspect"
 )
 
-var _ zcmd.Aspect = ClusterAspect{}
+var _ zcmd.Aspect = Aspect{}
 
-type ClusterAspect struct {
+type Aspect struct {
 	name string
 }
 
-func NewClusterAspect(name string) ClusterAspect {
-	return ClusterAspect{
+func NewAspect(name string) Aspect {
+	return Aspect{
 		name: name,
 	}
 }
 
-func (a ClusterAspect) Apply(c zcmd.Configurable) {
+func (a Aspect) Apply(c zcmd.Configurable) {
+	c.AddString(a.clientType()).Default("cluster")
 	c.AddString(a.host()).Default("localhost")
 	c.AddInt(a.port()).Default(6379)
 }
 
-func (a ClusterAspect) Client(env zcmd.Env) *redis.ClusterClient {
-	return redis.NewClusterClient(
-		&redis.ClusterOptions{
-			Addrs: []string{
-				fmt.Sprintf("%s:%d", env.String(a.host()), env.Int(a.port())),
+func (a Aspect) Client(env zcmd.Env) (redis.UniversalClient, error) {
+	switch env.String(a.clientType()) {
+	case "cluster":
+
+		return redis.NewClusterClient(
+			&redis.ClusterOptions{
+				Addrs: []string{
+					fmt.Sprintf("%s:%d", env.String(a.host()), env.Int(a.port())),
+				},
 			},
-		},
-	)
+		), nil
+
+	case "standard":
+		return redis.NewClient(
+			&redis.Options{
+				Addr: fmt.Sprintf("%s:%d", env.String(a.host()), env.Int(a.port())),
+			},
+		), nil
+
+	default:
+		return nil, fmt.Errorf("invalid client type: %s", env.String(a.clientType()))
+	}
 }
 
 // Option constructors
 
-func (a ClusterAspect) port() string {
+func (a Aspect) clientType() string {
+	return zaspect.Format("redis-%s-type", a.name)
+}
+
+func (a Aspect) port() string {
 	return zaspect.Format("redis-%s-port", a.name)
 }
 
-func (a ClusterAspect) host() string {
+func (a Aspect) host() string {
 	return zaspect.Format("redis-%s-host", a.name)
 }

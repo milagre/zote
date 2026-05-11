@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/milagre/zote/pulumi/infra/redis"
+	rediscloud "github.com/milagre/zote/pulumi/infra/redis/internal/cloud"
+	"github.com/milagre/zote/pulumi/infra/redis/internal/cloud/digitalocean"
 	"github.com/milagre/zote/pulumi/infra/redis/internal/container"
 	"github.com/milagre/zote/pulumi/profile"
 )
@@ -47,13 +49,73 @@ func TestConfig_Validate_rejectsMissingVersion(t *testing.T) {
 	}
 }
 
-func TestConfig_Validate_rejectsBadShards(t *testing.T) {
+func TestConfig_Validate_acceptsStandardOmittedShardsReplicas(t *testing.T) {
 	t.Parallel()
 
 	c := validRedisConfig()
 	c.Shards = 0
+	c.Replicas = 0
+
+	if err := c.Validate(); err != nil {
+		t.Errorf("Validate: %v", err)
+	}
+}
+
+func TestConfig_Validate_rejectsClusterWithoutShards(t *testing.T) {
+	t.Parallel()
+
+	c := validRedisConfig()
+	c.Shards = 0
+	c.Replicas = 1
 
 	if err := c.Validate(); err == nil || !strings.Contains(err.Error(), "shards") {
 		t.Errorf("expected shards error, got %v", err)
+	}
+}
+
+func TestConfig_Validate_requiresExactlyOneBackend_bothSet(t *testing.T) {
+	t.Parallel()
+
+	c := validRedisConfig()
+	c.Cloud = &rediscloud.Config{DigitalOcean: &digitalocean.Config{}}
+
+	if err := c.Validate(); err == nil || !strings.Contains(err.Error(), "exactly one") {
+		t.Errorf("expected exactly one backend error, got %v", err)
+	}
+}
+
+func TestConfig_Validate_requiresExactlyOneBackend_neitherSet(t *testing.T) {
+	t.Parallel()
+
+	c := redis.Config{}
+
+	if err := c.Validate(); err == nil || !strings.Contains(err.Error(), "exactly one") {
+		t.Errorf("expected exactly one backend error, got %v", err)
+	}
+}
+
+func TestConfig_Validate_cloudRequiresDigitalOcean(t *testing.T) {
+	t.Parallel()
+
+	c := redis.Config{
+		Cloud: &rediscloud.Config{},
+	}
+
+	if err := c.Validate(); err == nil || !strings.Contains(strings.ToLower(err.Error()), "digitalocean") {
+		t.Errorf("expected digitalocean error, got %v", err)
+	}
+}
+
+func TestConfig_Validate_acceptsCloudMinimal(t *testing.T) {
+	t.Parallel()
+
+	c := redis.Config{
+		Cloud: &rediscloud.Config{
+			DigitalOcean: &digitalocean.Config{},
+		},
+	}
+
+	if err := c.Validate(); err != nil {
+		t.Errorf("Validate: %v", err)
 	}
 }

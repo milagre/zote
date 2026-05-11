@@ -22,6 +22,129 @@ func registerStatefulSet(
 	cfg *corev1.ConfigMap,
 	scripts *corev1.ConfigMap,
 ) (*appsv1.StatefulSet, error) {
+	if args.Standard {
+		return registerStandardStatefulSet(ctx, parentName, comp, args, releaseName, svc, cfg)
+	}
+	if scripts == nil {
+		return nil, fmt.Errorf("cluster mode requires scripts ConfigMap")
+	}
+
+	return registerClusterStatefulSet(ctx, parentName, comp, args, releaseName, svc, cfg, scripts)
+}
+
+func registerStandardStatefulSet(
+	ctx *pulumi.Context,
+	parentName string,
+	comp pulumi.Resource,
+	args *Args,
+	releaseName string,
+	svc *corev1.Service,
+	cfg *corev1.ConfigMap,
+) (*appsv1.StatefulSet, error) {
+	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
+	storageMB := int64(math.Floor(float64(args.Profile.MemMB.Max) * 1.1))
+
+	return appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
+		Metadata: &metav1.ObjectMetaArgs{
+			Name:      pulumi.String(releaseName),
+			Namespace: pulumi.String(args.Namespace),
+		},
+		Spec: &appsv1.StatefulSetSpecArgs{
+			Replicas:            pulumi.Int(1),
+			ServiceName:         svc.Metadata.Name().Elem(),
+			PodManagementPolicy: pulumi.String("OrderedReady"),
+			Selector: &metav1.LabelSelectorArgs{
+				MatchLabels: labels,
+			},
+			Template: &corev1.PodTemplateSpecArgs{
+				Metadata: &metav1.ObjectMetaArgs{
+					Labels: labels,
+				},
+				Spec: &corev1.PodSpecArgs{
+					TerminationGracePeriodSeconds: pulumi.Int(60),
+					Containers: corev1.ContainerArray{
+						&corev1.ContainerArgs{
+							Name:            pulumi.String("redis"),
+							Image:           pulumi.String(fmt.Sprintf("redis:%s", args.Version)),
+							ImagePullPolicy: pulumi.String("IfNotPresent"),
+							Command: pulumi.StringArray{
+								pulumi.String("redis-server"),
+								pulumi.String("/etc/redis/redis.conf"),
+							},
+							Lifecycle: &corev1.LifecycleArgs{
+								PreStop: &corev1.LifecycleHandlerArgs{
+									Exec: &corev1.ExecActionArgs{
+										Command: pulumi.StringArray{
+											pulumi.String("sh"),
+											pulumi.String("-c"),
+											pulumi.String("redis-cli -p 6379 SHUTDOWN 2>/dev/null || true"),
+										},
+									},
+								},
+							},
+							Ports: corev1.ContainerPortArray{
+								&corev1.ContainerPortArgs{Name: pulumi.String("client"), ContainerPort: pulumi.Int(clientPort)},
+							},
+							VolumeMounts: corev1.VolumeMountArray{
+								&corev1.VolumeMountArgs{Name: pulumi.String("data"), MountPath: pulumi.String("/data")},
+								&corev1.VolumeMountArgs{Name: pulumi.String("config"), MountPath: pulumi.String("/etc/redis")},
+							},
+							Resources: &corev1.ResourceRequirementsArgs{
+								Limits: pulumi.StringMap{
+									"cpu":    pulumi.Sprintf("%g", args.Profile.CPUCores.Max),
+									"memory": pulumi.Sprintf("%dM", args.Profile.MemMB.Max),
+								},
+								Requests: pulumi.StringMap{
+									"cpu":    pulumi.Sprintf("%g", args.Profile.CPUCores.Min),
+									"memory": pulumi.Sprintf("%dM", args.Profile.MemMB.Min),
+								},
+							},
+						},
+					},
+					Volumes: corev1.VolumeArray{
+						&corev1.VolumeArgs{
+							Name: pulumi.String("config"),
+							ConfigMap: &corev1.ConfigMapVolumeSourceArgs{
+								Name: cfg.Metadata.Name().Elem(),
+							},
+						},
+					},
+				},
+			},
+			VolumeClaimTemplates: corev1.PersistentVolumeClaimTypeArray{
+				&corev1.PersistentVolumeClaimTypeArgs{
+					Metadata: &metav1.ObjectMetaArgs{
+						Name: pulumi.String("data"),
+					},
+					Spec: &corev1.PersistentVolumeClaimSpecArgs{
+						AccessModes: pulumi.StringArray{pulumi.String("ReadWriteOnce")},
+						Resources: &corev1.VolumeResourceRequirementsArgs{
+							Requests: pulumi.StringMap{
+								"storage": pulumi.Sprintf("%dM", storageMB),
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+		pulumi.Parent(comp),
+		pulumi.IgnoreChanges([]string{
+			"spec.volumeClaimTemplates",
+		}),
+	)
+}
+
+func registerClusterStatefulSet(
+	ctx *pulumi.Context,
+	parentName string,
+	comp pulumi.Resource,
+	args *Args,
+	releaseName string,
+	svc *corev1.Service,
+	cfg *corev1.ConfigMap,
+	scripts *corev1.ConfigMap,
+) (*appsv1.StatefulSet, error) {
 	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
 	totalPods := (args.Replicas + 1) * args.Shards
 	storageMB := int64(math.Floor(float64(args.Profile.MemMB.Max) * 1.1))

@@ -41,10 +41,16 @@ func registerConfig(
 	comp pulumi.Resource,
 	namespace string,
 	releaseName string,
+	standard bool,
 ) (*corev1.ConfigMap, *corev1.ConfigMap, error) {
 	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
 	ns := pulumi.String(namespace)
 	patchForce := pulumi.StringMap{"pulumi.com/patchForce": pulumi.String("true")}
+
+	confData := redisConf
+	if standard {
+		confData = redisStandardConf
+	}
 
 	cfg, err := corev1.NewConfigMap(ctx, parentName+"-conf", &corev1.ConfigMapArgs{
 		Metadata: &metav1.ObjectMetaArgs{
@@ -54,11 +60,15 @@ func registerConfig(
 			Annotations: patchForce,
 		},
 		Data: pulumi.StringMap{
-			"redis.conf": pulumi.String(redisConf),
+			"redis.conf": pulumi.String(confData),
 		},
 	}, pulumi.Parent(comp))
 	if err != nil {
 		return nil, nil, fmt.Errorf("redis.conf configmap: %w", err)
+	}
+
+	if standard {
+		return cfg, nil, nil
 	}
 
 	scripts, err := corev1.NewConfigMap(ctx, parentName+"-scripts", &corev1.ConfigMapArgs{
