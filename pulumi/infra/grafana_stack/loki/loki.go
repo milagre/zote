@@ -1,5 +1,5 @@
 // Package loki deploys Grafana Loki with object storage (S3-compatible).
-// Local envs use SingleBinary; non-local use SimpleScalable (write/read/backend).
+// Topology (SingleBinary vs SimpleScalable) follows [Config.Monolithic].
 package loki
 
 import (
@@ -140,7 +140,7 @@ func (a *Args) values() (pulumi.Map, []pulumi.Resource, error) {
 		backendN int
 		singleN  int
 	)
-	if a.Env.IsLocal() {
+	if a.Config.Monolithic {
 		mode = "SingleBinary"
 		writeN = 0
 		readN = 0
@@ -189,7 +189,7 @@ func (a *Args) values() (pulumi.Map, []pulumi.Resource, error) {
 	}
 	// Helm default replication_factor is 3; unhealthy ring with fewer ingestors yields failed queries (often nginx 502 on the gateway).
 	writeReplicas := writeN
-	if a.Env.IsLocal() {
+	if a.Config.Monolithic {
 		writeReplicas = singleN
 	}
 	lokiBlock["commonConfig"] = pulumi.Map{
@@ -225,7 +225,7 @@ func (a *Args) values() (pulumi.Map, []pulumi.Resource, error) {
 		},
 	}
 
-	if a.Env.IsLocal() {
+	if a.Config.Monolithic {
 		for k, v := range distributedMicroserviceZeros() {
 			values[k] = v
 		}
@@ -250,8 +250,8 @@ func replicationFactor(writeReplicas int) int {
 }
 
 // helmTopology selects Grafana chart deploymentMode and replica counts (see production/helm/loki/single-binary-values.yaml).
-func helmTopology(e env.Env) (deploymentMode string, writeN, readN, backendN, singleN int) {
-	if e.IsLocal() {
+func helmTopology(monolithic bool) (deploymentMode string, writeN, readN, backendN, singleN int) {
+	if monolithic {
 		return "SingleBinary", 0, 0, 0, 1
 	}
 

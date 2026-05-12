@@ -12,8 +12,9 @@ import (
 
 func lokiLocalConfig() loki.Config {
 	return loki.Config{
-		Profile: validProfile(),
-		Bucket:  "loki",
+		Monolithic: true,
+		Profile:    validProfile(),
+		Bucket:     "loki",
 	}
 }
 
@@ -25,7 +26,7 @@ func objectStorage() objectstorage.ObjectStorage {
 func localTierEnv(t *testing.T) env.Env {
 	t.Helper()
 
-	e, err := env.New("local", "dev", "user", "/tmp", "ZOTE")
+	e, err := env.New("zote", "local", "dev", "user", "/tmp", "ZOTE")
 	if err != nil {
 		t.Fatalf("env.New: %v", err)
 	}
@@ -36,7 +37,7 @@ func localTierEnv(t *testing.T) env.Env {
 func remoteEnv(t *testing.T) env.Env {
 	t.Helper()
 
-	e, err := env.New("remote", "prod", "prod", "/tmp", "ZOTE")
+	e, err := env.New("zote", "remote", "prod", "prod", "/tmp", "ZOTE")
 	if err != nil {
 		t.Fatalf("env.New: %v", err)
 	}
@@ -49,8 +50,8 @@ func TestArgs_validate_rejectsEmptyNamespace(t *testing.T) {
 
 	args := &loki.Args{
 		Env:           localTierEnv(t),
-		Config:         lokiLocalConfig(),
-		ObjectStorage:  objectStorage(),
+		Config:        lokiLocalConfig(),
+		ObjectStorage: objectStorage(),
 	}
 
 	if _, err := loki.New(nil, "loki", args); err == nil ||
@@ -96,9 +97,9 @@ func TestArgs_validate_rejectsBucketNotInObjectStorage(t *testing.T) {
 	t.Parallel()
 
 	args := &loki.Args{
-		Env:       remoteEnv(t),
-		Namespace: "infra",
-		Config:    lokiLocalConfig(),
+		Env:           remoteEnv(t),
+		Namespace:     "infra",
+		Config:        lokiLocalConfig(),
 		ObjectStorage: objectstorage.ObjectStorage{Buckets: []string{"other"}},
 	}
 

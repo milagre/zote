@@ -16,7 +16,7 @@ import (
 
 func validEnv(t *testing.T) env.Env {
 	t.Helper()
-	e, err := env.New("prod", "prod", "mars", "/home/mars", "MARS")
+	e, err := env.New("zote", "prod", "prod", "mars", "/home/mars", "MARS")
 	if err != nil {
 		t.Fatalf("env.New: %v", err)
 	}

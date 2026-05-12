@@ -94,7 +94,7 @@ func TestPrivateHostname(t *testing.T) {
 // message (matched as a substring) is trustworthy at the call site.
 func TestArgsValidate(t *testing.T) {
 	good := func() *Args {
-		e, err := env.New("local", "dev", "local", "/root", "APP")
+		e, err := env.New("zote", "local", "dev", "local", "/root", "APP")
 		if err != nil {
 			t.Fatalf("env.New: %v", err)
 		}

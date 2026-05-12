@@ -6,7 +6,9 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-// Values builds [pulumi.Map] from nested map/slice literals (leaves: string, int, int64, float64, bool, nil; else panic).
+// Values builds [pulumi.Map] from nested map/slice literals. Leaves may be plain Go
+// scalars (string, int, int64, float64, bool, nil) or any value satisfying pulumi.Input
+// (for example StringOutput or BoolOutput from other resources).
 func Values(m map[string]any) pulumi.Map {
 	out := pulumi.Map{}
 	for k, v := range m {
@@ -41,6 +43,9 @@ func valueInput(v any) pulumi.Input {
 		return pulumi.Bool(x)
 	case nil:
 		return nil
+
+	case pulumi.Input:
+		return x
 
 	default:
 		panic(fmt.Sprintf("helm.Values: unsupported type %T for value %v", v, v))

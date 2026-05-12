@@ -11,7 +11,7 @@ import (
 func mustEnv(t *testing.T) env.Env {
 	t.Helper()
 
-	e, err := env.New("local", "dev", "username", "/tmp", "")
+	e, err := env.New("zote", "local", "dev", "username", "/tmp", "")
 	if err != nil {
 		t.Fatalf("env.New: %v", err)
 	}

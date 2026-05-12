@@ -118,6 +118,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		}
 
 		r, e := digitalocean.Setup(ctx, comp, &digitalocean.Args{
+			Env:       args.Env,
 			Cloud:     args.Cloud,
 			Namespace: args.Namespace,
 			Name:      args.Name,

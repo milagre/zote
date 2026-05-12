@@ -25,9 +25,10 @@ func TestConfig_Validate_ok(t *testing.T) {
 		Dashboard: &grafana.Config{},
 		Alloy:     &alloy.Config{Version: "1.8.1"},
 		Loki: &loki.Config{
-			Version: "7.0.0",
-			Profile: validLokiProfile(),
-			Bucket:  "loki",
+			Version:    "7.0.0",
+			Monolithic: false,
+			Profile:    validLokiProfile(),
+			Bucket:     "loki",
 		},
 		Mimir: &mimir.Config{Monolithic: true, Bucket: "mimir"},
 	}
@@ -43,7 +44,7 @@ func TestConfig_Validate_requiresSubsections(t *testing.T) {
 		"nil dashboard": {
 			Dashboard: nil,
 			Alloy:     &alloy.Config{},
-			Loki:      &loki.Config{Version: "7.0.0", Profile: validLokiProfile(), Bucket: "loki"},
+			Loki:      &loki.Config{Version: "7.0.0", Monolithic: false, Profile: validLokiProfile(), Bucket: "loki"},
 			Mimir:     &mimir.Config{Bucket: "m"},
 		},
 		"nil loki": {

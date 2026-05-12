@@ -13,11 +13,12 @@ import (
 const RotateSecretsKeeperKey = "zote.rotateSecrets"
 
 type Env struct {
-	Type   string
-	Tier   string
-	Name   string
-	Root   string
-	Prefix string
+	AppName string
+	Type    string
+	Tier    string
+	Name    string
+	Root    string
+	Prefix  string
 	// Opaque stack bump string (e.g. zote:rotateSecrets); merged into random keepers when non-empty.
 	RotateSecrets string
 }
@@ -34,13 +35,14 @@ func WithRotateSecretsFromPulumi(ctx *pulumi.Context) Option {
 	}
 }
 
-func New(typ, tier, name, root, prefix string, opts ...Option) (Env, error) {
+func New(appName, typ, tier, name, root, prefix string, opts ...Option) (Env, error) {
 	e := Env{
-		Type:   typ,
-		Tier:   tier,
-		Name:   name,
-		Root:   root,
-		Prefix: prefix,
+		AppName: appName,
+		Type:    typ,
+		Tier:    tier,
+		Name:    name,
+		Root:    root,
+		Prefix:  prefix,
 	}
 	for _, o := range opts {
 		o(&e)

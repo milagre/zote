@@ -8,12 +8,15 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/cloud"
+	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra/objectstorage/internal/types"
 )
 
 type Args struct {
+	Env   env.Env
 	Cloud cloud.Cloud
 
+	Prefix    string
 	Namespace string
 	Name      string
 
@@ -59,7 +62,7 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 		region = vpc.Region()
 	}
 
-	resourceName := fmt.Sprintf("%s-%s", a.Namespace, a.Name)
+	resourceName := fmt.Sprintf("%s-%s-%s-%s", a.Env.AppName, a.Env.ID(), a.Namespace, a.Name)
 	buckets := make([]*do.SpacesBucket, 0, len(bucketNames))
 	grants := make(do.SpacesKeyGrantArray, 0, len(bucketNames))
 	projectUrns := make(pulumi.StringArray, 0, len(bucketNames))
@@ -116,4 +119,3 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 		}(),
 	}, nil
 }
-

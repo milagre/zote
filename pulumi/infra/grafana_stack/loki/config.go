@@ -8,9 +8,10 @@ import (
 
 // Config is the YAML-decoded loki configuration.
 type Config struct {
-	Version string      `yaml:"version"`
-	Profile profile.Raw `yaml:"profile"`
-	Bucket  string      `yaml:"bucket"`
+	Version    string      `yaml:"version"`
+	Monolithic bool        `yaml:"monolithic"`
+	Profile    profile.Raw `yaml:"profile"`
+	Bucket     string      `yaml:"bucket"`
 }
 
 func (c *Config) Validate() error {
