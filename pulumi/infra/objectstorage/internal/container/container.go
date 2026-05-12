@@ -107,8 +107,10 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 		size = *cfg.Size
 	}
 
+	finalBuckets := make(map[string]string, len(cfg.Buckets))
 	buckets := make([]any, 0, len(cfg.Buckets))
 	for _, b := range cfg.Buckets {
+		finalBuckets[b.Name] = b.Name
 		buckets = append(buckets, map[string]any{
 			"name":       b.Name,
 			"policy":     "none",
@@ -180,6 +182,7 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 			SecretKey: pw.Result,
 		},
 		Insecure: pulumi.Bool(true).ToBoolOutput(),
+		Buckets:  finalBuckets,
 		Deps:     []pulumi.Resource{sec, rel},
 	}, nil
 }

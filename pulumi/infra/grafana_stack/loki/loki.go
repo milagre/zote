@@ -118,6 +118,11 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 }
 
 func (a *Args) values() (pulumi.Map, []pulumi.Resource, error) {
+	s3Bucket, err := a.ObjectStorage.ProvisionedBucket(a.Config.Bucket)
+	if err != nil {
+		return nil, nil, fmt.Errorf("bucket: %w", err)
+	}
+
 	prof, err := profile.New(a.Config.Profile)
 	if err != nil {
 		return nil, nil, fmt.Errorf("profile: %w", err)
@@ -159,9 +164,9 @@ func (a *Args) values() (pulumi.Map, []pulumi.Resource, error) {
 		"storage": pulumi.Map{
 			"type": pulumi.String("s3"),
 			"bucketNames": pulumi.Map{
-				"chunks": pulumi.String(a.Config.Bucket),
-				"ruler":  pulumi.String(a.Config.Bucket),
-				"admin":  pulumi.String(a.Config.Bucket),
+				"chunks": pulumi.String(s3Bucket),
+				"ruler":  pulumi.String(s3Bucket),
+				"admin":  pulumi.String(s3Bucket),
 			},
 			"s3": pulumi.Map{
 				"endpoint":        a.ObjectStorage.S3.Addr(),
@@ -291,12 +296,12 @@ func (a *Args) validate() error {
 	return nil
 }
 
-func bucketIn(bucket string, buckets []string) bool {
-	for _, b := range buckets {
-		if b == bucket {
-			return true
-		}
+func bucketIn(bucket string, buckets map[string]string) bool {
+	if buckets == nil {
+		return false
 	}
 
-	return false
+	_, ok := buckets[bucket]
+
+	return ok
 }

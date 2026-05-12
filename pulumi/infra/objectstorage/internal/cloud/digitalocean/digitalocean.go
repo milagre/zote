@@ -63,12 +63,14 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 	}
 
 	resourceName := fmt.Sprintf("%s-%s-%s-%s", a.Env.AppName, a.Env.ID(), a.Namespace, a.Name)
+	finalBuckets := make(map[string]string, len(bucketNames))
 	buckets := make([]*do.SpacesBucket, 0, len(bucketNames))
 	grants := make(do.SpacesKeyGrantArray, 0, len(bucketNames))
 	projectUrns := make(pulumi.StringArray, 0, len(bucketNames))
 
 	for _, b := range bucketNames {
 		bucketName := fmt.Sprintf("%s-%s", resourceName, b)
+		finalBuckets[b] = bucketName
 		bucket, err := do.NewSpacesBucket(ctx, bucketName, &do.SpacesBucketArgs{
 			Name:   pulumi.String(bucketName),
 			Region: region.ToStringOutput().ToStringPtrOutput(),
@@ -110,6 +112,7 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 		Creds: types.Credentials{AccessKey: key.AccessKey, SecretKey: key.SecretKey},
 		// Spaces is always TLS; not "insecure".
 		Insecure: pulumi.Bool(false).ToBoolOutput(),
+		Buckets:  finalBuckets,
 		Deps: func() []pulumi.Resource {
 			deps := []pulumi.Resource{key}
 			for _, b := range buckets {

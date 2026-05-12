@@ -135,12 +135,12 @@ func (a *Args) validate() error {
 	return nil
 }
 
-func bucketIn(bucket string, buckets []string) bool {
-	for _, b := range buckets {
-		if b == bucket {
-			return true
-		}
+func bucketIn(bucket string, buckets map[string]string) bool {
+	if buckets == nil {
+		return false
 	}
 
-	return false
+	_, ok := buckets[bucket]
+
+	return ok
 }

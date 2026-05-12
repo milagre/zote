@@ -19,8 +19,7 @@ func lokiLocalConfig() loki.Config {
 }
 
 func objectStorage() objectstorage.ObjectStorage {
-	// Validation uses Buckets only; Resource is wired in real stacks.
-	return objectstorage.ObjectStorage{Buckets: []string{"loki"}}
+	return objectstorage.ObjectStorage{Buckets: map[string]string{"loki": "loki"}}
 }
 
 func localTierEnv(t *testing.T) env.Env {
@@ -100,7 +99,7 @@ func TestArgs_validate_rejectsBucketNotInObjectStorage(t *testing.T) {
 		Env:           remoteEnv(t),
 		Namespace:     "infra",
 		Config:        lokiLocalConfig(),
-		ObjectStorage: objectstorage.ObjectStorage{Buckets: []string{"other"}},
+		ObjectStorage: objectstorage.ObjectStorage{Buckets: map[string]string{"other": "other"}},
 	}
 
 	if _, err := loki.New(nil, "loki", args); err == nil ||

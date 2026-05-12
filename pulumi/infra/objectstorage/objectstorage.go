@@ -64,10 +64,9 @@ type ObjectStorage struct {
 	Creds    Credentials
 	Insecure pulumi.BoolOutput
 
-	// Buckets is the set of bucket names this component provisioned. It is a plain
-	// Go slice so downstream components can validate their configured bucket name
-	// without involving Pulumi Outputs.
-	Buckets []string
+	// Buckets maps each name from objectstorage buckets config to the provisioned
+	// bucket name in the backend (identity for MinIO; prefixed for Spaces).
+	Buckets map[string]string
 }
 
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (ObjectStorage, error) {
@@ -96,10 +95,6 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	switch {
 	case args.Config.Container != nil:
 		cfg := args.Config.Container
-		buckets := make([]string, 0, len(cfg.Buckets))
-		for _, b := range cfg.Buckets {
-			buckets = append(buckets, b.Name)
-		}
 
 		r, e := container.Setup(ctx, comp, &container.Args{
 			Env:       args.Env,
@@ -108,14 +103,9 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			Config:    cfg,
 		})
 		res, err = r, e
-		out.Buckets = buckets
 
 	case args.Config.Cloud != nil:
 		cfg := args.Config.Cloud.DigitalOcean
-		buckets := make([]string, 0, len(cfg.Buckets))
-		for _, b := range cfg.Buckets {
-			buckets = append(buckets, b.Name)
-		}
 
 		r, e := digitalocean.Setup(ctx, comp, &digitalocean.Args{
 			Env:       args.Env,
@@ -125,7 +115,6 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			Config:    cfg,
 		})
 		res, err = r, e
-		out.Buckets = buckets
 
 	default:
 		return ObjectStorage{}, fmt.Errorf("%s: dispatch: no backend selected", typeToken)
@@ -172,6 +161,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	out.Creds = Credentials(res.Creds)
 	out.Insecure = res.Insecure
 	out.Deps = res.Deps
+	out.Buckets = res.Buckets
 
 	if err := ctx.RegisterResourceOutputs(comp, pulumi.Map{
 		"k8s": pulumi.Map{
@@ -183,6 +173,20 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	return out, nil
+}
+
+// ProvisionedBucket returns the backend bucket name for a configured bucket name.
+func (o ObjectStorage) ProvisionedBucket(configured string) (string, error) {
+	if o.Buckets == nil {
+		return "", fmt.Errorf("object storage has no bucket %q", configured)
+	}
+
+	s, ok := o.Buckets[configured]
+	if !ok {
+		return "", fmt.Errorf("object storage has no bucket %q", configured)
+	}
+
+	return s, nil
 }
 
 func (a *Args) validate() error {

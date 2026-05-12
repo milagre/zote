@@ -53,6 +53,11 @@ func Deploy(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*Result, erro
 		return nil, fmt.Errorf("Bucket is required")
 	}
 
+	s3Bucket, err := a.ObjectStorage.ProvisionedBucket(a.Bucket)
+	if err != nil {
+		return nil, fmt.Errorf("bucket: %w", err)
+	}
+
 	image := defaultImage
 	if a.Image != nil {
 		image = *a.Image
@@ -97,7 +102,7 @@ alertmanager:
 `,
 		a.ObjectStorage.S3.Addr(),
 		a.ObjectStorage.Insecure,
-		pulumi.String(a.Bucket),
+		pulumi.String(s3Bucket),
 	)
 
 	cmOpts := []pulumi.ResourceOption{pulumi.Parent(parent)}

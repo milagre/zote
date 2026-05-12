@@ -54,6 +54,11 @@ func Deploy(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*Result, erro
 		return nil, fmt.Errorf("Bucket is required")
 	}
 
+	s3Bucket, err := a.ObjectStorage.ProvisionedBucket(a.Bucket)
+	if err != nil {
+		return nil, fmt.Errorf("bucket: %w", err)
+	}
+
 	resourceName := tokens.Qualify(a.Namespace, a.Name)
 
 	values := helm.Values(map[string]any{
@@ -68,7 +73,7 @@ func Deploy(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*Result, erro
 							"access_key_id":     a.ObjectStorage.Creds.AccessKey,
 							"secret_access_key": a.ObjectStorage.Creds.SecretKey,
 							"insecure":          a.ObjectStorage.Insecure,
-							"bucket_name":       a.Bucket,
+							"bucket_name":       s3Bucket,
 						},
 					},
 				},

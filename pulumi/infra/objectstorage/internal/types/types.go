@@ -18,5 +18,7 @@ type Result struct {
 	Creds    Credentials
 	Insecure pulumi.BoolOutput
 	Deps     []pulumi.Resource
-}
 
+	// Buckets maps each bucket name from objectstorage config to the provisioned name in the backend
+	Buckets map[string]string
+}
