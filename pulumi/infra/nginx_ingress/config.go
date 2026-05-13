@@ -6,6 +6,9 @@ import (
 	"github.com/milagre/zote/pulumi/profile"
 )
 
+// DefaultIngressClass is controller.ingressClassResource.name for this chart.
+const DefaultIngressClass = "nginx"
+
 // Config drives the ingress-nginx Helm release (sizing profile + optional version).
 type Config struct {
 	Version string `yaml:"version"`

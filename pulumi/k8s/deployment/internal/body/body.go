@@ -11,8 +11,8 @@ import (
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/annotations"
+	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/profile"
 )
@@ -88,9 +88,9 @@ func Register(
 	ns := pulumi.String(args.Namespace)
 	dep, err := appsv1.NewDeployment(ctx, name, &appsv1.DeploymentArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:        pulumi.String(args.Name),
-			Namespace:   ns,
-			Labels:      labels,
+			Name:      pulumi.String(args.Name),
+			Namespace: ns,
+			Labels:    labels,
 			Annotations: pulumi.StringMap{
 				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
 			},

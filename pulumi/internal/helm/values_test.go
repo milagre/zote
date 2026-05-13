@@ -3,8 +3,9 @@ package helm_test
 import (
 	"testing"
 
-	"github.com/milagre/zote/pulumi/internal/helm"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+
+	"github.com/milagre/zote/pulumi/internal/helm"
 )
 
 func TestValues_acceptsPulumiStringInput(t *testing.T) {

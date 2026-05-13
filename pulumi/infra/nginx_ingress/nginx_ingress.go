@@ -3,6 +3,7 @@ package nginx_ingress
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
@@ -23,11 +24,15 @@ type Args struct {
 	Namespace string
 	Env       env.Env
 
+	IngressClassName string
+
 	Config Config
 }
 
 type NginxIngress struct {
 	helm.ChartComponent
+
+	IngressClassName pulumi.StringOutput
 }
 
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*NginxIngress, error) {
@@ -42,19 +47,23 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		return nil, fmt.Errorf("nginx_ingress: config: %w", err)
 	}
 
+	ingressClass := ingressClassName(args.IngressClassName)
+
 	comp := &NginxIngress{}
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
 		Version:   helm.OptionalChartVersion(args.Config.Version),
-		Values:    values(args.Env, prof),
+		Values:    values(args.Env, prof, ingressClass),
 	}, &comp.ChartComponent, opts...); err != nil {
 		return nil, err
 	}
 
+	comp.IngressClassName = pulumi.String(ingressClass).ToStringOutput()
+
 	return comp, nil
 }
 
-func values(e env.Env, p profile.Profile) pulumi.Map {
+func values(e env.Env, p profile.Profile, ingressClass string) pulumi.Map {
 	autoscaling := map[string]any{
 		"enabled":                           true,
 		"minReplicas":                       3,
@@ -106,5 +115,20 @@ func values(e env.Env, p profile.Profile) pulumi.Map {
 		controller["service"] = map[string]any{"type": "NodePort"}
 	}
 
+	controller["ingressClassResource"] = map[string]any{
+		"name":    ingressClass,
+		"enabled": true,
+	}
+
 	return helm.Values(map[string]any{"controller": controller})
+}
+
+// ingressClassName returns s trimmed, or [DefaultIngressClass] when empty.
+func ingressClassName(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return DefaultIngressClass
+	}
+
+	return s
 }

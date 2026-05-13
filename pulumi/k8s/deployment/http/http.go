@@ -9,9 +9,10 @@ import (
 	networkingv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/networking/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/k8s/deployment/internal/body"
 	"github.com/milagre/zote/pulumi/annotations"
+	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/infra/nginx_ingress"
+	"github.com/milagre/zote/pulumi/k8s/deployment/internal/body"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/profile"
 	"github.com/milagre/zote/pulumi/tokens"
@@ -74,6 +75,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		return nil, fmt.Errorf("registering %s: %w", typeToken, err)
 	}
 
+	ingressClass := nginx_ingress.DefaultIngressClass
+
 	ports := []podspec.Port{{
 		Name:          "http",
 		ContainerPort: args.Setup.Port,
@@ -114,11 +117,11 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		return nil, err
 	}
 
-	if err := registerPrivateIngress(ctx, resourceName, args, svc, comp); err != nil {
+	if err := registerPrivateIngress(ctx, resourceName, args, svc, comp, ingressClass); err != nil {
 		return nil, err
 	}
 	if len(args.Internal.PublicHostnames) > 0 {
-		if err := registerPublicIngress(ctx, resourceName, args, svc, comp); err != nil {
+		if err := registerPublicIngress(ctx, resourceName, args, svc, comp, ingressClass); err != nil {
 			return nil, err
 		}
 	}
@@ -171,8 +174,8 @@ func (a *Args) validate() error {
 func registerService(ctx *pulumi.Context, name string, args *Args, parent pulumi.Resource) (*corev1.Service, error) {
 	svc, err := corev1.NewService(ctx, name, &corev1.ServiceArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:        pulumi.String(args.Name),
-			Namespace:   pulumi.String(args.Namespace),
+			Name:      pulumi.String(args.Name),
+			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
 				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
 			},
@@ -204,18 +207,18 @@ func registerService(ctx *pulumi.Context, name string, args *Args, parent pulumi
 // through the in-cluster nginx ingress controller. The `nginx.class`
 // annotation is kept alongside the typed IngressClassName so older nginx
 // controllers that only read the annotation still route traffic.
-func registerPrivateIngress(ctx *pulumi.Context, name string, args *Args, svc *corev1.Service, parent pulumi.Resource) error {
+func registerPrivateIngress(ctx *pulumi.Context, name string, args *Args, svc *corev1.Service, parent pulumi.Resource, ingressClass string) error {
 	_, err := networkingv1.NewIngress(ctx, name+"-nginx-private", &networkingv1.IngressArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(args.Name + "-nginx-private"),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey:        pulumi.String(annotations.SkipAwaitValueAll),
-				"kubernetes.io/ingress.class": pulumi.String("nginx"),
+				annotations.SkipAwaitKey:      pulumi.String(annotations.SkipAwaitValueAll),
+				"kubernetes.io/ingress.class": pulumi.String(ingressClass),
 			},
 		},
 		Spec: &networkingv1.IngressSpecArgs{
-			IngressClassName: pulumi.String("nginx"),
+			IngressClassName: pulumi.String(ingressClass),
 			Rules: networkingv1.IngressRuleArray{
 				hostRule(args.Internal.PrivateHostname, svc),
 			},
@@ -234,7 +237,7 @@ func registerPrivateIngress(ctx *pulumi.Context, name string, args *Args, svc *c
 // cert-manager issues per-ingress certificates covering exactly those
 // hosts; locally, TLS is left off so plain HTTP suffices for developer
 // traffic.
-func registerPublicIngress(ctx *pulumi.Context, name string, args *Args, svc *corev1.Service, parent pulumi.Resource) error {
+func registerPublicIngress(ctx *pulumi.Context, name string, args *Args, svc *corev1.Service, parent pulumi.Resource, ingressClass string) error {
 	hosts := append(append([]string{}, args.Internal.PublicHostnames...), args.Internal.VeneerHostnames...)
 
 	rules := make(networkingv1.IngressRuleArray, 0, len(hosts))
@@ -243,7 +246,7 @@ func registerPublicIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 	}
 
 	spec := &networkingv1.IngressSpecArgs{
-		IngressClassName: pulumi.String("nginx"),
+		IngressClassName: pulumi.String(ingressClass),
 		Rules:            rules,
 	}
 	if !args.Env.IsLocal() {
@@ -265,7 +268,7 @@ func registerPublicIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
 				annotations.SkipAwaitKey:         pulumi.String(annotations.SkipAwaitValueAll),
-				"kubernetes.io/ingress.class":    pulumi.String("nginx"),
+				"kubernetes.io/ingress.class":    pulumi.String(ingressClass),
 				"cert-manager.io/cluster-issuer": pulumi.String("letsencrypt-http01"),
 			},
 		},
@@ -293,7 +296,7 @@ func registerTunnelIngress(ctx *pulumi.Context, name string, args *Args, svc *co
 			Name:      pulumi.String(args.Name + "-tunnel"),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey:        pulumi.String(annotations.SkipAwaitValueAll),
+				annotations.SkipAwaitKey:      pulumi.String(annotations.SkipAwaitValueAll),
 				"kubernetes.io/ingress.class": pulumi.String("cloudflare-tunnel"),
 			},
 		},

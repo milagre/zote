@@ -22,8 +22,9 @@ var spec = helm.ChartSpec{
 }
 
 type Args struct {
-	Namespace string
-	AcmeEmail string
+	Namespace      string
+	AcmeEmail      string
+	IngressClasses []string
 
 	Config Config
 }
@@ -73,15 +74,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 					"privateKeySecretRef": pulumi.Map{
 						"name": pulumi.String(ClusterIssuerName),
 					},
-					"solvers": pulumi.Array{
-						pulumi.Map{
-							"http01": pulumi.Map{
-								"ingress": pulumi.Map{
-									"class": pulumi.String("nginx"),
-								},
-							},
-						},
-					},
+					"solvers": http01IngressSolvers(args.IngressClasses),
 				},
 			},
 		},
@@ -93,4 +86,19 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	comp.ClusterIssuer = issuer
 
 	return comp, nil
+}
+
+func http01IngressSolvers(classes []string) pulumi.Array {
+	out := make(pulumi.Array, 0, len(classes))
+	for _, c := range classes {
+		out = append(out, pulumi.Map{
+			"http01": pulumi.Map{
+				"ingress": pulumi.Map{
+					"class": pulumi.String(c),
+				},
+			},
+		})
+	}
+
+	return out
 }

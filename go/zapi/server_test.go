@@ -88,8 +88,8 @@ type testRoute struct {
 	methods Methods
 }
 
-func (r *testRoute) Name() string      { return r.name }
-func (r *testRoute) Path() string      { return r.path }
+func (r *testRoute) Name() string     { return r.name }
+func (r *testRoute) Path() string     { return r.path }
 func (r *testRoute) Methods() Methods { return r.methods }
 
 func TestContextWithTraceFromRequest(t *testing.T) {
