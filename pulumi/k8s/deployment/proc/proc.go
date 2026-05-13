@@ -18,8 +18,10 @@ import (
 
 var typeToken = tokens.Token("k8s", "ProcDeployment")
 
-type Conf = podspec.Conf
-type Files = podspec.Files
+type (
+	Conf  = podspec.Conf
+	Files = podspec.Files
+)
 
 type Args struct {
 	Env       env.Env
@@ -35,7 +37,7 @@ type Args struct {
 	Conf  Conf
 	Files Files
 
-	PrometheusMonitored bool
+	Metrics bool
 }
 
 type Deployment struct {
@@ -58,10 +60,10 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	var ports []podspec.Port
-	if args.PrometheusMonitored {
+	if args.Metrics {
 		ports = append(ports, podspec.Port{
 			Name:          "metrics",
-			ContainerPort: 9090,
+			ContainerPort: body.MetricsListenPort,
 			Protocol:      "TCP",
 		})
 	}
@@ -79,6 +81,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		Conf:      args.Conf,
 		Files:     args.Files,
 		Ports:     ports,
+		Metrics:   args.Metrics,
 	}, comp); err != nil {
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
 	}

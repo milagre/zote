@@ -1,11 +1,9 @@
-// Package body is the shared Deployment (+ PodMonitor when a "metrics" port exists); labels app=<Name>, deploy=<Type>.
+// Package body is the shared Deployment; labels app=<Name>, deploy=<Type>.
 package body
 
 import (
 	"fmt"
 
-	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes"
-	"github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apiextensions"
 	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"
 	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
@@ -35,9 +33,12 @@ type Args struct {
 	Files             podspec.Files
 	Ports             []podspec.Port
 	HTTPLivenessProbe *podspec.HTTPLivenessProbe
+
+	// Metrics=true enables scraping of the container's /metrics endpoint.
+	Metrics bool
 }
 
-// Register creates the Deployment (and PodMonitor if a "metrics" port exists).
+// Register creates the Deployment.
 func Register(
 	ctx *pulumi.Context,
 	name string,
@@ -55,9 +56,16 @@ func Register(
 		return nil, fmt.Errorf("body: Type is required")
 	}
 
-	labels := pulumi.StringMap{
+	podLabels := pulumi.StringMap{
 		"app":    pulumi.String(args.Name),
 		"deploy": pulumi.String(args.Type),
+	}
+
+	podAnnotations := pulumi.StringMap{}
+	if args.Metrics {
+		for k, v := range metricsAnnotations(MetricsListenPort) {
+			podAnnotations[k] = pulumi.String(v)
+		}
 	}
 
 	if args.Profile.Num == nil {
@@ -86,11 +94,12 @@ func Register(
 	childOpts := append([]pulumi.ResourceOption{pulumi.Parent(parent)}, opts...)
 
 	ns := pulumi.String(args.Namespace)
+
 	dep, err := appsv1.NewDeployment(ctx, name, &appsv1.DeploymentArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(args.Name),
 			Namespace: ns,
-			Labels:    labels,
+			Labels:    podLabels,
 			Annotations: pulumi.StringMap{
 				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
 			},
@@ -98,95 +107,24 @@ func Register(
 		Spec: &appsv1.DeploymentSpecArgs{
 			Replicas: pulumi.Int(args.Profile.Num.Min),
 			Selector: &metav1.LabelSelectorArgs{
-				MatchLabels: labels,
+				MatchLabels: podLabels,
 			},
 			Template: &corev1.PodTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
-					Name:      pulumi.String(args.Name),
-					Namespace: ns,
-					Labels:    labels,
+					Name:        pulumi.String(args.Name),
+					Namespace:   ns,
+					Labels:      podLabels,
+					Annotations: podAnnotations,
 				},
 				Spec: spec,
 			},
 		},
 	},
-		append(childOpts, pulumi.IgnoreChanges([]string{
-			// Targeting a specific key (e.g. annotations["kubectl.kubernetes.io/restartedAt"])
-			// hits "cannot ignore changes in added or removed elements" when the key is
-			// only present on one side of the diff; widening to the containing map works.
-			"spec.template.metadata.annotations",
-		}))...,
+		append(childOpts, pulumi.IgnoreChanges([]string{}))...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("body: deployment: %w", err)
 	}
 
-	if hasMetricsPort(args.Ports) {
-		if _, err := registerPodMonitor(ctx, name, args, labels, parent, opts); err != nil {
-			return nil, err
-		}
-	}
-
 	return dep, nil
-}
-
-func hasMetricsPort(ports []podspec.Port) bool {
-	for _, p := range ports {
-		if p.Name == metricsPortName {
-			return true
-		}
-	}
-
-	return false
-}
-
-// registerPodMonitor emits the prometheus-operator PodMonitor CR that
-// scrapes the Deployment's metrics port. It is created via the generic
-// CustomResource factory so the Zote library does not need a generated
-// binding for the prometheus-operator CRDs.
-func registerPodMonitor(
-	ctx *pulumi.Context,
-	name string,
-	args Args,
-	labels pulumi.StringMap,
-	parent pulumi.Resource,
-	opts []pulumi.ResourceOption,
-) (*apiextensions.CustomResource, error) {
-	childOpts := append([]pulumi.ResourceOption{pulumi.Parent(parent)}, opts...)
-
-	cr, err := apiextensions.NewCustomResource(ctx, name+"-podmonitor", &apiextensions.CustomResourceArgs{
-		ApiVersion: pulumi.String("monitoring.coreos.com/v1"),
-		Kind:       pulumi.String("PodMonitor"),
-		Metadata: &metav1.ObjectMetaArgs{
-			Name:      pulumi.String(args.Name),
-			Namespace: pulumi.String(args.Namespace),
-			Labels: pulumi.StringMap{
-				"app": pulumi.String(args.Name),
-			},
-			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
-			},
-		},
-		OtherFields: kubernetes.UntypedArgs{
-			"spec": pulumi.Map{
-				"selector": pulumi.Map{
-					"matchLabels": labels,
-				},
-				"namespaceSelector": pulumi.Map{
-					"matchNames": pulumi.StringArray{pulumi.String(args.Namespace)},
-				},
-				"podMetricsEndpoints": pulumi.Array{
-					pulumi.Map{
-						"port": pulumi.String(metricsPortName),
-						"path": pulumi.String("/metrics"),
-					},
-				},
-			},
-		},
-	}, childOpts...)
-	if err != nil {
-		return nil, fmt.Errorf("body: podmonitor: %w", err)
-	}
-
-	return cr, nil
 }

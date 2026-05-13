@@ -17,6 +17,9 @@ func TestDefaultAlloyRiverTemplate_includesScrapes(t *testing.T) {
 		"discovery.kubernetes",
 		"__meta_kubernetes_pod_annotation_prometheus_io_scrape",
 		"prometheus.scrape \"pods_annotations\"",
+		"loki.source.kubernetes \"pod_logs\"",
+		"discovery.kubernetes \"pod_logs\"",
+		"loki.write \"default\"",
 	} {
 		if !strings.Contains(cfg, want) {
 			t.Errorf("config missing %q", want)

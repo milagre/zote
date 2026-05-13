@@ -51,9 +51,9 @@ type Args struct {
 	Conf  Conf
 	Files Files
 
-	Setup               Options
-	PrometheusMonitored bool
-	Internal            Internal
+	Setup    Options
+	Metrics  bool
+	Internal Internal
 }
 
 type Deployment struct {
@@ -82,10 +82,10 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		ContainerPort: args.Setup.Port,
 		Protocol:      "TCP",
 	}}
-	if args.PrometheusMonitored {
+	if args.Metrics {
 		ports = append(ports, podspec.Port{
 			Name:          "metrics",
-			ContainerPort: 9090,
+			ContainerPort: body.MetricsListenPort,
 			Protocol:      "TCP",
 		})
 	}
@@ -103,6 +103,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		Conf:      args.Conf,
 		Files:     args.Files,
 		Ports:     ports,
+		Metrics:   args.Metrics,
 		HTTPLivenessProbe: &podspec.HTTPLivenessProbe{
 			Path: args.Setup.Health,
 			Port: args.Setup.Port,

@@ -16,9 +16,11 @@ import (
 
 var typeToken = tokens.Token("k8s", "Deployment")
 
-type Conf = podspec.Conf
-type Files = podspec.Files
-type HTTPMode = http.Options
+type (
+	Conf     = podspec.Conf
+	Files    = podspec.Files
+	HTTPMode = http.Options
+)
 
 type Mode struct {
 	HTTP *HTTPMode
@@ -45,7 +47,7 @@ type Args struct {
 	Conf  Conf
 	Files Files
 
-	PrometheusMonitored bool
+	Metrics bool
 
 	PublicDomains []string // HTTP: <name>.<ns>.<suffix> each
 	Veneers       []string // extra public hostnames verbatim
@@ -82,18 +84,18 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	switch kind {
 	case KindHTTP:
 		if _, err := http.New(ctx, name, &http.Args{
-			Env:                 args.Env,
-			Namespace:           args.Namespace,
-			Name:                args.Name,
-			Image:               args.Image,
-			Tag:                 args.Tag,
-			Command:             args.Command,
-			Args:                args.Args,
-			Profile:             args.Profile,
-			Conf:                args.Conf,
-			Files:               args.Files,
-			Setup:               *args.Mode.HTTP,
-			PrometheusMonitored: args.PrometheusMonitored,
+			Env:       args.Env,
+			Namespace: args.Namespace,
+			Name:      args.Name,
+			Image:     args.Image,
+			Tag:       args.Tag,
+			Command:   args.Command,
+			Args:      args.Args,
+			Profile:   args.Profile,
+			Conf:      args.Conf,
+			Files:     args.Files,
+			Setup:     *args.Mode.HTTP,
+			Metrics:   args.Metrics,
 			Internal: http.Internal{
 				PublicHostnames: synthesizedPublicHostnames(args.Name, args.Namespace, args.PublicDomains),
 				PrivateHostname: comp.PrivateHostname,
@@ -105,17 +107,17 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 
 	case KindProc:
 		if _, err := proc.New(ctx, name, &proc.Args{
-			Env:                 args.Env,
-			Namespace:           args.Namespace,
-			Name:                args.Name,
-			Image:               args.Image,
-			Tag:                 args.Tag,
-			Command:             args.Command,
-			Args:                args.Args,
-			Profile:             args.Profile,
-			Conf:                args.Conf,
-			Files:               args.Files,
-			PrometheusMonitored: args.PrometheusMonitored,
+			Env:       args.Env,
+			Namespace: args.Namespace,
+			Name:      args.Name,
+			Image:     args.Image,
+			Tag:       args.Tag,
+			Command:   args.Command,
+			Args:      args.Args,
+			Profile:   args.Profile,
+			Conf:      args.Conf,
+			Files:     args.Files,
+			Metrics:   args.Metrics,
 		}, pulumi.Parent(comp)); err != nil {
 			return nil, fmt.Errorf("%s: %w", typeToken, err)
 		}
