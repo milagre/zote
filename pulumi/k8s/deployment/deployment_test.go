@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/util/profile"
 )
 
 // TestSelectKind covers the full truth table of the mode selector: each

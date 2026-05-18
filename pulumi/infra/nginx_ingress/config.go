@@ -3,7 +3,7 @@ package nginx_ingress
 import (
 	"fmt"
 
-	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/util/profile"
 )
 
 // DefaultIngressClass is controller.ingressClassResource.name for this chart.

@@ -8,7 +8,7 @@ import (
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/grafana"
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/loki"
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/mimir"
-	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/util/profile"
 )
 
 func validLokiProfile() profile.Raw {

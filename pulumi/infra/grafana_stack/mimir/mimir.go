@@ -10,8 +10,8 @@ import (
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/mimir/internal/distributed"
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/mimir/internal/monolithic"
-	"github.com/milagre/zote/pulumi/infra/objectstorage"
-	"github.com/milagre/zote/pulumi/tokens"
+	"github.com/milagre/zote/pulumi/svc/objectstorage"
+	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
 type Args struct {

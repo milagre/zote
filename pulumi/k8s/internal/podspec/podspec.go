@@ -12,7 +12,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/util/profile"
 )
 
 type Conf struct {

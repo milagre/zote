@@ -6,8 +6,8 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/cloud/digitalocean"
-	dbdo "github.com/milagre/zote/pulumi/database/digitalocean"
-	osdo "github.com/milagre/zote/pulumi/infra/objectstorage/digitalocean"
+	dbdo "github.com/milagre/zote/pulumi/svc/mysql/digitalocean"
+	osdo "github.com/milagre/zote/pulumi/svc/objectstorage/digitalocean"
 )
 
 var _ dbdo.Cloud = (*digitalocean.DatabaseCloud)(nil)

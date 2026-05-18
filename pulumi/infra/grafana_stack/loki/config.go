@@ -3,7 +3,7 @@ package loki
 import (
 	"fmt"
 
-	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/util/profile"
 )
 
 // Config is the YAML-decoded loki configuration.

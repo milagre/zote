@@ -8,7 +8,7 @@ import (
 	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/tokens"
+	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
 type ChartSpec struct {

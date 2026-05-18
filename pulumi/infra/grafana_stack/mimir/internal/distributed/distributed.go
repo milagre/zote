@@ -8,11 +8,11 @@ import (
 	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/endpoint"
+	"github.com/milagre/zote/pulumi/util/endpoint"
 	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/infra/objectstorage"
+	"github.com/milagre/zote/pulumi/svc/objectstorage"
 	"github.com/milagre/zote/pulumi/internal/helm"
-	"github.com/milagre/zote/pulumi/tokens"
+	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/milagre/zote/pulumi/infra/nginx_ingress"
-	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/util/profile"
 )
 
 func rawProf() profile.Raw {

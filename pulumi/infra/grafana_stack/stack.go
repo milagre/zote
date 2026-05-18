@@ -15,8 +15,8 @@ import (
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/grafana"
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/loki"
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/mimir"
-	"github.com/milagre/zote/pulumi/infra/objectstorage"
-	"github.com/milagre/zote/pulumi/tokens"
+	"github.com/milagre/zote/pulumi/svc/objectstorage"
+	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
 var typeToken = tokens.Token("infra", "GrafanaStack")

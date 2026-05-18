@@ -6,8 +6,8 @@ import (
 
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/loki"
-	"github.com/milagre/zote/pulumi/infra/objectstorage"
-	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/svc/objectstorage"
+	"github.com/milagre/zote/pulumi/util/profile"
 )
 
 func lokiLocalConfig() loki.Config {

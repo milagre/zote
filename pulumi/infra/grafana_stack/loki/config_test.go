@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/loki"
-	"github.com/milagre/zote/pulumi/profile"
+	"github.com/milagre/zote/pulumi/util/profile"
 )
 
 func validProfile() profile.Raw {

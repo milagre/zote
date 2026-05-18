@@ -10,9 +10,9 @@ import (
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/endpoint"
+	"github.com/milagre/zote/pulumi/util/endpoint"
 	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/infra/objectstorage"
+	"github.com/milagre/zote/pulumi/svc/objectstorage"
 )
 
 const defaultImage = "grafana/mimir:2.16.0"

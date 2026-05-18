@@ -9,13 +9,13 @@ import (
 	networkingv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/networking/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/annotations"
+	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra/nginx_ingress"
 	"github.com/milagre/zote/pulumi/k8s/deployment/internal/body"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
-	"github.com/milagre/zote/pulumi/profile"
-	"github.com/milagre/zote/pulumi/tokens"
+	"github.com/milagre/zote/pulumi/util/profile"
+	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
 var typeToken = tokens.Token("k8s", "HttpDeployment")

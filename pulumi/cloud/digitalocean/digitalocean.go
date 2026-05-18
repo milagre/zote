@@ -38,7 +38,7 @@ func (c *Cloud) ForObjectStorage() *ObjectStorageCloud {
 	return &ObjectStorageCloud{vpcID: c.vpcID, projectID: c.projectID}
 }
 
-// DatabaseCloud satisfies database/digitalocean.Cloud.
+// DatabaseCloud satisfies svc/mysql/digitalocean.Cloud.
 type DatabaseCloud struct {
 	vpcID     pulumi.StringInput
 	projectID pulumi.StringInput
@@ -48,7 +48,7 @@ func (d *DatabaseCloud) VPCID() pulumi.StringInput { return d.vpcID }
 
 func (d *DatabaseCloud) ProjectID() pulumi.StringInput { return d.projectID }
 
-// ObjectStorageCloud satisfies infra/objectstorage/digitalocean.Cloud.
+// ObjectStorageCloud satisfies svc/objectstorage/digitalocean.Cloud.
 type ObjectStorageCloud struct {
 	vpcID     pulumi.StringInput
 	projectID pulumi.StringInput

@@ -6,22 +6,36 @@ This module lives in its own `go.mod` (`github.com/milagre/zote/pulumi`) so Pulu
 
 ## Layout
 
-- `env`, `config`, `profile` — pure Go structures, validation, and configuration loading.
-- `cloud` — the umbrella `Cloud` interface every provider satisfies (currently the load-balancer annotation methods). Per-resource-family capabilities (database placement, object-storage endpoints, …) are *not* on this interface; they live in resource-family-and-provider-specific packages (e.g. `database/digitalocean`) so each provider can expose exactly what that resource family needs.
-  - `cloud/<provider>` — concrete provider implementation (e.g. `cloud/digitalocean.Cloud`, constructed via `digitalocean.New()`). The consumer Pulumi program selects one provider per stack and passes it to cloud-polymorphic components. Per-instance context that varies between resources (e.g. the VPC/project a specific database cluster lives in) is obtained from the provider via explicit factory methods (`Cloud.ForDatabase(vpcID, projectID)`), so one provider value can serve many instances living in different networks.
-- `database/<provider>` — per-provider interfaces describing the handle a database backend on that provider needs (e.g. `database/digitalocean.Cloud`, with `VPCID`/`ProjectID`). Callers never implement these directly; the matching `cloud/<provider>` factory method returns a value that satisfies them implicitly.
-- `infra`
-  - `infra/<name>` — one subpackage per piece of shared cluster infrastructure. Each parent package is the sole public entry point for deploying that piece. It accepts caller args, picks a backend, and wires shared client resources (ConfigMap/Secret) around whatever the backend emits.
-    - `infra/<name>/internal/<backend>` — backend implementations (container, cloud provider) live under `internal/` so they cannot be imported by consumers. Caller-facing argument types are re-exported from the parent via Go type aliases (e.g. `influxdb.ContainerArgs = container.Args`) so callers only ever depend on `infra/<name>`.
-- `k8s`
-  - `k8s/deployment` — polymorphic workload facade: callers describe intent through a `Mode` (HTTP or background process) and the facade materializes the matching underlying component, synthesizing public/private hostnames from `Name`, `Namespace`, `PublicDomains`, and `Veneers`.
-    - `k8s/deployment/http`, `k8s/deployment/proc` — the concrete workload components the facade delegates to; they may also be used directly when a caller only needs one shape.
-  - `k8s/cronjob`, `k8s/job` — scheduled and one-shot task components.
-- `database/<engine>` — top-level components with polymorphic backends (container vs cloud provider) selected via explicit args, same `internal/<backend>` convention as `infra/<name>`.
+### Bootstrap (program wiring)
+
+- `env`, `config` — environment identity and merged per-env YAML loading.
+- `cloud` — multi-provider handle passed into components (`Cloud.ForDatabase`, `ForObjectStorage`, load-balancer annotations). Each service that needs cloud placement defines its own small interface (e.g. `svc/mysql/digitalocean`, `svc/objectstorage/digitalocean`); `cloud/digitalocean` implements them.
+
+### Utilities (`util/`)
+
+Stateless helpers imported by components and consumer programs:
+
+- `util/annotations`, `util/endpoint`, `util/profile`, `util/stringdata`, `util/tokens`
+
+### Components
+
+Deployable Pulumi component families (each exposes a `New` and registers a `ComponentResource`):
+
+- **`infra/`** — cluster-scoped systems (once or fixed per environment): `keda`, `metrics_server`, `grafana_stack`, `cert_manager`, `nginx_ingress`, `cloudflare_tunnel`, `prometheus`, …
+- **`svc/`** — namespace-scoped backing services: `rabbitmq`, `redis`, `mysql`, `influxdb`, `timescaledb`, `objectstorage`, …
+- **`k8s/`** — workloads: `deployment` (http/proc), `job`, `cronjob`
+
+Shared chart machinery: `internal/helm`.
+
+Package conventions:
+
+- `svc/<name>/internal/<backend>` — backends are internal; parents re-export caller-facing types via aliases.
+- `svc/<name>/digitalocean` — optional placement interface for that service’s cloud backend (duplicate per service when shapes match; do not share a global placement package).
+- `infra/grafana_stack` may depend on `svc/objectstorage`; `svc` does not depend on `infra`.
 
 ## Conventions
 
-- **Type tokens** always use the `zote:` prefix (e.g. `zote:infra:Grafana`)
-- **Providers are supplied by the caller.** Components accept `opts ...pulumi.ResourceOption` (and an explicit provider arg where appropriate) but never construct Kubernetes or Helm providers internally.
+- **Type tokens** use the `zote:` prefix with a family segment (e.g. `zote:infra:Grafana`, `zote:svc:Rabbitmq`, `zote:svc:Mysql`, `zote:k8s:Deployment`).
+- **Providers are supplied by the caller.** Components accept `opts ...pulumi.ResourceOption` but never construct Kubernetes or Helm providers internally.
 - **Child resources** use explicit, stable logical names that match the Kubernetes/Helm names they materialize.
-- **Polymorphic backends** (e.g. `database/mysql` with container or cloud implementations) use a small internal Go interface, optional pointer-typed args, and explicit precedence rules. See the plan for details.
+- **Polymorphic backends** (e.g. `svc/mysql` container vs cloud) use a small internal Go interface, optional pointer-typed args, and explicit precedence rules.

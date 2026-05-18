@@ -10,8 +10,8 @@ import (
 	"github.com/milagre/zote/pulumi/k8s/deployment/http"
 	"github.com/milagre/zote/pulumi/k8s/deployment/proc"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
-	"github.com/milagre/zote/pulumi/profile"
-	"github.com/milagre/zote/pulumi/tokens"
+	"github.com/milagre/zote/pulumi/util/profile"
+	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
 var typeToken = tokens.Token("k8s", "Deployment")
