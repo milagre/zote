@@ -165,7 +165,8 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 		RepositoryOpts: &helmv3.RepositoryOptsArgs{
 			Repo: pulumi.String("https://charts.min.io/").ToStringPtrOutput(),
 		},
-		Values: values,
+		Values:    values,
+		SkipAwait: pulumi.Bool(true),
 	}, pulumi.Parent(parent), pulumi.DependsOn([]pulumi.Resource{sec}))
 	if err != nil {
 		return nil, fmt.Errorf("minio helm release: %w", err)

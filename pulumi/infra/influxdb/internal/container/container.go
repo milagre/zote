@@ -189,6 +189,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, influxParent pulumi
 		RepositoryOpts: &helmv3.RepositoryOptsArgs{
 			Repo: pulumi.String(chartRepository).ToStringPtrOutput(),
 		},
+		SkipAwait: pulumi.Bool(true),
 	}, pulumi.Parent(influxParent)); err != nil {
 		return nil, fmt.Errorf("%s: installing chart: %w", typeToken, err)
 	}

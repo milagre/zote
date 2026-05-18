@@ -10,6 +10,7 @@ import (
 	"github.com/pulumi/pulumi-random/sdk/v4/go/random"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
+	"github.com/milagre/zote/pulumi/annotations"
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/profile"
 	"github.com/milagre/zote/pulumi/tokens"
@@ -118,9 +119,12 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 
 	sts, err := appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:      pulumi.String(releaseName),
-			Namespace: ns,
-			Labels:    labels,
+			Name:        pulumi.String(releaseName),
+			Namespace:   ns,
+			Labels:      labels,
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+			},
 		},
 		Spec: &appsv1.StatefulSetSpecArgs{
 			ServiceName: pulumi.String(releaseName),

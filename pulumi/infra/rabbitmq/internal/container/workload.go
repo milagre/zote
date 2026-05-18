@@ -8,6 +8,7 @@ import (
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
+	"github.com/milagre/zote/pulumi/annotations"
 	"github.com/milagre/zote/pulumi/profile"
 )
 
@@ -51,10 +52,18 @@ func registerWorkload(
 		initCmd = append(initCmd, pulumi.String(a))
 	}
 
+	podAnnotations := pulumi.StringMap{}
+	for k, v := range PrometheusPodAnnotations() {
+		podAnnotations[k] = pulumi.String(v)
+	}
+
 	sts, err := appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:      pulumi.String(releaseName),
-			Namespace: ns,
+			Name:        pulumi.String(releaseName),
+			Namespace:   ns,
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+			},
 		},
 		Spec: &appsv1.StatefulSetSpecArgs{
 			Replicas:            pulumi.Int(replicas),
@@ -65,8 +74,9 @@ func registerWorkload(
 			},
 			Template: &corev1.PodTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
-					Name:   pulumi.String(releaseName),
-					Labels: labels,
+					Name:        pulumi.String(releaseName),
+					Labels:      labels,
+					Annotations: podAnnotations,
 				},
 				Spec: &corev1.PodSpecArgs{
 					ServiceAccountName: sa.Metadata.Name().Elem(),

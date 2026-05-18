@@ -8,6 +8,8 @@ import (
 	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+
+	"github.com/milagre/zote/pulumi/annotations"
 )
 
 const scriptsDefaultMode = 0o755
@@ -46,8 +48,11 @@ func registerStandardStatefulSet(
 
 	return appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:      pulumi.String(releaseName),
-			Namespace: pulumi.String(args.Namespace),
+			Name:        pulumi.String(releaseName),
+			Namespace:   pulumi.String(args.Namespace),
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+			},
 		},
 		Spec: &appsv1.StatefulSetSpecArgs{
 			Replicas:            pulumi.Int(1),
@@ -151,8 +156,11 @@ func registerClusterStatefulSet(
 
 	return appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:      pulumi.String(releaseName),
-			Namespace: pulumi.String(args.Namespace),
+			Name:        pulumi.String(releaseName),
+			Namespace:   pulumi.String(args.Namespace),
+			Annotations: pulumi.StringMap{
+				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+			},
 		},
 		Spec: &appsv1.StatefulSetSpecArgs{
 			Replicas:            pulumi.Int(totalPods),
