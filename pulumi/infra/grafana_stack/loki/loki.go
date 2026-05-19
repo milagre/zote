@@ -91,7 +91,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		RepositoryOpts: &helmv3.RepositoryOptsArgs{
 			Repo: pulumi.String(repository).ToStringPtrOutput(),
 		},
-		Values: values,
+		Values:    values,
+		SkipAwait: pulumi.Bool(true),
 	}, relOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("%s: helm release: %w", typeToken, err)
