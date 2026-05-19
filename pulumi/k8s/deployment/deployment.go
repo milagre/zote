@@ -7,6 +7,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/k8s/deployment/http"
 	"github.com/milagre/zote/pulumi/k8s/deployment/proc"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
@@ -48,6 +49,9 @@ type Args struct {
 	Files Files
 
 	Metrics bool
+
+	// Cluster supplies registered ingress classes for HTTP workloads.
+	Cluster *infra.Cluster
 
 	PublicDomains []string // HTTP: <name>.<ns>.<suffix> each
 	Veneers       []string // extra public hostnames verbatim
@@ -101,6 +105,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 				PrivateHostname: comp.PrivateHostname,
 				VeneerHostnames: args.Veneers,
 			},
+			Cluster: args.Cluster,
 		}, pulumi.Parent(comp)); err != nil {
 			return nil, fmt.Errorf("%s: %w", typeToken, err)
 		}

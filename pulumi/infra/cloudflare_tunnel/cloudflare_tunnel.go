@@ -6,6 +6,7 @@ import (
 
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
+	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/internal/helm"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
@@ -25,6 +26,9 @@ type Args struct {
 	TunnelName string
 
 	Config Config
+
+	// Cluster registers deployed capabilities when non-nil.
+	Cluster *infra.Cluster
 }
 
 type CloudflareTunnel struct {
@@ -63,6 +67,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	comp.IngressClassName = pulumi.String(IngressClassName).ToStringOutput()
+
+	args.Cluster.SetTunnelIngressClass(IngressClassName)
 
 	return comp, nil
 }

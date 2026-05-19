@@ -8,6 +8,7 @@ import (
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
+	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/internal/helm"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
@@ -27,6 +28,9 @@ type Args struct {
 	IngressClasses []string
 
 	Config Config
+
+	// Cluster registers deployed capabilities when non-nil.
+	Cluster *infra.Cluster
 }
 
 type CertManager struct {
@@ -84,6 +88,10 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	comp.ClusterIssuer = issuer
+
+	if args.Cluster != nil {
+		args.Cluster.SetClusterIssuer(ClusterIssuerName)
+	}
 
 	return comp, nil
 }

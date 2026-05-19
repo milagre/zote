@@ -21,7 +21,7 @@ Stateless helpers imported by components and consumer programs:
 
 Deployable Pulumi component families (each exposes a `New` and registers a `ComponentResource`):
 
-- **`infra/`** — cluster-scoped systems (once or fixed per environment): `keda`, `metrics_server`, `grafana_stack`, `cert_manager`, `nginx_ingress`, `cloudflare_tunnel`, `prometheus`, …
+- **`infra/`** — cluster-scoped systems (once or fixed per environment): `keda`, `metrics_server`, `grafana_stack`, `cert_manager`, `nginx_ingress`, `cloudflare_tunnel`, `prometheus`, … Pass a shared `*infra.Cluster` into each component `New`; it records capability discovery data (ingress class names, `HasKeda`, Pulumiverse `grafana.Provider`, …) without importing sibling infra packages.
 - **`svc/`** — namespace-scoped backing services: `rabbitmq`, `redis`, `mysql`, `influxdb`, `timescaledb`, `objectstorage`, …
 - **`k8s/`** — workloads: `deployment` (http/proc), `job`, `cronjob`
 

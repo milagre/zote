@@ -447,6 +447,10 @@ github.com/pulumi/pulumi/sdk/v3/go/pulumi/internals
 github.com/pulumi/pulumi/sdk/v3/go/pulumix
 github.com/pulumi/pulumi/sdk/v3/proto/go
 github.com/pulumi/pulumi/sdk/v3/proto/go/codegen
+# github.com/pulumiverse/pulumi-grafana/sdk v1.0.0
+## explicit; go 1.25
+github.com/pulumiverse/pulumi-grafana/sdk/go/grafana
+github.com/pulumiverse/pulumi-grafana/sdk/go/grafana/internal
 # github.com/rivo/uniseg v0.4.7
 ## explicit; go 1.18
 github.com/rivo/uniseg

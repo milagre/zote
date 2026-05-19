@@ -8,6 +8,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/internal/helm"
 	"github.com/milagre/zote/pulumi/util/profile"
 	"github.com/milagre/zote/pulumi/util/tokens"
@@ -27,6 +28,9 @@ type Args struct {
 	IngressClassName string
 
 	Config Config
+
+	// Cluster registers deployed capabilities when non-nil.
+	Cluster *infra.Cluster
 }
 
 type NginxIngress struct {
@@ -59,6 +63,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	comp.IngressClassName = pulumi.String(ingressClass).ToStringOutput()
+
+	args.Cluster.SetPublicIngressClass(ingressClass)
 
 	return comp, nil
 }

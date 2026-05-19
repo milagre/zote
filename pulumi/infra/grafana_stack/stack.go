@@ -9,8 +9,10 @@ import (
 	"net/url"
 
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+	grafanapulumi "github.com/pulumiverse/pulumi-grafana/sdk/go/grafana"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/alloy"
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/grafana"
 	"github.com/milagre/zote/pulumi/infra/grafana_stack/loki"
@@ -29,6 +31,9 @@ type Args struct {
 
 	Config        Config
 	ObjectStorage objectstorage.ObjectStorage
+
+	// Cluster registers deployed capabilities when non-nil.
+	Cluster *infra.Cluster
 }
 
 type Credentials struct {
@@ -140,7 +145,27 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		return nil, fmt.Errorf("%s: registering outputs: %w", typeToken, err)
 	}
 
+	prov, err := newGrafanaProvider(ctx, resourceName, g, comp)
+	if err != nil {
+		return nil, fmt.Errorf("%s: grafana provider: %w", typeToken, err)
+	}
+
+	args.Cluster.SetGrafana(prov)
+
 	return comp, nil
+}
+
+// newGrafanaProvider configures the Pulumiverse Grafana provider against the
+// in-cluster dashboard API (basic auth admin credentials from the Helm release).
+func newGrafanaProvider(ctx *pulumi.Context, name string, g *grafana.Grafana, parent pulumi.Resource) (*grafanapulumi.Provider, error) {
+	auth := pulumi.All(g.Admin.Username, g.Admin.Password).ApplyT(func(vals []any) (string, error) {
+		return fmt.Sprintf("%s:%s", vals[0].(string), vals[1].(string)), nil
+	}).(pulumi.StringOutput)
+
+	return grafanapulumi.NewProvider(ctx, name+"-provider", &grafanapulumi.ProviderArgs{
+		Url:  pulumi.String(g.API.String()),
+		Auth: auth,
+	}, pulumi.Parent(parent), pulumi.DependsOn([]pulumi.Resource{g.Helm.Release}))
 }
 
 func defaultGrafanaDatasources(lokiBaseURL string, mimirPrometheusURL string) map[string]any {

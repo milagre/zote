@@ -6,6 +6,7 @@ import (
 
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
+	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/internal/helm"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
@@ -21,6 +22,9 @@ type Args struct {
 	Namespace string
 
 	Config Config
+
+	// Cluster registers deployed capabilities when non-nil.
+	Cluster *infra.Cluster
 }
 
 type Keda struct {
@@ -44,6 +48,10 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		Version:   helm.OptionalChartVersion(args.Config.Version),
 	}, &comp.ChartComponent, opts...); err != nil {
 		return nil, err
+	}
+
+	if args.Cluster != nil {
+		args.Cluster.HasKeda = true
 	}
 
 	return comp, nil
