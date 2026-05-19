@@ -9,9 +9,9 @@ import (
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
+	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/util/labels"
 	"github.com/milagre/zote/pulumi/util/profile"
 )
@@ -57,7 +57,7 @@ func Register(
 		return nil, fmt.Errorf("body: Type is required")
 	}
 
-	podLabels := labels.Pod(args.Type, args.Name)
+	podLabels := labels.Pod(args.Namespace, args.Name)
 	podLabels["app"] = pulumi.String(args.Name)
 	podLabels["deploy"] = pulumi.String(args.Type)
 

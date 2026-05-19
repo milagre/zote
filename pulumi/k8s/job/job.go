@@ -9,9 +9,10 @@ import (
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
+	"github.com/milagre/zote/pulumi/util/annotations"
+	"github.com/milagre/zote/pulumi/util/labels"
 	"github.com/milagre/zote/pulumi/util/profile"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
@@ -86,7 +87,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		backoff = *args.Attempts
 	}
 
-	labels := pulumi.StringMap{"app": pulumi.String(args.Name)}
+	podLabels := labels.Pod(args.Namespace, args.Name)
 
 	// When Wait is false we want to skip the builtin "wait for Job to Succeed"
 	// awaiter while *still* awaiting delete on replace — Job spec is largely
@@ -107,7 +108,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:        pulumi.String(args.Name),
 			Namespace:   pulumi.String(args.Namespace),
-			Labels:      labels,
+			Labels:      podLabels,
 			Annotations: metaAnnotations,
 		},
 		Spec: &batchv1.JobSpecArgs{
@@ -115,7 +116,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			Template: &corev1.PodTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
 					Name:   pulumi.String(args.Name),
-					Labels: labels,
+					Labels: podLabels,
 				},
 				Spec: spec,
 			},

@@ -9,17 +9,20 @@ import (
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
+	"github.com/milagre/zote/pulumi/util/annotations"
+	"github.com/milagre/zote/pulumi/util/labels"
 	"github.com/milagre/zote/pulumi/util/profile"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
 var typeToken = tokens.Token("k8s", "CronJob")
 
-type Conf = podspec.Conf
-type Files = podspec.Files
+type (
+	Conf  = podspec.Conf
+	Files = podspec.Files
+)
 
 type Args struct {
 	Env       env.Env
@@ -84,13 +87,13 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		timezone = "Etc/UTC"
 	}
 
-	labels := pulumi.StringMap{"app": pulumi.String(args.Name)}
+	podLabels := labels.Pod(args.Namespace, args.Name)
 
 	if _, err := batchv1.NewCronJob(ctx, resourceName, &batchv1.CronJobArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(args.Name),
 			Namespace: pulumi.String(args.Namespace),
-			Labels:    labels,
+			Labels:    podLabels,
 			Annotations: pulumi.StringMap{
 				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
 			},
@@ -106,7 +109,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			JobTemplate: &batchv1.JobTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
 					Name:   pulumi.String(args.Name),
-					Labels: labels,
+					Labels: podLabels,
 				},
 				Spec: &batchv1.JobSpecArgs{
 					BackoffLimit:            pulumi.Int(2),
@@ -114,7 +117,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 					Template: &corev1.PodTemplateSpecArgs{
 						Metadata: &metav1.ObjectMetaArgs{
 							Name:   pulumi.String(args.Name),
-							Labels: labels,
+							Labels: podLabels,
 						},
 						Spec: spec,
 					},
