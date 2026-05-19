@@ -178,6 +178,10 @@ func New(ctx *pulumi.Context, parentName string, args *Args, influxParent pulumi
 		"service": pulumi.Map{
 			"type": pulumi.String("ClusterIP"),
 		},
+		"podLabels": pulumi.Map{
+			"service": pulumi.String("influxdb"),
+			"name":    pulumi.String(args.Name),
+		},
 	}
 
 	if _, err := helmv3.NewRelease(ctx, parentName, &helmv3.ReleaseArgs{

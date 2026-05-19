@@ -9,6 +9,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/util/annotations"
+	"github.com/milagre/zote/pulumi/util/labels"
 	"github.com/milagre/zote/pulumi/util/profile"
 )
 
@@ -26,6 +27,7 @@ func registerWorkload(
 	parentName string,
 	comp pulumi.Resource,
 	namespace string,
+	name string,
 	releaseName string,
 	version string,
 	prof profile.Profile,
@@ -34,7 +36,7 @@ func registerWorkload(
 	sa *corev1.ServiceAccount,
 ) (*appsv1.StatefulSet, *corev1.Service, *corev1.Service, error) {
 	ns := pulumi.String(namespace)
-	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
+	podLabels := labels.Pod("rabbitmq", name)
 	replicas := 1
 	if prof.Num != nil {
 		replicas = prof.Num.Min
@@ -59,8 +61,8 @@ func registerWorkload(
 
 	sts, err := appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:        pulumi.String(releaseName),
-			Namespace:   ns,
+			Name:      pulumi.String(releaseName),
+			Namespace: ns,
 			Annotations: pulumi.StringMap{
 				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
 			},
@@ -70,12 +72,12 @@ func registerWorkload(
 			ServiceName:         pulumi.String(releaseName + "-headless"),
 			PodManagementPolicy: pulumi.String("OrderedReady"),
 			Selector: &metav1.LabelSelectorArgs{
-				MatchLabels: labels,
+				MatchLabels: podLabels,
 			},
 			Template: &corev1.PodTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
 					Name:        pulumi.String(releaseName),
-					Labels:      labels,
+					Labels:      podLabels,
 					Annotations: podAnnotations,
 				},
 				Spec: &corev1.PodSpecArgs{
@@ -225,11 +227,11 @@ func registerWorkload(
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(releaseName),
 			Namespace: ns,
-			Labels:    labels,
+			Labels:    podLabels,
 		},
 		Spec: &corev1.ServiceSpecArgs{
 			Type:     pulumi.String("ClusterIP"),
-			Selector: labels,
+			Selector: podLabels,
 			Ports: corev1.ServicePortArray{
 				&corev1.ServicePortArgs{Name: pulumi.String("http"), Protocol: pulumi.String("TCP"), Port: pulumi.Int(portManagement)},
 				&corev1.ServicePortArgs{Name: pulumi.String("prometheus"), Protocol: pulumi.String("TCP"), Port: pulumi.Int(portPrometheus)},
@@ -250,7 +252,7 @@ func registerWorkload(
 			Type:            pulumi.String("ClusterIP"),
 			ClusterIP:       pulumi.String("None"),
 			SessionAffinity: pulumi.String("None"),
-			Selector:        labels,
+			Selector:        podLabels,
 			Ports: corev1.ServicePortArray{
 				&corev1.ServicePortArgs{
 					Name:       pulumi.String("epmd"),

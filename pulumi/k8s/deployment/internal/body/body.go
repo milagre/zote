@@ -1,4 +1,4 @@
-// Package body is the shared Deployment; labels app=<Name>, deploy=<Type>.
+// Package body is the shared Deployment; labels service=<Type>, name=<Name>, app=<Name>, deploy=<Type>.
 package body
 
 import (
@@ -12,6 +12,7 @@ import (
 	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
+	"github.com/milagre/zote/pulumi/util/labels"
 	"github.com/milagre/zote/pulumi/util/profile"
 )
 
@@ -56,10 +57,9 @@ func Register(
 		return nil, fmt.Errorf("body: Type is required")
 	}
 
-	podLabels := pulumi.StringMap{
-		"app":    pulumi.String(args.Name),
-		"deploy": pulumi.String(args.Type),
-	}
+	podLabels := labels.Pod(args.Type, args.Name)
+	podLabels["app"] = pulumi.String(args.Name)
+	podLabels["deploy"] = pulumi.String(args.Type)
 
 	podAnnotations := pulumi.StringMap{}
 	if args.Metrics {

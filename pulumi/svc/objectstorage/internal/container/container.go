@@ -128,6 +128,10 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 		"mode":             "standalone",
 		"replicas":         1,
 		"existingSecret":   authSecretName,
+		"podLabels": map[string]string{
+			"service": "objectstorage",
+			"name":    a.Name,
+		},
 		"persistence": map[string]any{
 			"enabled": true,
 			"size":    size,

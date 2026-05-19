@@ -10,8 +10,9 @@ import (
 	"github.com/pulumi/pulumi-random/sdk/v4/go/random"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/util/annotations"
+	"github.com/milagre/zote/pulumi/util/labels"
 	"github.com/milagre/zote/pulumi/util/profile"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
@@ -80,7 +81,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	}
 
 	releaseName := fmt.Sprintf("timescaledb-%s", args.Name)
-	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
+	podLabels := labels.Pod("timescaledb", args.Name)
 	ns := pulumi.String(args.Namespace)
 
 	password, err := random.NewRandomPassword(ctx, parentName+"-password", &random.RandomPasswordArgs{
@@ -119,9 +120,9 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 
 	sts, err := appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:        pulumi.String(releaseName),
-			Namespace:   ns,
-			Labels:      labels,
+			Name:      pulumi.String(releaseName),
+			Namespace: ns,
+			Labels:    podLabels,
 			Annotations: pulumi.StringMap{
 				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
 			},
@@ -130,11 +131,11 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 			ServiceName: pulumi.String(releaseName),
 			Replicas:    pulumi.Int(1),
 			Selector: &metav1.LabelSelectorArgs{
-				MatchLabels: labels,
+				MatchLabels: podLabels,
 			},
 			Template: &corev1.PodTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
-					Labels: labels,
+					Labels: podLabels,
 				},
 				Spec: &corev1.PodSpecArgs{
 					Containers: corev1.ContainerArray{
@@ -188,11 +189,11 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(releaseName),
 			Namespace: ns,
-			Labels:    labels,
+			Labels:    podLabels,
 		},
 		Spec: &corev1.ServiceSpecArgs{
 			Type:     pulumi.String("ClusterIP"),
-			Selector: labels,
+			Selector: podLabels,
 			Ports: corev1.ServicePortArray{
 				&corev1.ServicePortArgs{
 					Protocol:   pulumi.String("TCP"),

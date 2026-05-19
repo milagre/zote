@@ -13,6 +13,7 @@ import (
 
 	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/util/labels"
 	"github.com/milagre/zote/pulumi/util/profile"
 	"github.com/milagre/zote/pulumi/util/stringdata"
 	"github.com/milagre/zote/pulumi/util/tokens"
@@ -93,7 +94,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	}
 
 	releaseName := args.Name
-	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
+	podLabels := labels.Pod("mysql", args.Name)
 
 	password, err := random.NewRandomPassword(ctx, parentName+"-password", &random.RandomPasswordArgs{
 		Length:          pulumi.Int(64),
@@ -120,7 +121,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:        pulumi.String(cfgName),
 			Namespace:   pulumi.String(args.Namespace),
-			Labels:      labels,
+			Labels:      podLabels,
 			Annotations: patchForce,
 		},
 		Data: pulumi.StringMap{
@@ -136,7 +137,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:        pulumi.String(cfgName),
 			Namespace:   pulumi.String(args.Namespace),
-			Labels:      labels,
+			Labels:      podLabels,
 			Annotations: patchForce,
 		},
 		Type: pulumi.String("Opaque"),
@@ -152,10 +153,10 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(releaseName),
 			Namespace: pulumi.String(args.Namespace),
-			Labels:    labels,
+			Labels:    podLabels,
 		},
 		Spec: &corev1.ServiceSpecArgs{
-			Selector: labels,
+			Selector: podLabels,
 			Ports: corev1.ServicePortArray{
 				&corev1.ServicePortArgs{
 					Name: pulumi.String("mysql"),
@@ -179,11 +180,11 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 			ServiceName: pulumi.String(releaseName),
 			Replicas:    pulumi.Int(1),
 			Selector: &metav1.LabelSelectorArgs{
-				MatchLabels: labels,
+				MatchLabels: podLabels,
 			},
 			Template: &corev1.PodTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
-					Labels: labels,
+					Labels: podLabels,
 				},
 				Spec: podSpec(primary, args, cfgCM, passwordSecret),
 			},

@@ -146,7 +146,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 
 	sts, client, headless, err := registerWorkload(
 		ctx, parentName, comp,
-		args.Namespace, releaseName, args.Version,
+		args.Namespace, args.Name, releaseName, args.Version,
 		args.Profile, cfgCM, cfgSecret, sa,
 	)
 	if err != nil {

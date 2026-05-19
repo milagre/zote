@@ -251,6 +251,24 @@ discovery.relabel "pods_scrape" {
     regex         = "([^:]+)(?::\\d+)?;(\\d+)"
     replacement   = "$1:$2"
   }
+
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    action        = "replace"
+    target_label  = "namespace"
+  }
+
+  rule {
+    source_labels = ["__meta_kubernetes_pod_label_name"]
+    action        = "replace"
+    target_label  = "name"
+  }
+
+  rule {
+    source_labels = ["__meta_kubernetes_pod_label_service"]
+    action        = "replace"
+    target_label  = "service"
+  }
 }
 
 prometheus.scrape "pods_annotations" {

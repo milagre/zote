@@ -6,6 +6,8 @@ import (
 	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+
+	"github.com/milagre/zote/pulumi/util/labels"
 )
 
 func registerHeadlessService(
@@ -14,8 +16,9 @@ func registerHeadlessService(
 	comp pulumi.Resource,
 	namespace string,
 	releaseName string,
+	instanceName string,
 ) (*corev1.Service, error) {
-	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
+	podLabels := labels.Pod("redis", instanceName)
 	// Headless: required for StatefulSet per-pod DNS (redis-0.redis-name.ns.svc)
 	// so cluster hostnames and CLUSTER MEET targets resolve to current Pod IPs
 	// after restarts.
@@ -23,11 +26,11 @@ func registerHeadlessService(
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(releaseName),
 			Namespace: pulumi.String(namespace),
-			Labels:    labels,
+			Labels:    podLabels,
 		},
 		Spec: &corev1.ServiceSpecArgs{
 			ClusterIP: pulumi.String("None"),
-			Selector:  labels,
+			Selector:  podLabels,
 			Ports: corev1.ServicePortArray{
 				&corev1.ServicePortArgs{Port: pulumi.Int(clientPort)},
 			},
@@ -41,9 +44,10 @@ func registerConfig(
 	comp pulumi.Resource,
 	namespace string,
 	releaseName string,
+	instanceName string,
 	standard bool,
 ) (*corev1.ConfigMap, *corev1.ConfigMap, error) {
-	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
+	podLabels := labels.Pod("redis", instanceName)
 	ns := pulumi.String(namespace)
 	patchForce := pulumi.StringMap{"pulumi.com/patchForce": pulumi.String("true")}
 
@@ -56,7 +60,7 @@ func registerConfig(
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:        pulumi.String("cfg-" + releaseName),
 			Namespace:   ns,
-			Labels:      labels,
+			Labels:      podLabels,
 			Annotations: patchForce,
 		},
 		Data: pulumi.StringMap{
@@ -75,7 +79,7 @@ func registerConfig(
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:        pulumi.String("cfg-" + releaseName + "-scripts"),
 			Namespace:   ns,
-			Labels:      labels,
+			Labels:      podLabels,
 			Annotations: patchForce,
 		},
 		Data: pulumi.StringMap{

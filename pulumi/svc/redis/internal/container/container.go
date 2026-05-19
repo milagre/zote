@@ -77,12 +77,12 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 
 	releaseName := fmt.Sprintf("redis-%s", args.Name)
 
-	svc, err := registerHeadlessService(ctx, parentName, comp, args.Namespace, releaseName)
+	svc, err := registerHeadlessService(ctx, parentName, comp, args.Namespace, releaseName, args.Name)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
 	}
 
-	cfg, scripts, err := registerConfig(ctx, parentName, comp, args.Namespace, releaseName, args.Standard)
+	cfg, scripts, err := registerConfig(ctx, parentName, comp, args.Namespace, releaseName, args.Name, args.Standard)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
 	}

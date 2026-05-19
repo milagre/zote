@@ -10,6 +10,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/util/annotations"
+	"github.com/milagre/zote/pulumi/util/labels"
 )
 
 const scriptsDefaultMode = 0o755
@@ -43,7 +44,7 @@ func registerStandardStatefulSet(
 	svc *corev1.Service,
 	cfg *corev1.ConfigMap,
 ) (*appsv1.StatefulSet, error) {
-	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
+	podLabels := labels.Pod("redis", args.Name)
 	storageMB := int64(math.Floor(float64(args.Profile.MemMB.Max) * 1.1))
 
 	return appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
@@ -59,11 +60,11 @@ func registerStandardStatefulSet(
 			ServiceName:         svc.Metadata.Name().Elem(),
 			PodManagementPolicy: pulumi.String("OrderedReady"),
 			Selector: &metav1.LabelSelectorArgs{
-				MatchLabels: labels,
+				MatchLabels: podLabels,
 			},
 			Template: &corev1.PodTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
-					Labels: labels,
+					Labels: podLabels,
 				},
 				Spec: &corev1.PodSpecArgs{
 					TerminationGracePeriodSeconds: pulumi.Int(60),
@@ -150,7 +151,7 @@ func registerClusterStatefulSet(
 	cfg *corev1.ConfigMap,
 	scripts *corev1.ConfigMap,
 ) (*appsv1.StatefulSet, error) {
-	labels := pulumi.StringMap{"app": pulumi.String(releaseName)}
+	podLabels := labels.Pod("redis", args.Name)
 	totalPods := (args.Replicas + 1) * args.Shards
 	storageMB := int64(math.Floor(float64(args.Profile.MemMB.Max) * 1.1))
 
@@ -167,11 +168,11 @@ func registerClusterStatefulSet(
 			ServiceName:         svc.Metadata.Name().Elem(),
 			PodManagementPolicy: pulumi.String("OrderedReady"),
 			Selector: &metav1.LabelSelectorArgs{
-				MatchLabels: labels,
+				MatchLabels: podLabels,
 			},
 			Template: &corev1.PodTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
-					Labels: labels,
+					Labels: podLabels,
 				},
 				Spec: &corev1.PodSpecArgs{
 					TerminationGracePeriodSeconds: pulumi.Int(60),
