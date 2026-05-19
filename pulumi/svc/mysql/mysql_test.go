@@ -8,9 +8,9 @@ import (
 
 	"github.com/milagre/zote/pulumi/cloud"
 	docloud "github.com/milagre/zote/pulumi/cloud/digitalocean"
+	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/svc/mysql/internal/container"
 	"github.com/milagre/zote/pulumi/svc/mysql/internal/digitalocean"
-	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/util/profile"
 )
 

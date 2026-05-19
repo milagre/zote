@@ -8,6 +8,8 @@ import (
 	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
+
+	"github.com/milagre/zote/pulumi/util/annotations"
 )
 
 func registerBootstrapJob(
@@ -25,6 +27,9 @@ func registerBootstrapJob(
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(releaseName + "-cluster"),
 			Namespace: pulumi.String(args.Namespace),
+			Annotations: pulumi.StringMap{
+				annotations.WaitForKey: pulumi.String(annotations.WaitForValueImmediate),
+			},
 		},
 		Spec: &batchv1.JobSpecArgs{
 			BackoffLimit: pulumi.Int(20),

@@ -10,9 +10,9 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/cloud"
+	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/svc/mysql/internal/container"
 	"github.com/milagre/zote/pulumi/svc/mysql/internal/digitalocean"
-	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/util/stringdata"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )

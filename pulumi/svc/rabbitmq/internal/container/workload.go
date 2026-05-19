@@ -64,7 +64,7 @@ func registerWorkload(
 			Name:      pulumi.String(releaseName),
 			Namespace: ns,
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+				annotations.WaitForKey: pulumi.String(annotations.WaitForValueImmediate),
 			},
 		},
 		Spec: &appsv1.StatefulSetSpecArgs{

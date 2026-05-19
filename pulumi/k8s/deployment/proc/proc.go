@@ -8,10 +8,10 @@ import (
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/k8s/deployment/internal/body"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
+	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/util/profile"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
@@ -128,7 +128,7 @@ func registerService(ctx *pulumi.Context, name string, args *Args, parent pulumi
 			Name:      pulumi.String(args.Name),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+				annotations.WaitForKey: pulumi.String(annotations.WaitForValueImmediate),
 			},
 		},
 		Spec: &corev1.ServiceSpecArgs{

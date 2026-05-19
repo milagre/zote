@@ -230,7 +230,7 @@ func registerService(ctx *pulumi.Context, name string, args *Args, parent pulumi
 			Name:      pulumi.String(args.Name),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+				annotations.WaitForKey: pulumi.String(annotations.WaitForValueImmediate),
 			},
 		},
 		Spec: &corev1.ServiceSpecArgs{
@@ -275,7 +275,7 @@ func registerPrivateIngress(
 			Name:      pulumi.String(args.Name + "-nginx-private"),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey:      pulumi.String(annotations.SkipAwaitValueAll),
+				annotations.WaitForKey:        pulumi.String(annotations.WaitForValueImmediate),
 				"kubernetes.io/ingress.class": pulumi.String(*className),
 			},
 		},
@@ -316,7 +316,7 @@ func registerPublicIngress(
 
 	className := publicIngressClassName(args.Cluster)
 	ann := pulumi.StringMap{
-		annotations.SkipAwaitKey:      pulumi.String(annotations.SkipAwaitValueAll),
+		annotations.WaitForKey:        pulumi.String(annotations.WaitForValueImmediate),
 		"kubernetes.io/ingress.class": pulumi.String(*className),
 	}
 
@@ -383,7 +383,7 @@ func registerTunnelIngress(
 			Name:      pulumi.String(args.Name + "-tunnel"),
 			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey:      pulumi.String(annotations.SkipAwaitValueAll),
+				annotations.WaitForKey:        pulumi.String(annotations.WaitForValueImmediate),
 				"kubernetes.io/ingress.class": pulumi.String(*className),
 			},
 		},

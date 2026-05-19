@@ -8,10 +8,10 @@ import (
 	helmv3 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/helm/v3"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/util/endpoint"
 	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/svc/objectstorage"
 	"github.com/milagre/zote/pulumi/internal/helm"
+	"github.com/milagre/zote/pulumi/svc/objectstorage"
+	"github.com/milagre/zote/pulumi/util/endpoint"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
@@ -108,7 +108,8 @@ func Deploy(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*Result, erro
 		RepositoryOpts: &helmv3.RepositoryOptsArgs{
 			Repo: pulumi.String(repository).ToStringPtrOutput(),
 		},
-		Values: values,
+		Values:    values,
+		SkipAwait: pulumi.Bool(true),
 	}, relOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("helm release: %w", err)

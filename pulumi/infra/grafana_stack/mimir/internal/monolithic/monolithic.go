@@ -10,9 +10,10 @@ import (
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
-	"github.com/milagre/zote/pulumi/util/endpoint"
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/svc/objectstorage"
+	"github.com/milagre/zote/pulumi/util/annotations"
+	"github.com/milagre/zote/pulumi/util/endpoint"
 )
 
 const defaultImage = "grafana/mimir:2.16.0"
@@ -128,6 +129,9 @@ alertmanager:
 			Name:      pulumi.String(a.Name),
 			Namespace: pulumi.String(a.Namespace),
 			Labels:    pulumi.StringMap{"app": pulumi.String(a.Name)},
+			Annotations: pulumi.StringMap{
+				annotations.WaitForKey: pulumi.String(annotations.WaitForValueImmediate),
+			},
 		},
 		Spec: &appsv1.DeploymentSpecArgs{
 			Replicas: pulumi.Int(1),

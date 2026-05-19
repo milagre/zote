@@ -11,8 +11,8 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
-	"github.com/milagre/zote/pulumi/svc/objectstorage/internal/types"
 	"github.com/milagre/zote/pulumi/internal/helm"
+	"github.com/milagre/zote/pulumi/svc/objectstorage/internal/types"
 	"github.com/milagre/zote/pulumi/util/profile"
 	"github.com/milagre/zote/pulumi/util/stringdata"
 )

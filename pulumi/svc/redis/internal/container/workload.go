@@ -49,10 +49,10 @@ func registerStandardStatefulSet(
 
 	return appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:        pulumi.String(releaseName),
-			Namespace:   pulumi.String(args.Namespace),
+			Name:      pulumi.String(releaseName),
+			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+				annotations.WaitForKey: pulumi.String(annotations.WaitForValueImmediate),
 			},
 		},
 		Spec: &appsv1.StatefulSetSpecArgs{
@@ -159,10 +159,10 @@ func registerClusterStatefulSet(
 
 	return appsv1.NewStatefulSet(ctx, parentName, &appsv1.StatefulSetArgs{
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:        pulumi.String(releaseName),
-			Namespace:   pulumi.String(args.Namespace),
+			Name:      pulumi.String(releaseName),
+			Namespace: pulumi.String(args.Namespace),
 			Annotations: pulumi.StringMap{
-				annotations.SkipAwaitKey: pulumi.String(annotations.SkipAwaitValueAll),
+				annotations.WaitForKey: pulumi.String(annotations.WaitForValueImmediate),
 			},
 		},
 		Spec: &appsv1.StatefulSetSpecArgs{
