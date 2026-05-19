@@ -124,6 +124,7 @@ func InstallChart(
 		Namespace: pulumi.String(args.Namespace).ToStringPtrOutput(),
 		Version:   version,
 		Values:    args.Values,
+		SkipAwait: pulumi.Bool(true),
 	}
 	if spec.Repository != "" {
 		releaseArgs.RepositoryOpts = &helmv3.RepositoryOptsArgs{
