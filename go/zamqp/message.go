@@ -160,6 +160,19 @@ func (m requeueMessage) finalHeaders() Headers {
 	return headers
 }
 
+func retryQueueDelay(delay time.Duration) time.Duration {
+	if delay <= 0 {
+		return 0
+	}
+
+	rounded := delay.Round(time.Second)
+	if rounded <= 0 {
+		return time.Second
+	}
+
+	return rounded
+}
+
 func (m *requeueMessage) queueDefinition() Queue {
 	if m.queue != nil {
 		return *m.queue
@@ -169,15 +182,16 @@ func (m *requeueMessage) queueDefinition() Queue {
 
 	opts := Options{}
 	if m.kind == "retry" {
+		delay := retryQueueDelay(m.delay)
 		opts = Options{
-			amqp091.QueueMessageTTLArg:  int(m.delay / time.Millisecond),
+			amqp091.QueueMessageTTLArg:  int(delay / time.Millisecond),
 			amqp091.QueueOverflowArg:    amqp091.QueueOverflowRejectPublish,
 			amqp091.QueueTypeArg:        amqp091.QueueTypeQuorum,
 			"x-dead-letter-exchange":    "",
 			"x-dead-letter-routing-key": m.originalQueueName,
 			"x-dead-letter-strategy":    "at-least-once",
 		}
-		queueName += "-" + m.delay.String()
+		queueName += fmt.Sprintf("-%ds", int64(delay/time.Second))
 	}
 
 	m.queue = &Queue{
