@@ -271,9 +271,23 @@ discovery.relabel "pods_scrape" {
   }
 }
 
+// Zote service-specific metric rewrites (pod label service=..., any name/namespace).
+// Add rules here for __name__ prefixes and other per-service relabels.
+prometheus.relabel "zote_metrics" {
+  forward_to = [prometheus.remote_write.default.receiver]
+
+  rule {
+    source_labels = ["service", "__name__"]
+    separator     = ";"
+    regex         = "influxdb;(.+)"
+    target_label  = "__name__"
+    replacement   = "influxdb_$1"
+  }
+}
+
 prometheus.scrape "pods_annotations" {
   targets    = discovery.relabel.pods_scrape.output
-  forward_to = [prometheus.remote_write.default.receiver]
+  forward_to = [prometheus.relabel.zote_metrics.receiver]
 }
 
 // Pod logs (per-node): Grafana Alloy Helm sets HOSTNAME to the node name for field selectors.
