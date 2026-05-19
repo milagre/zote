@@ -2,13 +2,13 @@ package container
 
 import "strconv"
 
+const portPrometheus = 8086
+
 // PrometheusPodAnnotations are pod template annotations for Alloy's annotation-based scrape.
-// Path is /metrics/per-object so queue metrics include queue (and vhost) labels; the default
-// /metrics endpoint returns aggregated series without per-queue dimensions.
 func PrometheusPodAnnotations() map[string]string {
 	return map[string]string{
 		"prometheus.io/scrape": "true",
-		"prometheus.io/path":   "/metrics/per-object",
+		"prometheus.io/path":   "/metrics",
 		"prometheus.io/port":   strconv.Itoa(portPrometheus),
 	}
 }

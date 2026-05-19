@@ -129,6 +129,11 @@ func New(ctx *pulumi.Context, parentName string, args *Args, influxParent pulumi
 	p := args.Profile
 	cacheMax := int64(math.Floor(float64(p.MemMB.Max) * 0.6 * 1024 * 1024))
 
+	podAnnotations := pulumi.StringMap{}
+	for k, v := range PrometheusPodAnnotations() {
+		podAnnotations[k] = pulumi.String(v)
+	}
+
 	values := pulumi.Map{
 		"nameOverride":     pulumi.String(releaseName),
 		"fullnameOverride": pulumi.String(releaseName),
@@ -178,6 +183,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, influxParent pulumi
 		"service": pulumi.Map{
 			"type": pulumi.String("ClusterIP"),
 		},
+		"podAnnotations": podAnnotations,
 		"podLabels": pulumi.Map{
 			"service": pulumi.String("influxdb"),
 			"name":    pulumi.String(args.Name),
