@@ -64,7 +64,8 @@ func registerStandardStatefulSet(
 			},
 			Template: &corev1.PodTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
-					Labels: podLabels,
+					Labels:      podLabels,
+					Annotations: prometheusPodAnnotationMap(),
 				},
 				Spec: &corev1.PodSpecArgs{
 					TerminationGracePeriodSeconds: pulumi.Int(60),
@@ -106,6 +107,7 @@ func registerStandardStatefulSet(
 								},
 							},
 						},
+						redisExporterContainer(),
 					},
 					Volumes: corev1.VolumeArray{
 						&corev1.VolumeArgs{
@@ -172,7 +174,8 @@ func registerClusterStatefulSet(
 			},
 			Template: &corev1.PodTemplateSpecArgs{
 				Metadata: &metav1.ObjectMetaArgs{
-					Labels: podLabels,
+					Labels:      podLabels,
+					Annotations: prometheusPodAnnotationMap(),
 				},
 				Spec: &corev1.PodSpecArgs{
 					TerminationGracePeriodSeconds: pulumi.Int(60),
@@ -241,6 +244,7 @@ func registerClusterStatefulSet(
 								},
 							},
 						},
+						redisExporterContainer(),
 					},
 					Volumes: corev1.VolumeArray{
 						&corev1.VolumeArgs{
