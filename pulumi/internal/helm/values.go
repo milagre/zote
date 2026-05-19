@@ -23,6 +23,14 @@ func valueInput(v any) pulumi.Input {
 	case map[string]any:
 		return Values(x)
 
+	case map[string]string:
+		out := pulumi.StringMap{}
+		for k, v := range x {
+			out[k] = pulumi.String(v)
+		}
+
+		return out
+
 	case []any:
 		arr := make(pulumi.Array, 0, len(x))
 		for _, el := range x {

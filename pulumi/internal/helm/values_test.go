@@ -42,3 +42,14 @@ func TestValues_acceptsPulumiInputInSlice(t *testing.T) {
 		"list": []any{pulumi.String("a"), "plain"},
 	})
 }
+
+func TestValues_acceptsStringMap(t *testing.T) {
+	t.Parallel()
+
+	_ = helm.Values(map[string]any{
+		"podLabels": map[string]string{
+			"service": "objectstorage",
+			"name":    "observability",
+		},
+	})
+}
