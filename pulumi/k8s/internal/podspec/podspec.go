@@ -16,8 +16,8 @@ import (
 )
 
 type Conf struct {
-	ConfigMaps []string
-	Secrets    []string
+	ConfigMaps []pulumi.StringInput
+	Secrets    []pulumi.StringInput
 	Values     map[string]string
 }
 
@@ -211,14 +211,14 @@ func envFrom(c Conf) corev1.EnvFromSourceArray {
 	for _, cm := range c.ConfigMaps {
 		out = append(out, &corev1.EnvFromSourceArgs{
 			ConfigMapRef: &corev1.ConfigMapEnvSourceArgs{
-				Name: pulumi.String(cm),
+				Name: cm,
 			},
 		})
 	}
 	for _, sec := range c.Secrets {
 		out = append(out, &corev1.EnvFromSourceArgs{
 			SecretRef: &corev1.SecretEnvSourceArgs{
-				Name: pulumi.String(sec),
+				Name: sec,
 			},
 		})
 	}
