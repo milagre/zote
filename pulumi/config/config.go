@@ -22,13 +22,11 @@ type Config struct {
 	Sources []string
 	Raw     []map[string]any
 	Data    map[string]any
-	EnvVars map[string]string
 }
 
 type Loader struct {
-	FS      fs.FS // nil → os.DirFS(Env.Root)
-	Env     env.Env
-	EnvVars map[string]string
+	FS  fs.FS // nil → os.DirFS(Env.Root)
+	Env env.Env
 }
 
 func (l *Loader) Load() (*Config, error) {
@@ -91,7 +89,6 @@ func (l *Loader) Load() (*Config, error) {
 		Sources: sources,
 		Raw:     raw,
 		Data:    merged,
-		EnvVars: l.EnvVars,
 	}, nil
 }
 

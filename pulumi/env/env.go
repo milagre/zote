@@ -19,6 +19,10 @@ type Env struct {
 	Name    string
 	Root    string
 	Prefix  string
+
+	// AmbientWorkloadVars are literal env vars every workload in this deployment will have
+	AmbientWorkloadVars map[string]string
+
 	// Opaque stack bump string (e.g. zote:rotateSecrets); merged into random keepers when non-empty.
 	RotateSecrets string
 }
@@ -43,6 +47,8 @@ func New(appName, typ, tier, name, root, prefix string, opts ...Option) (Env, er
 		Name:    name,
 		Root:    root,
 		Prefix:  prefix,
+
+		AmbientWorkloadVars: make(map[string]string),
 	}
 	for _, o := range opts {
 		o(&e)
