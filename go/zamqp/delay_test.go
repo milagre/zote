@@ -46,6 +46,8 @@ func TestDelayQueue(t *testing.T) {
 	require.Equal(t, "debounce-router", queue.Options["x-dead-letter-exchange"])
 	_, hasDLRK := queue.Options["x-dead-letter-routing-key"]
 	require.False(t, hasDLRK)
+	require.Equal(t, amqp091.QueueTypeQuorum, queue.Options[amqp091.QueueTypeArg])
+	require.Equal(t, "at-least-once", queue.Options["x-dead-letter-strategy"])
 }
 
 func TestDelayDeclarations(t *testing.T) {

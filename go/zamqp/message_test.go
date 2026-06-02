@@ -8,6 +8,39 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestMessageToPublishing_PersistentDeliveryMode(t *testing.T) {
+	t.Parallel()
+
+	pub, err := messageToPublishing(NewRawMessage(
+		[]byte("payload"),
+		"text/plain",
+		Exchange{Name: "dest"},
+		MessageOptions{Compress: true},
+	))
+	require.NoError(t, err)
+	require.Equal(t, amqp091.Persistent, pub.DeliveryMode)
+}
+
+func TestMessageToPublishing_TransientDeliveryMode(t *testing.T) {
+	t.Parallel()
+
+	pub, err := messageToPublishing(NewRawMessage(
+		[]byte("payload"),
+		"text/plain",
+		Exchange{Name: "dest"},
+		MessageOptions{Transient: true},
+	))
+	require.NoError(t, err)
+	require.Equal(t, amqp091.Transient, pub.DeliveryMode)
+}
+
+func TestPublishingDeliveryMode(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, amqp091.Persistent, publishingDeliveryMode(MessageOptions{}))
+	require.Equal(t, amqp091.Transient, publishingDeliveryMode(MessageOptions{Transient: true}))
+}
+
 func TestRequeueMessageQueueDefinitionRetryDelayUsesSecondResolution(t *testing.T) {
 	t.Parallel()
 

@@ -18,6 +18,9 @@ type MessageOptions struct {
 	Headers                 Headers
 	SkipExchangeDeclaration bool
 
+	// Transient selects transient delivery mode when true. False (default) publishes persistent messages.
+	Transient bool
+
 	// Delay holds the message in a delay queue before publishing to Exchange with RoutingKey.
 	// Zero keeps the normal publish path.
 	Delay time.Duration
@@ -116,7 +119,16 @@ func messageToPublishing(msg Message) (amqp091.Publishing, error) {
 		Headers:         msg.Options().Headers.toTable(),
 		ContentType:     contentType,
 		ContentEncoding: contentEncoding,
+		DeliveryMode:    publishingDeliveryMode(msg.Options()),
 	}, nil
+}
+
+func publishingDeliveryMode(opts MessageOptions) uint8 {
+	if opts.Transient {
+		return amqp091.Transient
+	}
+
+	return amqp091.Persistent
 }
 
 type requeueMessage struct {
