@@ -40,7 +40,7 @@ func TestRequeueMessageQueueDefinitionRetryDelayBucketsFractionalDelays(t *testi
 	require.Equal(t, first.queueDefinition().Name, second.queueDefinition().Name)
 }
 
-func TestRequeueMessageQueueDefinitionRetryDelaySubSecondUsesOneSecond(t *testing.T) {
+func TestRequeueMessageQueueDefinitionRetryDelaySubSecond(t *testing.T) {
 	t.Parallel()
 
 	msg := &requeueMessage{
@@ -51,8 +51,8 @@ func TestRequeueMessageQueueDefinitionRetryDelaySubSecondUsesOneSecond(t *testin
 
 	queue := msg.queueDefinition()
 
-	require.Equal(t, "retry-myqueue-1s", queue.Name)
-	require.Equal(t, 1000, queue.Options[amqp091.QueueMessageTTLArg])
+	require.Equal(t, "retry-myqueue-250ms", queue.Name)
+	require.Equal(t, 250, queue.Options[amqp091.QueueMessageTTLArg])
 }
 
 func TestRequeueMessageQueueDefinitionRetryDelayZeroUsesZeroSeconds(t *testing.T) {

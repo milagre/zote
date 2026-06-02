@@ -56,12 +56,25 @@ func (p connPublisher) Publish(ctx context.Context, msg Message) (PublishResult,
 	}
 	defer ch.Close()
 
+	opts := msg.Options()
 	exchange := msg.Exchange()
-	if !msg.Options().SkipExchangeDeclaration && exchange.Name != AnonymousExchange.Name {
-		err = ExecuteDeclarations(ch, Declarations{Exchanges: []Exchange{exchange}})
-		if err != nil {
-			return PublishResult{}, fmt.Errorf("declaring exchange: %w", err)
-		}
+	delay := adjustedDelay(opts.Delay)
+
+	publishExchange := exchange.Name
+
+	declarations := Declarations{}
+	if delay > 0 {
+		declarations = delayDeclarations(exchange, delay)
+		publishExchange = delayExchange(exchange.Name, delay).Name
+	}
+
+	if !opts.SkipExchangeDeclaration && exchange.Name != AnonymousExchange.Name {
+		declarations.Exchanges = append(declarations.Exchanges, exchange)
+	}
+
+	err = ExecuteDeclarations(ch, declarations)
+	if err != nil {
+		return PublishResult{}, fmt.Errorf("declaring exchange: %w", err)
 	}
 
 	confs := ch.channel.NotifyPublish(make(chan amqp091.Confirmation, 1))
@@ -78,7 +91,7 @@ func (p connPublisher) Publish(ctx context.Context, msg Message) (PublishResult,
 	mergedHeaders := mergePublishHeaders(ctx, msg)
 	publishing.Headers = mergedHeaders.toTable()
 
-	err = ch.channel.PublishWithContext(ctx, exchange.Name, msg.Options().RoutingKey, true, false, publishing)
+	err = ch.channel.PublishWithContext(ctx, publishExchange, opts.RoutingKey, true, false, publishing)
 	if err != nil {
 		return PublishResult{}, fmt.Errorf("publishing: %w", err)
 	}

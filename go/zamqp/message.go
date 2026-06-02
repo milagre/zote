@@ -18,6 +18,10 @@ type MessageOptions struct {
 	Headers                 Headers
 	SkipExchangeDeclaration bool
 
+	// Delay holds the message in a delay queue before publishing to Exchange with RoutingKey.
+	// Zero keeps the normal publish path.
+	Delay time.Duration
+
 	// JobID is the only way to set the job ID explicitly when publishing. The internal job
 	// header key in MessageOptions.Headers is ignored. When JobID is empty, the job ID comes
 	// from context (see IDs), then generated.
@@ -160,19 +164,6 @@ func (m requeueMessage) finalHeaders() Headers {
 	return headers
 }
 
-func retryQueueDelay(delay time.Duration) time.Duration {
-	if delay <= 0 {
-		return 0
-	}
-
-	rounded := delay.Round(time.Second)
-	if rounded <= 0 {
-		return time.Second
-	}
-
-	return rounded
-}
-
 func (m *requeueMessage) queueDefinition() Queue {
 	if m.queue != nil {
 		return *m.queue
@@ -182,7 +173,7 @@ func (m *requeueMessage) queueDefinition() Queue {
 
 	opts := Options{}
 	if m.kind == "retry" {
-		delay := retryQueueDelay(m.delay)
+		delay := adjustedDelay(m.delay)
 		opts = Options{
 			amqp091.QueueMessageTTLArg:  int(delay / time.Millisecond),
 			amqp091.QueueOverflowArg:    amqp091.QueueOverflowRejectPublish,
@@ -191,7 +182,7 @@ func (m *requeueMessage) queueDefinition() Queue {
 			"x-dead-letter-routing-key": m.originalQueueName,
 			"x-dead-letter-strategy":    "at-least-once",
 		}
-		queueName += fmt.Sprintf("-%ds", int64(delay/time.Second))
+		queueName += fmt.Sprintf("-%s", delay)
 	}
 
 	m.queue = &Queue{
