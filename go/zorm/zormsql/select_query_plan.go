@@ -480,13 +480,33 @@ func convertNullableValue(nullableVal interface{}, targetType reflect.Type) (ref
 			return reflect.Zero(targetType), false
 		}
 		elemType := targetType
+
 		if targetType.Kind() == reflect.Ptr {
 			elemType = targetType.Elem()
+			dest := reflect.New(elemType)
+			if scanner, ok := dest.Interface().(sql.Scanner); ok {
+				if err := scanner.Scan(v.Time); err != nil {
+					return reflect.Zero(targetType), false
+				}
+
+				return dest, true
+			}
+
 			timeVal := reflect.ValueOf(v.Time).Convert(elemType)
 			ptrVal := reflect.New(elemType)
 			ptrVal.Elem().Set(timeVal)
 			return ptrVal, true
 		}
+
+		dest := reflect.New(elemType)
+		if scanner, ok := dest.Interface().(sql.Scanner); ok {
+			if err := scanner.Scan(v.Time); err != nil {
+				return reflect.Zero(targetType), false
+			}
+
+			return dest.Elem(), true
+		}
+
 		return reflect.ValueOf(v.Time).Convert(elemType), true
 	default:
 		if targetType.Kind() == reflect.Ptr {

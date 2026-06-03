@@ -10,7 +10,30 @@ import (
 	"github.com/milagre/zote/go/zelement/zsort"
 )
 
-var valuerType = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
+var (
+	valuerType = reflect.TypeOf((*driver.Valuer)(nil)).Elem()
+	timeType   = reflect.TypeOf(time.Time{})
+)
+
+// embedsTime reports whether typ is time.Time or a struct that embeds time.Time (e.g. ztime.Date).
+func embedsTime(typ reflect.Type) bool {
+	if typ == timeType {
+		return true
+	}
+
+	if typ.Kind() != reflect.Struct {
+		return false
+	}
+
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		if field.Anonymous && field.Type == timeType {
+			return true
+		}
+	}
+
+	return false
+}
 
 // copyFields copies only the specified fields from src to dst.
 func copyFields(dst, src reflect.Value, fields []string) {
@@ -104,19 +127,19 @@ func createNullableScanTarget(fieldType reflect.Type) interface{} {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return &sql.NullInt64{}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		// Use NullInt64 for unsigned integers (may lose precision for very large uint64)
+		// Use NullInt64 for unsigned integers (will lose precision for very large uint64)
 		return &sql.NullInt64{}
 	case reflect.Float32, reflect.Float64:
 		return &sql.NullFloat64{}
 	case reflect.Bool:
 		return &sql.NullBool{}
 	default:
-		// For time.Time and other types, try to use the pointer type
-		if elemType == reflect.TypeOf(time.Time{}) {
+		// DATE/DATETIME columns (including custom date types such as ztime.Date) are read as
+		// time.Time by database drivers; decode via sql.Scanner in convertNullableValue.
+		if embedsTime(elemType) {
 			return &sql.NullTime{}
 		}
-		// Decimals, JSON-backed types, and other sql.Scanner implementations: scan as string
-		// first so NULL is representable; convertNullableValue decodes into the real type.
+		// Fallback for structs, enums, JSON, etc.; convertNullableValue may use sql.Scanner on the string.
 		return &sql.NullString{}
 	}
 }
