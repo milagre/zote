@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/milagre/zote/go/ztime"
 	"github.com/stretchr/testify/require"
+
+	"github.com/milagre/zote/go/ztime"
 )
 
 func TestConvertNullableValue_NullStringToZtimeDatePtr(t *testing.T) {

@@ -43,10 +43,10 @@ func delayQueue(exchange Exchange, delay time.Duration) Queue {
 		Name: delayName(exchange.Name, delay),
 		Options: Options{
 			amqp091.QueueMessageTTLArg: int(adjustedDelay(delay) / time.Millisecond),
-			amqp091.QueueOverflowArg:    amqp091.QueueOverflowRejectPublish,
-			amqp091.QueueTypeArg:        amqp091.QueueTypeQuorum,
-			"x-dead-letter-exchange":    exchange.Name,
-			"x-dead-letter-strategy":    "at-least-once",
+			amqp091.QueueOverflowArg:   amqp091.QueueOverflowRejectPublish,
+			amqp091.QueueTypeArg:       amqp091.QueueTypeQuorum,
+			"x-dead-letter-exchange":   exchange.Name,
+			"x-dead-letter-strategy":   "at-least-once",
 		},
 	}
 }
