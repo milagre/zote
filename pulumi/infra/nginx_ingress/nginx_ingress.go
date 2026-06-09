@@ -65,6 +65,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	comp.IngressClassName = pulumi.String(ingressClass).ToStringOutput()
 
 	args.Cluster.SetPublicIngressClass(ingressClass)
+	args.Cluster.SetPublicIngressService(name+"-controller", args.Namespace)
 
 	return comp, nil
 }

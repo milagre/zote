@@ -16,6 +16,12 @@ type Cluster struct {
 	// PublicIngressClassName is the ingress class for public traffic.
 	PublicIngressClassName *string
 
+	// PublicIngressServiceName is the controller Service name in the ingress namespace.
+	PublicIngressServiceName *string
+
+	// PublicIngressServiceHostname is the in-cluster hostname of PublicIngressServiceName.
+	PublicIngressServiceHostname *string
+
 	// PrivateIngressClassName is reserved for a future private ingress controller.
 	PrivateIngressClassName *string
 
@@ -37,6 +43,16 @@ func (c *Cluster) SetPublicIngressClass(name string) {
 	}
 
 	c.PublicIngressClassName = stringPtr(name)
+}
+
+// SetPublicIngressService records the public ingress controller Service name and hostname.
+func (c *Cluster) SetPublicIngressService(serviceName, namespace string) {
+	if c == nil {
+		return
+	}
+
+	c.PublicIngressServiceName = stringPtr(serviceName)
+	c.PublicIngressServiceHostname = stringPtr(serviceName + "." + namespace + ".svc.cluster.local")
 }
 
 // SetPrivateIngressClass records the private ingress class name.
