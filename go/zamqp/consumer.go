@@ -5,11 +5,10 @@ import (
 )
 
 type Consumer interface {
-	// Does not return. On consumer context cancellation, will gracefully wait
-	// for all messages to complete processing. The worker context should NOT be
-	// canceled. An error is only returned if the system fails to start
-	// successfully. Once the system has started, no error is possible.
-	Start(processCtx context.Context, workerCtx context.Context) error
+	// Does not return until shutdown. On context cancellation, waits for in-flight messages to finish. Message processing uses
+	// context.WithoutCancel on ctx so work is not interrupted when shutdown begins. An error is only returned if the system fails to start
+	// successfully.
+	Start(ctx context.Context) error
 }
 
 type ConsumeFunc func(ctx context.Context, publisher Publisher, msg Delivery)

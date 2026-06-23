@@ -38,15 +38,17 @@ func NewDirectConsumer(conn Connection, declarations Declarations, queueName str
 	}
 }
 
-func (c *directConsumer) Start(baseCtx context.Context, workerContext context.Context) error {
+func (c *directConsumer) Start(ctx context.Context) error {
 	if c.started {
 		return errConsumerAlreadyStarted
 	}
 	c.started = true
 	defer func() { c.started = false }()
 
-	processCtx, cancel := context.WithCancel(baseCtx)
+	processCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	workerContext := context.WithoutCancel(ctx)
 
 	workerID := 0
 	wait := sync.WaitGroup{}

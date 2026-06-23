@@ -16,6 +16,8 @@ import (
 	"github.com/milagre/zote/go/ztrace"
 )
 
+const defaultShutdownTimeout = 60 * time.Second
+
 type Server interface {
 	ListenAndServe(addr string) error
 	Shutdown(ctx context.Context) error
@@ -38,7 +40,8 @@ type server struct {
 	server *http.Server
 
 	// Closed when Shutdown returns
-	shutdown chan struct{}
+	shutdown        chan struct{}
+	shutdownTimeout time.Duration
 }
 
 type Option func(s *server)
@@ -49,14 +52,23 @@ func ServerOptionDefaultOptionsRequest(f HandleFunc) Option {
 	}
 }
 
+func ServerOptionShutdownTimeout(timeout time.Duration) Option {
+	return func(s *server) {
+		s.shutdownTimeout = timeout
+	}
+}
+
 func NewServer(ctx context.Context, routes []Route, options ...Option) (*server, error) {
+	serverCtx := context.WithoutCancel(ctx)
+
 	server := &server{
-		rootContext: ctx,
-		handler:     &handlerTree{},
-		shutdown:    make(chan struct{}),
-		routes:      map[string]Route{},
-		parents:     map[string]Route{},
-		middleware:  []Middleware{},
+		rootContext:     serverCtx,
+		handler:         &handlerTree{},
+		shutdown:        make(chan struct{}),
+		routes:          map[string]Route{},
+		parents:         map[string]Route{},
+		middleware:      []Middleware{},
+		shutdownTimeout: defaultShutdownTimeout,
 	}
 	server.handler.server = server
 
@@ -94,6 +106,15 @@ func NewServer(ctx context.Context, routes []Route, options ...Option) (*server,
 	for _, opt := range options {
 		opt(server)
 	}
+
+	go func() {
+		<-ctx.Done()
+
+		shutdownCtx, cancel := context.WithTimeout(serverCtx, server.shutdownTimeout)
+		defer cancel()
+
+		_ = server.Shutdown(shutdownCtx)
+	}()
 
 	return server, nil
 }
