@@ -56,10 +56,10 @@ func Listen(ctx context.Context, cbs Callbacks) (context.Context, context.Cancel
 
 			case sig := <-ch:
 				if f, ok := callbacks[sig]; ok {
-					zlog.FromContext(ctx).Infof("Signal %s received", sig)
+					zlog.FromContext(ctx).Infof("Signal '%s' received", sig)
 					f()
 				} else {
-					zlog.FromContext(ctx).Infof("Signal %s ignored", sig)
+					zlog.FromContext(ctx).Infof("Signal '%s' ignored", sig)
 				}
 
 				if sig == syscall.SIGTERM || sig == syscall.SIGINT {
