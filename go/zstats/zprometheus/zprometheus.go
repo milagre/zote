@@ -2,6 +2,7 @@ package zprometheus
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -369,16 +370,20 @@ func (a *Adapter) Start(ctx context.Context, addr string) error {
 		return fmt.Errorf("failed to listen on %s: %w", addr, err)
 	}
 
-	go (func() {
+	go func() {
 		err := server.Serve(listener)
-		if err != nil {
-			zlog.FromContext(ctx).Errorf("failed to start Prometheus metrics server: %v", err)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			zlog.FromContext(ctx).Errorf("Prometheus metrics server stopped unexpectedly: %v", err)
 		}
-	})()
+	}()
 
 	go func() {
 		<-ctx.Done()
-		server.Shutdown(ctx)
+
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer shutdownCancel()
+
+		server.Shutdown(shutdownCtx)
 	}()
 
 	return nil
