@@ -11,5 +11,5 @@ popd
 
 pushd $PROJ/pulumi
 go mod tidy && go mod vendor
-go test ./...
+go test -p 2 -gcflags="-c=2" ./...
 popd

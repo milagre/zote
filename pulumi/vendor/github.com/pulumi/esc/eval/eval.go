@@ -15,23 +15,26 @@
 package eval
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"reflect"
-	"sort"
+	"slices"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/pulumi/esc"
 	"github.com/pulumi/esc/ast"
+	"github.com/pulumi/esc/internal/spell"
 	"github.com/pulumi/esc/internal/util"
 	"github.com/pulumi/esc/schema"
 	"github.com/pulumi/esc/syntax"
 	"github.com/pulumi/esc/syntax/encoding"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/resource"
-	"golang.org/x/exp/maps"
 )
 
 // A ProviderLoader provides the environment evaluator the capability to load providers.
@@ -69,10 +72,6 @@ func LoadYAMLBytes(filename string, source []byte) (*ast.EnvironmentDecl, syntax
 
 	t, tdiags := ast.ParseEnvironment(source, syn)
 	diags.Extend(tdiags...)
-	if tdiags.HasErrors() {
-		return nil, diags, nil
-	}
-
 	return t, diags, nil
 }
 
@@ -117,7 +116,7 @@ func RotateEnvironment(
 	environments EnvironmentLoader,
 	execContext *esc.ExecContext,
 	paths []resource.PropertyPath,
-) (*esc.Environment, *RotationResult, syntax.Diagnostics) {
+) (*esc.Environment, RotationResult, syntax.Diagnostics) {
 	rotateDocPaths := make(map[string]bool, len(paths))
 	for _, path := range paths {
 		rotateDocPaths["values."+path.String()] = true
@@ -138,7 +137,7 @@ func evalEnvironment(
 	execContext *esc.ExecContext,
 	showSecrets bool,
 	rotatePaths map[string]bool,
-) (*esc.Environment, *RotationResult, syntax.Diagnostics) {
+) (*esc.Environment, RotationResult, syntax.Diagnostics) {
 	if env == nil || (len(env.Values.GetEntries()) == 0 && len(env.Imports.GetElements()) == 0) {
 		return nil, nil, nil
 	}
@@ -155,17 +154,23 @@ func evalEnvironment(
 		}
 	}
 
+	contextProperties, exportDiags := ec.myContext.export(name)
+	diags.Extend(exportDiags...)
+
 	executionContext := &esc.EvaluatedExecutionContext{
-		Properties: ec.myContext.export(name).Value.(map[string]esc.Value),
+		Properties: contextProperties.Value.(map[string]esc.Value),
 		Schema:     ec.myContext.schema,
 	}
 
+	envProperties, exportDiags := v.export(name)
+	diags.Extend(exportDiags...)
+
 	return &esc.Environment{
 		Exprs:            ec.root.export(name).Object,
-		Properties:       v.export(name).Value.(map[string]esc.Value),
+		Properties:       envProperties.Value.(map[string]esc.Value),
 		Schema:           s,
 		ExecutionContext: executionContext,
-	}, &ec.rotationResult, diags
+	}, ec.rotationResult, diags
 }
 
 type imported struct {
@@ -270,6 +275,7 @@ type exprNode interface {
 // - {Null, Boolean, Number, String}Expr -> literalExpr
 // - InterpolateExpr                     -> interpolateExpr
 // - SymbolExpr                          -> symbolExpr
+// - ConcatExpr                          -> concatExpr
 // - FromBase64Expr                      -> fromBase64Expr
 // - FromJSONExpr                        -> fromJSONExpr
 // - JoinExpr                            -> joinExpr
@@ -318,9 +324,26 @@ func declare[Expr exprNode](e *evalContext, path string, x Expr, base *value) *e
 		}
 		property := &propertyAccess{accessors: accessors}
 		return newExpr(path, &symbolExpr{node: x, property: property}, schema.Always().Schema(), base)
+	case *ast.ConcatExpr:
+		repr := &concatExpr{
+			node:   x,
+			arrays: declare(e, "", x.Arrays, nil),
+		}
+		return newExpr(path, repr, schema.Array().Items(schema.Always()).Schema(), base)
 	case *ast.FromBase64Expr:
 		repr := &fromBase64Expr{node: x, string: declare(e, "", x.String, nil)}
 		return newExpr(path, repr, schema.String().Schema(), base)
+	case *ast.ValidateExpr:
+		repr := &validateExpr{
+			node:       x,
+			schemaExpr: declare(e, "", x.Schema, nil),
+			value:      declare(e, "", x.Value, nil),
+		}
+		// Output schema is dynamic - will be determined during evaluation
+		return newExpr(path, repr, schema.Always().Schema(), base)
+	case *ast.FinalExpr:
+		repr := &finalExpr{node: x, value: declare(e, "", x.Value, nil)}
+		return newExpr(path, repr, schema.Always().Schema(), base)
 	case *ast.FromJSONExpr:
 		repr := &fromJSONExpr{node: x, string: declare(e, "", x.String, nil)}
 		return newExpr(path, repr, schema.Always(), base)
@@ -331,6 +354,13 @@ func declare[Expr exprNode](e *evalContext, path string, x Expr, base *value) *e
 			values:    declare(e, "", x.Values, nil),
 		}
 		return newExpr(path, repr, schema.String().Schema(), base)
+	case *ast.SplitExpr:
+		repr := &splitExpr{
+			node:      x,
+			delimiter: declare(e, "", x.Delimiter, nil),
+			string:    declare(e, "", x.String, nil),
+		}
+		return newExpr(path, repr, schema.Array().Items(schema.String()).Schema(), base)
 	case *ast.OpenExpr:
 		repr := &openExpr{
 			node:        x,
@@ -377,11 +407,14 @@ func declare[Expr exprNode](e *evalContext, path string, x Expr, base *value) *e
 	case *ast.ObjectExpr:
 		properties := make(map[string]*expr, len(x.Entries))
 		for _, entry := range x.Entries {
-			k := entry.Key.Value
-			if _, ok := properties[k]; ok {
-				e.errorf(entry.Key, "duplicate key %q", k)
-			} else {
-				properties[k] = declare(e, util.JoinKey(path, k), entry.Value, base.property(entry.Key, k))
+			// Possible during parse errors. We elide properties with nil keys.
+			if entry.Key != nil {
+				k := entry.Key.Value
+				if _, ok := properties[k]; ok {
+					e.errorf(entry.Key, "duplicate key %q", k)
+				} else {
+					properties[k] = declare(e, util.JoinKey(path, k), entry.Value, base.property(entry.Key, k))
+				}
 			}
 		}
 		repr := &objectExpr{node: x, properties: properties}
@@ -559,6 +592,17 @@ func (e *evalContext) evaluateExpr(x *expr, accept *schema.Schema) *value {
 		return val
 	}
 
+	// Check if the base value is final. If so, the child cannot override it.
+	if x.base != nil && x.base.final {
+		diag := ast.ExprError(x.repr.syntax(), "cannot override final value")
+		diag.Severity = hcl.DiagWarning
+		e.diags.Extend(diag)
+		val := x.base
+		x.schema = val.schema
+		x.value = val
+		return val
+	}
+
 	val := (*value)(nil)
 	switch repr := x.repr.(type) {
 	case *missingExpr:
@@ -578,12 +622,20 @@ func (e *evalContext) evaluateExpr(x *expr, accept *schema.Schema) *value {
 		val = e.evaluateInterpolate(x, repr)
 	case *symbolExpr:
 		val = e.evaluatePropertyAccess(x, repr.property.accessors, accept)
+	case *concatExpr:
+		val = e.evaluateBuiltinConcat(x, repr)
 	case *fromBase64Expr:
 		val = e.evaluateBuiltinFromBase64(x, repr)
+	case *finalExpr:
+		val = e.evaluateBuiltinFinal(x, repr)
+	case *validateExpr:
+		val = e.evaluateBuiltinValidate(x, repr)
 	case *fromJSONExpr:
 		val = e.evaluateBuiltinFromJSON(x, repr)
 	case *joinExpr:
 		val = e.evaluateBuiltinJoin(x, repr)
+	case *splitExpr:
+		val = e.evaluateBuiltinSplit(x, repr)
 	case *openExpr:
 		val = e.evaluateBuiltinOpen(x, repr)
 	case *rotateExpr:
@@ -669,8 +721,7 @@ func (e *evalContext) evaluateObject(x *expr, repr *objectExpr, accept *schema.S
 	// NOTE: technically, evaluation order of maps is unspecified and the result should be independent of order.
 	// However, we always evaluate in lexicographic order so that we can produce predictable diagnostics in the
 	// face of cycles.
-	keys := maps.Keys(repr.properties)
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(repr.properties))
 
 	object, properties := make(map[string]*value, len(keys)), make(schema.SchemaMap, len(keys))
 	for _, k := range keys {
@@ -771,7 +822,8 @@ func (e *evalContext) evaluateExprAccess(x *expr, accessors []*propertyAccessor,
 				if receiver.base.isObject() {
 					return e.evaluateValueAccess(x.repr.syntax(), receiver.base, accessors)
 				}
-				e.accessorErrorf(x.repr.syntax(), accessor.accessor, "unknown property %q", key)
+				nearest := spell.Nearest(key, maps.Keys(repr.properties))
+				e.accessorErrorf(x.repr.syntax(), accessor.accessor, "unknown property %q%v", key, didYouMean(nearest))
 				return e.invalidPropertyAccess(x.repr.syntax(), accessors)
 			}
 			receiver = prop
@@ -873,7 +925,8 @@ func (e *evalContext) evaluateValueAccess(syntax ast.Expr, receiver *value, acce
 				if receiver.base.isObject() {
 					return e.evaluateValueAccess(syntax, receiver.base, accessors)
 				}
-				e.accessorErrorf(syntax, accessor.accessor, "unknown property %q", key)
+				nearest := spell.Nearest(key, maps.Keys(repr))
+				e.accessorErrorf(syntax, accessor.accessor, "unknown property %q%v", key, didYouMean(nearest))
 				return e.invalidPropertyAccess(syntax, accessors)
 			}
 			receiver = prop
@@ -1062,7 +1115,10 @@ func (e *evalContext) evaluateBuiltinOpen(x *expr, repr *openExpr) *value {
 		return v
 	}
 
-	output, err := provider.Open(e.ctx, inputs.export("").Value.(map[string]esc.Value), e.execContext)
+	inputsV, exportDiags := inputs.export("")
+	e.diags.Extend(exportDiags...)
+
+	output, err := provider.Open(e.ctx, inputsV.Value.(map[string]esc.Value), e.execContext)
 	if err != nil {
 		e.errorf(repr.syntax(), "%s", err.Error())
 		v.unknown = true
@@ -1125,12 +1181,18 @@ func (e *evalContext) evaluateBuiltinRotate(x *expr, repr *rotateExpr) *value {
 		return v
 	}
 
+	inputsV, exportDiags := inputs.export("")
+	e.diags.Extend(exportDiags...)
+
 	// if rotating, invoke prior to open
 	if e.shouldRotate(docPath) {
+		stateV, exportDiags := state.export("")
+		e.diags.Extend(exportDiags...)
+
 		newState, err := rotator.Rotate(
 			e.ctx,
-			inputs.export("").Value.(map[string]esc.Value),
-			asObjectOrNil(state.export("").Value),
+			inputsV.Value.(map[string]esc.Value),
+			asObjectOrNil(stateV.Value),
 			e.execContext,
 		)
 		if err != nil {
@@ -1165,10 +1227,13 @@ func (e *evalContext) evaluateBuiltinRotate(x *expr, repr *rotateExpr) *value {
 		state = unexport(newState, x)
 	}
 
+	stateV, exportDiags := state.export("")
+	e.diags.Extend(exportDiags...)
+
 	output, err := rotator.Open(
 		e.ctx,
-		inputs.export("").Value.(map[string]esc.Value),
-		asObjectOrNil(state.export("").Value),
+		inputsV.Value.(map[string]esc.Value),
+		asObjectOrNil(stateV.Value),
 		e.execContext,
 	)
 	if err != nil {
@@ -1200,6 +1265,27 @@ func asObjectOrNil(v any) map[string]esc.Value {
 	return cast
 }
 
+// evaluateBuiltinConcat evaluates a call to the fn::concat builtin.
+func (e *evalContext) evaluateBuiltinConcat(x *expr, repr *concatExpr) *value {
+	v := &value{def: x, schema: x.schema}
+
+	arrays, ok := e.evaluateTypedExpr(repr.arrays, schema.Array().Items(schema.Array().Items(schema.Always())).Schema())
+	if !ok {
+		v.unknown = true
+		return v
+	}
+
+	v.combine(arrays)
+	if !v.unknown {
+		var result []*value
+		for _, arrayVal := range arrays.repr.([]*value) {
+			result = append(result, arrayVal.repr.([]*value)...)
+		}
+		v.repr = result
+	}
+	return v
+}
+
 // evaluateBuiltinJoin evaluates a call to the fn::join builtin.
 func (e *evalContext) evaluateBuiltinJoin(x *expr, repr *joinExpr) *value {
 	v := &value{def: x, schema: x.schema}
@@ -1218,6 +1304,29 @@ func (e *evalContext) evaluateBuiltinJoin(x *expr, repr *joinExpr) *value {
 			values[i] = v.repr.(string)
 		}
 		v.repr = strings.Join(values, delim.repr.(string))
+	}
+	return v
+}
+
+// evaluateBuiltinSplit evaluates a call to the fn::split builtin.
+func (e *evalContext) evaluateBuiltinSplit(x *expr, repr *splitExpr) *value {
+	v := &value{def: x, schema: x.schema}
+
+	delim, delimOk := e.evaluateTypedExpr(repr.delimiter, schema.String().Schema())
+	str, strOk := e.evaluateTypedExpr(repr.string, schema.String().Schema())
+	if !delimOk || !strOk {
+		v.unknown = true
+		return v
+	}
+
+	v.combine(delim, str)
+	if !v.unknown {
+		parts := strings.Split(str.repr.(string), delim.repr.(string))
+		result := make([]*value, len(parts))
+		for i, part := range parts {
+			result[i] = &value{def: x, schema: schema.String().Schema(), repr: part}
+		}
+		v.repr = result
 	}
 	return v
 }
@@ -1242,6 +1351,103 @@ func (e *evalContext) evaluateBuiltinFromBase64(x *expr, repr *fromBase64Expr) *
 		}
 		v.repr = string(b)
 	}
+	return v
+}
+
+// evaluateBuiltinValidate evaluates a call to the fn::validate builtin.
+// It validates the value against the provided schema and emits diagnostics on failure.
+// The value is always returned (pass-through semantics).
+func (e *evalContext) evaluateBuiltinValidate(x *expr, repr *validateExpr) *value {
+	v := &value{def: x}
+
+	// Evaluate and validate the schema expression against the JSON schema schema
+	schemaVal, schemaOk := e.evaluateTypedExpr(repr.schemaExpr, schema.JSONSchemaSchema())
+	if schemaVal.containsUnknowns() {
+		// If schema is unknown, we can't validate - just return the value
+		val := e.evaluateExpr(repr.value, schema.Always())
+		v.schema = val.schema
+		v.repr = val.repr
+		v.combine(val)
+		return v
+	}
+
+	// If schema validation failed, still try to convert and use it
+	// (the error has already been reported)
+	if !schemaOk {
+		val := e.evaluateExpr(repr.value, schema.Always())
+		v.schema = val.schema
+		v.repr = val.repr
+		v.combine(val)
+		return v
+	}
+
+	// Convert the evaluated schema value to a *schema.Schema
+	validationSchema, err := e.valueToSchema(schemaVal)
+	if err != nil {
+		e.errorf(repr.schemaExpr.repr.syntax(), "invalid schema: %v", err)
+		val := e.evaluateExpr(repr.value, schema.Always())
+		v.schema = val.schema
+		v.repr = val.repr
+		v.combine(val)
+		return v
+	}
+	repr.conformSchema = validationSchema
+
+	// Compile the schema (like fn::open does with provider schemas)
+	if err := validationSchema.Compile(); err != nil {
+		e.errorf(repr.schemaExpr.repr.syntax(), "invalid schema: %v", err)
+		val := e.evaluateExpr(repr.value, schema.Always())
+		v.schema = val.schema
+		v.repr = val.repr
+		v.combine(val)
+		return v
+	}
+
+	// Validate value against the conform schema using evaluateTypedExpr
+	// This follows the same pattern as fn::open: inputs, ok := e.evaluateTypedExpr(repr.inputs, repr.inputSchema)
+	val, _ := e.evaluateTypedExpr(repr.value, validationSchema)
+
+	// Return the value with its schema (pass-through semantics)
+	v.schema = val.schema
+	v.repr = val.repr
+	v.combine(val)
+	return v
+}
+
+// valueToSchema converts an evaluated value to a *schema.Schema.
+func (e *evalContext) valueToSchema(v *value) (*schema.Schema, error) {
+	// Export the value to esc.Value
+	ev, diags := v.export("")
+	e.diags.Extend(diags...)
+
+	// Convert to JSON representation
+	jsonVal := ev.ToJSON(false)
+
+	// Marshal to JSON bytes
+	jsonBytes, err := json.Marshal(jsonVal)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal schema to JSON: %w", err)
+	}
+
+	// Unmarshal into a schema.Schema
+	var s schema.Schema
+	dec := json.NewDecoder(bytes.NewReader(jsonBytes))
+	dec.UseNumber()
+	if err := dec.Decode(&s); err != nil {
+		return nil, fmt.Errorf("failed to parse schema: %w", err)
+	}
+
+	return &s, nil
+}
+
+// evaluateBuiltinFinal evaluates a call to the fn::final builtin. The inner value is evaluated
+// normally, and the result is wrapped with the final flag to prevent overrides in child environments.
+func (e *evalContext) evaluateBuiltinFinal(x *expr, repr *finalExpr) *value {
+	val := e.evaluateExpr(repr.value, schema.Always())
+	v := &value{def: x, final: true}
+	v.schema = val.schema
+	v.repr = val.repr
+	v.combine(val)
 	return v
 }
 
@@ -1307,7 +1513,10 @@ func (e *evalContext) evaluateBuiltinToJSON(x *expr, repr *toJSONExpr) *value {
 
 	v.combine(value)
 	if !v.unknown {
-		b, err := json.Marshal(value.export("").ToJSON(false))
+		valueV, exportDiags := value.export("")
+		e.diags.Extend(exportDiags...)
+
+		b, err := json.Marshal(valueV.ToJSON(false))
 		if err != nil {
 			e.errorf(repr.syntax(), "failed to encode JSON: %v", err)
 			v.unknown = true
@@ -1330,4 +1539,13 @@ func (e *evalContext) evaluateBuiltinToString(x *expr, repr *toStringExpr) *valu
 		v.repr = s
 	}
 	return v
+}
+
+type didYouMean string
+
+func (name didYouMean) String() string {
+	if name == "" {
+		return ""
+	}
+	return fmt.Sprintf("; did you mean %q?", string(name))
 }

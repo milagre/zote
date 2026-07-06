@@ -9088,6 +9088,8 @@ type AppSpecService struct {
 	InstanceSizeSlug *string `pulumi:"instanceSizeSlug"`
 	// A list of ports on which this service will listen for internal traffic.
 	InternalPorts []int `pulumi:"internalPorts"`
+	// A liveness health check to determine if the worker should be restarted. Workers do not accept inbound traffic, so only HTTP liveness probes are supported (TCP is not).
+	LivenessHealthCheck *AppSpecServiceLivenessHealthCheck `pulumi:"livenessHealthCheck"`
 	// Describes a log forwarding destination.
 	LogDestinations []AppSpecServiceLogDestination `pulumi:"logDestinations"`
 	// The name of the component.
@@ -9152,6 +9154,8 @@ type AppSpecServiceArgs struct {
 	InstanceSizeSlug pulumi.StringPtrInput `pulumi:"instanceSizeSlug"`
 	// A list of ports on which this service will listen for internal traffic.
 	InternalPorts pulumi.IntArrayInput `pulumi:"internalPorts"`
+	// A liveness health check to determine if the worker should be restarted. Workers do not accept inbound traffic, so only HTTP liveness probes are supported (TCP is not).
+	LivenessHealthCheck AppSpecServiceLivenessHealthCheckPtrInput `pulumi:"livenessHealthCheck"`
 	// Describes a log forwarding destination.
 	LogDestinations AppSpecServiceLogDestinationArrayInput `pulumi:"logDestinations"`
 	// The name of the component.
@@ -9304,6 +9308,11 @@ func (o AppSpecServiceOutput) InstanceSizeSlug() pulumi.StringPtrOutput {
 // A list of ports on which this service will listen for internal traffic.
 func (o AppSpecServiceOutput) InternalPorts() pulumi.IntArrayOutput {
 	return o.ApplyT(func(v AppSpecService) []int { return v.InternalPorts }).(pulumi.IntArrayOutput)
+}
+
+// A liveness health check to determine if the worker should be restarted. Workers do not accept inbound traffic, so only HTTP liveness probes are supported (TCP is not).
+func (o AppSpecServiceOutput) LivenessHealthCheck() AppSpecServiceLivenessHealthCheckPtrOutput {
+	return o.ApplyT(func(v AppSpecService) *AppSpecServiceLivenessHealthCheck { return v.LivenessHealthCheck }).(AppSpecServiceLivenessHealthCheckPtrOutput)
 }
 
 // Describes a log forwarding destination.
@@ -12030,6 +12039,257 @@ func (o AppSpecServiceImageDeployOnPushArrayOutput) Index(i pulumi.IntInput) App
 	return pulumi.All(o, i).ApplyT(func(vs []interface{}) AppSpecServiceImageDeployOnPush {
 		return vs[0].([]AppSpecServiceImageDeployOnPush)[vs[1].(int)]
 	}).(AppSpecServiceImageDeployOnPushOutput)
+}
+
+type AppSpecServiceLivenessHealthCheck struct {
+	// The number of failed health checks before considered unhealthy.
+	FailureThreshold *int `pulumi:"failureThreshold"`
+	// The route path used for the HTTP health check ping.
+	HttpPath *string `pulumi:"httpPath"`
+	// The number of seconds to wait before beginning health checks.
+	InitialDelaySeconds *int `pulumi:"initialDelaySeconds"`
+	// The number of seconds to wait between health checks.
+	PeriodSeconds *int `pulumi:"periodSeconds"`
+	// The port on which the health check will be performed.
+	Port *int `pulumi:"port"`
+	// The number of successful health checks before considered healthy.
+	SuccessThreshold *int `pulumi:"successThreshold"`
+	// The number of seconds after which the check times out.
+	TimeoutSeconds *int `pulumi:"timeoutSeconds"`
+}
+
+// AppSpecServiceLivenessHealthCheckInput is an input type that accepts AppSpecServiceLivenessHealthCheckArgs and AppSpecServiceLivenessHealthCheckOutput values.
+// You can construct a concrete instance of `AppSpecServiceLivenessHealthCheckInput` via:
+//
+//	AppSpecServiceLivenessHealthCheckArgs{...}
+type AppSpecServiceLivenessHealthCheckInput interface {
+	pulumi.Input
+
+	ToAppSpecServiceLivenessHealthCheckOutput() AppSpecServiceLivenessHealthCheckOutput
+	ToAppSpecServiceLivenessHealthCheckOutputWithContext(context.Context) AppSpecServiceLivenessHealthCheckOutput
+}
+
+type AppSpecServiceLivenessHealthCheckArgs struct {
+	// The number of failed health checks before considered unhealthy.
+	FailureThreshold pulumi.IntPtrInput `pulumi:"failureThreshold"`
+	// The route path used for the HTTP health check ping.
+	HttpPath pulumi.StringPtrInput `pulumi:"httpPath"`
+	// The number of seconds to wait before beginning health checks.
+	InitialDelaySeconds pulumi.IntPtrInput `pulumi:"initialDelaySeconds"`
+	// The number of seconds to wait between health checks.
+	PeriodSeconds pulumi.IntPtrInput `pulumi:"periodSeconds"`
+	// The port on which the health check will be performed.
+	Port pulumi.IntPtrInput `pulumi:"port"`
+	// The number of successful health checks before considered healthy.
+	SuccessThreshold pulumi.IntPtrInput `pulumi:"successThreshold"`
+	// The number of seconds after which the check times out.
+	TimeoutSeconds pulumi.IntPtrInput `pulumi:"timeoutSeconds"`
+}
+
+func (AppSpecServiceLivenessHealthCheckArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*AppSpecServiceLivenessHealthCheck)(nil)).Elem()
+}
+
+func (i AppSpecServiceLivenessHealthCheckArgs) ToAppSpecServiceLivenessHealthCheckOutput() AppSpecServiceLivenessHealthCheckOutput {
+	return i.ToAppSpecServiceLivenessHealthCheckOutputWithContext(context.Background())
+}
+
+func (i AppSpecServiceLivenessHealthCheckArgs) ToAppSpecServiceLivenessHealthCheckOutputWithContext(ctx context.Context) AppSpecServiceLivenessHealthCheckOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(AppSpecServiceLivenessHealthCheckOutput)
+}
+
+func (i AppSpecServiceLivenessHealthCheckArgs) ToAppSpecServiceLivenessHealthCheckPtrOutput() AppSpecServiceLivenessHealthCheckPtrOutput {
+	return i.ToAppSpecServiceLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (i AppSpecServiceLivenessHealthCheckArgs) ToAppSpecServiceLivenessHealthCheckPtrOutputWithContext(ctx context.Context) AppSpecServiceLivenessHealthCheckPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(AppSpecServiceLivenessHealthCheckOutput).ToAppSpecServiceLivenessHealthCheckPtrOutputWithContext(ctx)
+}
+
+// AppSpecServiceLivenessHealthCheckPtrInput is an input type that accepts AppSpecServiceLivenessHealthCheckArgs, AppSpecServiceLivenessHealthCheckPtr and AppSpecServiceLivenessHealthCheckPtrOutput values.
+// You can construct a concrete instance of `AppSpecServiceLivenessHealthCheckPtrInput` via:
+//
+//	        AppSpecServiceLivenessHealthCheckArgs{...}
+//
+//	or:
+//
+//	        nil
+type AppSpecServiceLivenessHealthCheckPtrInput interface {
+	pulumi.Input
+
+	ToAppSpecServiceLivenessHealthCheckPtrOutput() AppSpecServiceLivenessHealthCheckPtrOutput
+	ToAppSpecServiceLivenessHealthCheckPtrOutputWithContext(context.Context) AppSpecServiceLivenessHealthCheckPtrOutput
+}
+
+type appSpecServiceLivenessHealthCheckPtrType AppSpecServiceLivenessHealthCheckArgs
+
+func AppSpecServiceLivenessHealthCheckPtr(v *AppSpecServiceLivenessHealthCheckArgs) AppSpecServiceLivenessHealthCheckPtrInput {
+	return (*appSpecServiceLivenessHealthCheckPtrType)(v)
+}
+
+func (*appSpecServiceLivenessHealthCheckPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**AppSpecServiceLivenessHealthCheck)(nil)).Elem()
+}
+
+func (i *appSpecServiceLivenessHealthCheckPtrType) ToAppSpecServiceLivenessHealthCheckPtrOutput() AppSpecServiceLivenessHealthCheckPtrOutput {
+	return i.ToAppSpecServiceLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (i *appSpecServiceLivenessHealthCheckPtrType) ToAppSpecServiceLivenessHealthCheckPtrOutputWithContext(ctx context.Context) AppSpecServiceLivenessHealthCheckPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(AppSpecServiceLivenessHealthCheckPtrOutput)
+}
+
+type AppSpecServiceLivenessHealthCheckOutput struct{ *pulumi.OutputState }
+
+func (AppSpecServiceLivenessHealthCheckOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*AppSpecServiceLivenessHealthCheck)(nil)).Elem()
+}
+
+func (o AppSpecServiceLivenessHealthCheckOutput) ToAppSpecServiceLivenessHealthCheckOutput() AppSpecServiceLivenessHealthCheckOutput {
+	return o
+}
+
+func (o AppSpecServiceLivenessHealthCheckOutput) ToAppSpecServiceLivenessHealthCheckOutputWithContext(ctx context.Context) AppSpecServiceLivenessHealthCheckOutput {
+	return o
+}
+
+func (o AppSpecServiceLivenessHealthCheckOutput) ToAppSpecServiceLivenessHealthCheckPtrOutput() AppSpecServiceLivenessHealthCheckPtrOutput {
+	return o.ToAppSpecServiceLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (o AppSpecServiceLivenessHealthCheckOutput) ToAppSpecServiceLivenessHealthCheckPtrOutputWithContext(ctx context.Context) AppSpecServiceLivenessHealthCheckPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v AppSpecServiceLivenessHealthCheck) *AppSpecServiceLivenessHealthCheck {
+		return &v
+	}).(AppSpecServiceLivenessHealthCheckPtrOutput)
+}
+
+// The number of failed health checks before considered unhealthy.
+func (o AppSpecServiceLivenessHealthCheckOutput) FailureThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecServiceLivenessHealthCheck) *int { return v.FailureThreshold }).(pulumi.IntPtrOutput)
+}
+
+// The route path used for the HTTP health check ping.
+func (o AppSpecServiceLivenessHealthCheckOutput) HttpPath() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v AppSpecServiceLivenessHealthCheck) *string { return v.HttpPath }).(pulumi.StringPtrOutput)
+}
+
+// The number of seconds to wait before beginning health checks.
+func (o AppSpecServiceLivenessHealthCheckOutput) InitialDelaySeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecServiceLivenessHealthCheck) *int { return v.InitialDelaySeconds }).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds to wait between health checks.
+func (o AppSpecServiceLivenessHealthCheckOutput) PeriodSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecServiceLivenessHealthCheck) *int { return v.PeriodSeconds }).(pulumi.IntPtrOutput)
+}
+
+// The port on which the health check will be performed.
+func (o AppSpecServiceLivenessHealthCheckOutput) Port() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecServiceLivenessHealthCheck) *int { return v.Port }).(pulumi.IntPtrOutput)
+}
+
+// The number of successful health checks before considered healthy.
+func (o AppSpecServiceLivenessHealthCheckOutput) SuccessThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecServiceLivenessHealthCheck) *int { return v.SuccessThreshold }).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds after which the check times out.
+func (o AppSpecServiceLivenessHealthCheckOutput) TimeoutSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecServiceLivenessHealthCheck) *int { return v.TimeoutSeconds }).(pulumi.IntPtrOutput)
+}
+
+type AppSpecServiceLivenessHealthCheckPtrOutput struct{ *pulumi.OutputState }
+
+func (AppSpecServiceLivenessHealthCheckPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**AppSpecServiceLivenessHealthCheck)(nil)).Elem()
+}
+
+func (o AppSpecServiceLivenessHealthCheckPtrOutput) ToAppSpecServiceLivenessHealthCheckPtrOutput() AppSpecServiceLivenessHealthCheckPtrOutput {
+	return o
+}
+
+func (o AppSpecServiceLivenessHealthCheckPtrOutput) ToAppSpecServiceLivenessHealthCheckPtrOutputWithContext(ctx context.Context) AppSpecServiceLivenessHealthCheckPtrOutput {
+	return o
+}
+
+func (o AppSpecServiceLivenessHealthCheckPtrOutput) Elem() AppSpecServiceLivenessHealthCheckOutput {
+	return o.ApplyT(func(v *AppSpecServiceLivenessHealthCheck) AppSpecServiceLivenessHealthCheck {
+		if v != nil {
+			return *v
+		}
+		var ret AppSpecServiceLivenessHealthCheck
+		return ret
+	}).(AppSpecServiceLivenessHealthCheckOutput)
+}
+
+// The number of failed health checks before considered unhealthy.
+func (o AppSpecServiceLivenessHealthCheckPtrOutput) FailureThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.FailureThreshold
+	}).(pulumi.IntPtrOutput)
+}
+
+// The route path used for the HTTP health check ping.
+func (o AppSpecServiceLivenessHealthCheckPtrOutput) HttpPath() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *AppSpecServiceLivenessHealthCheck) *string {
+		if v == nil {
+			return nil
+		}
+		return v.HttpPath
+	}).(pulumi.StringPtrOutput)
+}
+
+// The number of seconds to wait before beginning health checks.
+func (o AppSpecServiceLivenessHealthCheckPtrOutput) InitialDelaySeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.InitialDelaySeconds
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds to wait between health checks.
+func (o AppSpecServiceLivenessHealthCheckPtrOutput) PeriodSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.PeriodSeconds
+	}).(pulumi.IntPtrOutput)
+}
+
+// The port on which the health check will be performed.
+func (o AppSpecServiceLivenessHealthCheckPtrOutput) Port() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.Port
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of successful health checks before considered healthy.
+func (o AppSpecServiceLivenessHealthCheckPtrOutput) SuccessThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.SuccessThreshold
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds after which the check times out.
+func (o AppSpecServiceLivenessHealthCheckPtrOutput) TimeoutSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.TimeoutSeconds
+	}).(pulumi.IntPtrOutput)
 }
 
 type AppSpecServiceLogDestination struct {
@@ -14919,6 +15179,8 @@ type AppSpecWorker struct {
 	InstanceCount *int `pulumi:"instanceCount"`
 	// The instance size to use for this component. This determines the plan (basic or professional) and the available CPU and memory. The list of available instance sizes can be [found with the API](https://docs.digitalocean.com/reference/api/digitalocean/#tag/Apps/operation/apps_list_instanceSizes) or using the [doctl CLI](https://docs.digitalocean.com/reference/doctl/) (`doctl apps tier instance-size list`). Default: `basic-xxs`
 	InstanceSizeSlug *string `pulumi:"instanceSizeSlug"`
+	// A liveness health check to determine if the worker should be restarted. Workers do not accept inbound traffic, so only HTTP liveness probes are supported (TCP is not).
+	LivenessHealthCheck *AppSpecWorkerLivenessHealthCheck `pulumi:"livenessHealthCheck"`
 	// Describes a log forwarding destination.
 	LogDestinations []AppSpecWorkerLogDestination `pulumi:"logDestinations"`
 	// The name of the component.
@@ -14969,6 +15231,8 @@ type AppSpecWorkerArgs struct {
 	InstanceCount pulumi.IntPtrInput `pulumi:"instanceCount"`
 	// The instance size to use for this component. This determines the plan (basic or professional) and the available CPU and memory. The list of available instance sizes can be [found with the API](https://docs.digitalocean.com/reference/api/digitalocean/#tag/Apps/operation/apps_list_instanceSizes) or using the [doctl CLI](https://docs.digitalocean.com/reference/doctl/) (`doctl apps tier instance-size list`). Default: `basic-xxs`
 	InstanceSizeSlug pulumi.StringPtrInput `pulumi:"instanceSizeSlug"`
+	// A liveness health check to determine if the worker should be restarted. Workers do not accept inbound traffic, so only HTTP liveness probes are supported (TCP is not).
+	LivenessHealthCheck AppSpecWorkerLivenessHealthCheckPtrInput `pulumi:"livenessHealthCheck"`
 	// Describes a log forwarding destination.
 	LogDestinations AppSpecWorkerLogDestinationArrayInput `pulumi:"logDestinations"`
 	// The name of the component.
@@ -15095,6 +15359,11 @@ func (o AppSpecWorkerOutput) InstanceCount() pulumi.IntPtrOutput {
 // The instance size to use for this component. This determines the plan (basic or professional) and the available CPU and memory. The list of available instance sizes can be [found with the API](https://docs.digitalocean.com/reference/api/digitalocean/#tag/Apps/operation/apps_list_instanceSizes) or using the [doctl CLI](https://docs.digitalocean.com/reference/doctl/) (`doctl apps tier instance-size list`). Default: `basic-xxs`
 func (o AppSpecWorkerOutput) InstanceSizeSlug() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v AppSpecWorker) *string { return v.InstanceSizeSlug }).(pulumi.StringPtrOutput)
+}
+
+// A liveness health check to determine if the worker should be restarted. Workers do not accept inbound traffic, so only HTTP liveness probes are supported (TCP is not).
+func (o AppSpecWorkerOutput) LivenessHealthCheck() AppSpecWorkerLivenessHealthCheckPtrOutput {
+	return o.ApplyT(func(v AppSpecWorker) *AppSpecWorkerLivenessHealthCheck { return v.LivenessHealthCheck }).(AppSpecWorkerLivenessHealthCheckPtrOutput)
 }
 
 // Describes a log forwarding destination.
@@ -17150,6 +17419,257 @@ func (o AppSpecWorkerImageDeployOnPushArrayOutput) Index(i pulumi.IntInput) AppS
 	}).(AppSpecWorkerImageDeployOnPushOutput)
 }
 
+type AppSpecWorkerLivenessHealthCheck struct {
+	// The number of failed health checks before considered unhealthy.
+	FailureThreshold *int `pulumi:"failureThreshold"`
+	// The route path used for the HTTP health check ping.
+	HttpPath *string `pulumi:"httpPath"`
+	// The number of seconds to wait before beginning health checks.
+	InitialDelaySeconds *int `pulumi:"initialDelaySeconds"`
+	// The number of seconds to wait between health checks.
+	PeriodSeconds *int `pulumi:"periodSeconds"`
+	// The port on which the health check will be performed.
+	Port *int `pulumi:"port"`
+	// The number of successful health checks before considered healthy.
+	SuccessThreshold *int `pulumi:"successThreshold"`
+	// The number of seconds after which the check times out.
+	TimeoutSeconds *int `pulumi:"timeoutSeconds"`
+}
+
+// AppSpecWorkerLivenessHealthCheckInput is an input type that accepts AppSpecWorkerLivenessHealthCheckArgs and AppSpecWorkerLivenessHealthCheckOutput values.
+// You can construct a concrete instance of `AppSpecWorkerLivenessHealthCheckInput` via:
+//
+//	AppSpecWorkerLivenessHealthCheckArgs{...}
+type AppSpecWorkerLivenessHealthCheckInput interface {
+	pulumi.Input
+
+	ToAppSpecWorkerLivenessHealthCheckOutput() AppSpecWorkerLivenessHealthCheckOutput
+	ToAppSpecWorkerLivenessHealthCheckOutputWithContext(context.Context) AppSpecWorkerLivenessHealthCheckOutput
+}
+
+type AppSpecWorkerLivenessHealthCheckArgs struct {
+	// The number of failed health checks before considered unhealthy.
+	FailureThreshold pulumi.IntPtrInput `pulumi:"failureThreshold"`
+	// The route path used for the HTTP health check ping.
+	HttpPath pulumi.StringPtrInput `pulumi:"httpPath"`
+	// The number of seconds to wait before beginning health checks.
+	InitialDelaySeconds pulumi.IntPtrInput `pulumi:"initialDelaySeconds"`
+	// The number of seconds to wait between health checks.
+	PeriodSeconds pulumi.IntPtrInput `pulumi:"periodSeconds"`
+	// The port on which the health check will be performed.
+	Port pulumi.IntPtrInput `pulumi:"port"`
+	// The number of successful health checks before considered healthy.
+	SuccessThreshold pulumi.IntPtrInput `pulumi:"successThreshold"`
+	// The number of seconds after which the check times out.
+	TimeoutSeconds pulumi.IntPtrInput `pulumi:"timeoutSeconds"`
+}
+
+func (AppSpecWorkerLivenessHealthCheckArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*AppSpecWorkerLivenessHealthCheck)(nil)).Elem()
+}
+
+func (i AppSpecWorkerLivenessHealthCheckArgs) ToAppSpecWorkerLivenessHealthCheckOutput() AppSpecWorkerLivenessHealthCheckOutput {
+	return i.ToAppSpecWorkerLivenessHealthCheckOutputWithContext(context.Background())
+}
+
+func (i AppSpecWorkerLivenessHealthCheckArgs) ToAppSpecWorkerLivenessHealthCheckOutputWithContext(ctx context.Context) AppSpecWorkerLivenessHealthCheckOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(AppSpecWorkerLivenessHealthCheckOutput)
+}
+
+func (i AppSpecWorkerLivenessHealthCheckArgs) ToAppSpecWorkerLivenessHealthCheckPtrOutput() AppSpecWorkerLivenessHealthCheckPtrOutput {
+	return i.ToAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (i AppSpecWorkerLivenessHealthCheckArgs) ToAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(ctx context.Context) AppSpecWorkerLivenessHealthCheckPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(AppSpecWorkerLivenessHealthCheckOutput).ToAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(ctx)
+}
+
+// AppSpecWorkerLivenessHealthCheckPtrInput is an input type that accepts AppSpecWorkerLivenessHealthCheckArgs, AppSpecWorkerLivenessHealthCheckPtr and AppSpecWorkerLivenessHealthCheckPtrOutput values.
+// You can construct a concrete instance of `AppSpecWorkerLivenessHealthCheckPtrInput` via:
+//
+//	        AppSpecWorkerLivenessHealthCheckArgs{...}
+//
+//	or:
+//
+//	        nil
+type AppSpecWorkerLivenessHealthCheckPtrInput interface {
+	pulumi.Input
+
+	ToAppSpecWorkerLivenessHealthCheckPtrOutput() AppSpecWorkerLivenessHealthCheckPtrOutput
+	ToAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(context.Context) AppSpecWorkerLivenessHealthCheckPtrOutput
+}
+
+type appSpecWorkerLivenessHealthCheckPtrType AppSpecWorkerLivenessHealthCheckArgs
+
+func AppSpecWorkerLivenessHealthCheckPtr(v *AppSpecWorkerLivenessHealthCheckArgs) AppSpecWorkerLivenessHealthCheckPtrInput {
+	return (*appSpecWorkerLivenessHealthCheckPtrType)(v)
+}
+
+func (*appSpecWorkerLivenessHealthCheckPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**AppSpecWorkerLivenessHealthCheck)(nil)).Elem()
+}
+
+func (i *appSpecWorkerLivenessHealthCheckPtrType) ToAppSpecWorkerLivenessHealthCheckPtrOutput() AppSpecWorkerLivenessHealthCheckPtrOutput {
+	return i.ToAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (i *appSpecWorkerLivenessHealthCheckPtrType) ToAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(ctx context.Context) AppSpecWorkerLivenessHealthCheckPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(AppSpecWorkerLivenessHealthCheckPtrOutput)
+}
+
+type AppSpecWorkerLivenessHealthCheckOutput struct{ *pulumi.OutputState }
+
+func (AppSpecWorkerLivenessHealthCheckOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*AppSpecWorkerLivenessHealthCheck)(nil)).Elem()
+}
+
+func (o AppSpecWorkerLivenessHealthCheckOutput) ToAppSpecWorkerLivenessHealthCheckOutput() AppSpecWorkerLivenessHealthCheckOutput {
+	return o
+}
+
+func (o AppSpecWorkerLivenessHealthCheckOutput) ToAppSpecWorkerLivenessHealthCheckOutputWithContext(ctx context.Context) AppSpecWorkerLivenessHealthCheckOutput {
+	return o
+}
+
+func (o AppSpecWorkerLivenessHealthCheckOutput) ToAppSpecWorkerLivenessHealthCheckPtrOutput() AppSpecWorkerLivenessHealthCheckPtrOutput {
+	return o.ToAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (o AppSpecWorkerLivenessHealthCheckOutput) ToAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(ctx context.Context) AppSpecWorkerLivenessHealthCheckPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v AppSpecWorkerLivenessHealthCheck) *AppSpecWorkerLivenessHealthCheck {
+		return &v
+	}).(AppSpecWorkerLivenessHealthCheckPtrOutput)
+}
+
+// The number of failed health checks before considered unhealthy.
+func (o AppSpecWorkerLivenessHealthCheckOutput) FailureThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecWorkerLivenessHealthCheck) *int { return v.FailureThreshold }).(pulumi.IntPtrOutput)
+}
+
+// The route path used for the HTTP health check ping.
+func (o AppSpecWorkerLivenessHealthCheckOutput) HttpPath() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v AppSpecWorkerLivenessHealthCheck) *string { return v.HttpPath }).(pulumi.StringPtrOutput)
+}
+
+// The number of seconds to wait before beginning health checks.
+func (o AppSpecWorkerLivenessHealthCheckOutput) InitialDelaySeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecWorkerLivenessHealthCheck) *int { return v.InitialDelaySeconds }).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds to wait between health checks.
+func (o AppSpecWorkerLivenessHealthCheckOutput) PeriodSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecWorkerLivenessHealthCheck) *int { return v.PeriodSeconds }).(pulumi.IntPtrOutput)
+}
+
+// The port on which the health check will be performed.
+func (o AppSpecWorkerLivenessHealthCheckOutput) Port() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecWorkerLivenessHealthCheck) *int { return v.Port }).(pulumi.IntPtrOutput)
+}
+
+// The number of successful health checks before considered healthy.
+func (o AppSpecWorkerLivenessHealthCheckOutput) SuccessThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecWorkerLivenessHealthCheck) *int { return v.SuccessThreshold }).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds after which the check times out.
+func (o AppSpecWorkerLivenessHealthCheckOutput) TimeoutSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v AppSpecWorkerLivenessHealthCheck) *int { return v.TimeoutSeconds }).(pulumi.IntPtrOutput)
+}
+
+type AppSpecWorkerLivenessHealthCheckPtrOutput struct{ *pulumi.OutputState }
+
+func (AppSpecWorkerLivenessHealthCheckPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**AppSpecWorkerLivenessHealthCheck)(nil)).Elem()
+}
+
+func (o AppSpecWorkerLivenessHealthCheckPtrOutput) ToAppSpecWorkerLivenessHealthCheckPtrOutput() AppSpecWorkerLivenessHealthCheckPtrOutput {
+	return o
+}
+
+func (o AppSpecWorkerLivenessHealthCheckPtrOutput) ToAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(ctx context.Context) AppSpecWorkerLivenessHealthCheckPtrOutput {
+	return o
+}
+
+func (o AppSpecWorkerLivenessHealthCheckPtrOutput) Elem() AppSpecWorkerLivenessHealthCheckOutput {
+	return o.ApplyT(func(v *AppSpecWorkerLivenessHealthCheck) AppSpecWorkerLivenessHealthCheck {
+		if v != nil {
+			return *v
+		}
+		var ret AppSpecWorkerLivenessHealthCheck
+		return ret
+	}).(AppSpecWorkerLivenessHealthCheckOutput)
+}
+
+// The number of failed health checks before considered unhealthy.
+func (o AppSpecWorkerLivenessHealthCheckPtrOutput) FailureThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.FailureThreshold
+	}).(pulumi.IntPtrOutput)
+}
+
+// The route path used for the HTTP health check ping.
+func (o AppSpecWorkerLivenessHealthCheckPtrOutput) HttpPath() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *AppSpecWorkerLivenessHealthCheck) *string {
+		if v == nil {
+			return nil
+		}
+		return v.HttpPath
+	}).(pulumi.StringPtrOutput)
+}
+
+// The number of seconds to wait before beginning health checks.
+func (o AppSpecWorkerLivenessHealthCheckPtrOutput) InitialDelaySeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.InitialDelaySeconds
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds to wait between health checks.
+func (o AppSpecWorkerLivenessHealthCheckPtrOutput) PeriodSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.PeriodSeconds
+	}).(pulumi.IntPtrOutput)
+}
+
+// The port on which the health check will be performed.
+func (o AppSpecWorkerLivenessHealthCheckPtrOutput) Port() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.Port
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of successful health checks before considered healthy.
+func (o AppSpecWorkerLivenessHealthCheckPtrOutput) SuccessThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.SuccessThreshold
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds after which the check times out.
+func (o AppSpecWorkerLivenessHealthCheckPtrOutput) TimeoutSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *AppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.TimeoutSeconds
+	}).(pulumi.IntPtrOutput)
+}
+
 type AppSpecWorkerLogDestination struct {
 	// Datadog configuration.
 	Datadog *AppSpecWorkerLogDestinationDatadog `pulumi:"datadog"`
@@ -18478,6 +18998,181 @@ func (o DatabaseClusterMaintenanceWindowArrayOutput) Index(i pulumi.IntInput) Da
 	return pulumi.All(o, i).ApplyT(func(vs []interface{}) DatabaseClusterMaintenanceWindow {
 		return vs[0].([]DatabaseClusterMaintenanceWindow)[vs[1].(int)]
 	}).(DatabaseClusterMaintenanceWindowOutput)
+}
+
+type DatabaseClusterStorageAutoscale struct {
+	// Whether storage autoscaling is enabled for the cluster.
+	Enabled bool `pulumi:"enabled"`
+	// The amount of storage, in GiB, to add when autoscaling is triggered.
+	IncrementGib *int `pulumi:"incrementGib"`
+	// The storage utilization percentage at which autoscaling is triggered.
+	ThresholdPercent *int `pulumi:"thresholdPercent"`
+}
+
+// DatabaseClusterStorageAutoscaleInput is an input type that accepts DatabaseClusterStorageAutoscaleArgs and DatabaseClusterStorageAutoscaleOutput values.
+// You can construct a concrete instance of `DatabaseClusterStorageAutoscaleInput` via:
+//
+//	DatabaseClusterStorageAutoscaleArgs{...}
+type DatabaseClusterStorageAutoscaleInput interface {
+	pulumi.Input
+
+	ToDatabaseClusterStorageAutoscaleOutput() DatabaseClusterStorageAutoscaleOutput
+	ToDatabaseClusterStorageAutoscaleOutputWithContext(context.Context) DatabaseClusterStorageAutoscaleOutput
+}
+
+type DatabaseClusterStorageAutoscaleArgs struct {
+	// Whether storage autoscaling is enabled for the cluster.
+	Enabled pulumi.BoolInput `pulumi:"enabled"`
+	// The amount of storage, in GiB, to add when autoscaling is triggered.
+	IncrementGib pulumi.IntPtrInput `pulumi:"incrementGib"`
+	// The storage utilization percentage at which autoscaling is triggered.
+	ThresholdPercent pulumi.IntPtrInput `pulumi:"thresholdPercent"`
+}
+
+func (DatabaseClusterStorageAutoscaleArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*DatabaseClusterStorageAutoscale)(nil)).Elem()
+}
+
+func (i DatabaseClusterStorageAutoscaleArgs) ToDatabaseClusterStorageAutoscaleOutput() DatabaseClusterStorageAutoscaleOutput {
+	return i.ToDatabaseClusterStorageAutoscaleOutputWithContext(context.Background())
+}
+
+func (i DatabaseClusterStorageAutoscaleArgs) ToDatabaseClusterStorageAutoscaleOutputWithContext(ctx context.Context) DatabaseClusterStorageAutoscaleOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(DatabaseClusterStorageAutoscaleOutput)
+}
+
+func (i DatabaseClusterStorageAutoscaleArgs) ToDatabaseClusterStorageAutoscalePtrOutput() DatabaseClusterStorageAutoscalePtrOutput {
+	return i.ToDatabaseClusterStorageAutoscalePtrOutputWithContext(context.Background())
+}
+
+func (i DatabaseClusterStorageAutoscaleArgs) ToDatabaseClusterStorageAutoscalePtrOutputWithContext(ctx context.Context) DatabaseClusterStorageAutoscalePtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(DatabaseClusterStorageAutoscaleOutput).ToDatabaseClusterStorageAutoscalePtrOutputWithContext(ctx)
+}
+
+// DatabaseClusterStorageAutoscalePtrInput is an input type that accepts DatabaseClusterStorageAutoscaleArgs, DatabaseClusterStorageAutoscalePtr and DatabaseClusterStorageAutoscalePtrOutput values.
+// You can construct a concrete instance of `DatabaseClusterStorageAutoscalePtrInput` via:
+//
+//	        DatabaseClusterStorageAutoscaleArgs{...}
+//
+//	or:
+//
+//	        nil
+type DatabaseClusterStorageAutoscalePtrInput interface {
+	pulumi.Input
+
+	ToDatabaseClusterStorageAutoscalePtrOutput() DatabaseClusterStorageAutoscalePtrOutput
+	ToDatabaseClusterStorageAutoscalePtrOutputWithContext(context.Context) DatabaseClusterStorageAutoscalePtrOutput
+}
+
+type databaseClusterStorageAutoscalePtrType DatabaseClusterStorageAutoscaleArgs
+
+func DatabaseClusterStorageAutoscalePtr(v *DatabaseClusterStorageAutoscaleArgs) DatabaseClusterStorageAutoscalePtrInput {
+	return (*databaseClusterStorageAutoscalePtrType)(v)
+}
+
+func (*databaseClusterStorageAutoscalePtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**DatabaseClusterStorageAutoscale)(nil)).Elem()
+}
+
+func (i *databaseClusterStorageAutoscalePtrType) ToDatabaseClusterStorageAutoscalePtrOutput() DatabaseClusterStorageAutoscalePtrOutput {
+	return i.ToDatabaseClusterStorageAutoscalePtrOutputWithContext(context.Background())
+}
+
+func (i *databaseClusterStorageAutoscalePtrType) ToDatabaseClusterStorageAutoscalePtrOutputWithContext(ctx context.Context) DatabaseClusterStorageAutoscalePtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(DatabaseClusterStorageAutoscalePtrOutput)
+}
+
+type DatabaseClusterStorageAutoscaleOutput struct{ *pulumi.OutputState }
+
+func (DatabaseClusterStorageAutoscaleOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*DatabaseClusterStorageAutoscale)(nil)).Elem()
+}
+
+func (o DatabaseClusterStorageAutoscaleOutput) ToDatabaseClusterStorageAutoscaleOutput() DatabaseClusterStorageAutoscaleOutput {
+	return o
+}
+
+func (o DatabaseClusterStorageAutoscaleOutput) ToDatabaseClusterStorageAutoscaleOutputWithContext(ctx context.Context) DatabaseClusterStorageAutoscaleOutput {
+	return o
+}
+
+func (o DatabaseClusterStorageAutoscaleOutput) ToDatabaseClusterStorageAutoscalePtrOutput() DatabaseClusterStorageAutoscalePtrOutput {
+	return o.ToDatabaseClusterStorageAutoscalePtrOutputWithContext(context.Background())
+}
+
+func (o DatabaseClusterStorageAutoscaleOutput) ToDatabaseClusterStorageAutoscalePtrOutputWithContext(ctx context.Context) DatabaseClusterStorageAutoscalePtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v DatabaseClusterStorageAutoscale) *DatabaseClusterStorageAutoscale {
+		return &v
+	}).(DatabaseClusterStorageAutoscalePtrOutput)
+}
+
+// Whether storage autoscaling is enabled for the cluster.
+func (o DatabaseClusterStorageAutoscaleOutput) Enabled() pulumi.BoolOutput {
+	return o.ApplyT(func(v DatabaseClusterStorageAutoscale) bool { return v.Enabled }).(pulumi.BoolOutput)
+}
+
+// The amount of storage, in GiB, to add when autoscaling is triggered.
+func (o DatabaseClusterStorageAutoscaleOutput) IncrementGib() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v DatabaseClusterStorageAutoscale) *int { return v.IncrementGib }).(pulumi.IntPtrOutput)
+}
+
+// The storage utilization percentage at which autoscaling is triggered.
+func (o DatabaseClusterStorageAutoscaleOutput) ThresholdPercent() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v DatabaseClusterStorageAutoscale) *int { return v.ThresholdPercent }).(pulumi.IntPtrOutput)
+}
+
+type DatabaseClusterStorageAutoscalePtrOutput struct{ *pulumi.OutputState }
+
+func (DatabaseClusterStorageAutoscalePtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**DatabaseClusterStorageAutoscale)(nil)).Elem()
+}
+
+func (o DatabaseClusterStorageAutoscalePtrOutput) ToDatabaseClusterStorageAutoscalePtrOutput() DatabaseClusterStorageAutoscalePtrOutput {
+	return o
+}
+
+func (o DatabaseClusterStorageAutoscalePtrOutput) ToDatabaseClusterStorageAutoscalePtrOutputWithContext(ctx context.Context) DatabaseClusterStorageAutoscalePtrOutput {
+	return o
+}
+
+func (o DatabaseClusterStorageAutoscalePtrOutput) Elem() DatabaseClusterStorageAutoscaleOutput {
+	return o.ApplyT(func(v *DatabaseClusterStorageAutoscale) DatabaseClusterStorageAutoscale {
+		if v != nil {
+			return *v
+		}
+		var ret DatabaseClusterStorageAutoscale
+		return ret
+	}).(DatabaseClusterStorageAutoscaleOutput)
+}
+
+// Whether storage autoscaling is enabled for the cluster.
+func (o DatabaseClusterStorageAutoscalePtrOutput) Enabled() pulumi.BoolPtrOutput {
+	return o.ApplyT(func(v *DatabaseClusterStorageAutoscale) *bool {
+		if v == nil {
+			return nil
+		}
+		return &v.Enabled
+	}).(pulumi.BoolPtrOutput)
+}
+
+// The amount of storage, in GiB, to add when autoscaling is triggered.
+func (o DatabaseClusterStorageAutoscalePtrOutput) IncrementGib() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *DatabaseClusterStorageAutoscale) *int {
+		if v == nil {
+			return nil
+		}
+		return v.IncrementGib
+	}).(pulumi.IntPtrOutput)
+}
+
+// The storage utilization percentage at which autoscaling is triggered.
+func (o DatabaseClusterStorageAutoscalePtrOutput) ThresholdPercent() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *DatabaseClusterStorageAutoscale) *int {
+		if v == nil {
+			return nil
+		}
+		return v.ThresholdPercent
+	}).(pulumi.IntPtrOutput)
 }
 
 type DatabaseFirewallRule struct {
@@ -33039,6 +33734,516 @@ func (o GradientaiAgentTemplateModelVersionArrayOutput) Index(i pulumi.IntInput)
 	}).(GradientaiAgentTemplateModelVersionOutput)
 }
 
+type GradientaiCustomModelActiveDeployment struct {
+	// Timestamp when the deployment was created.
+	CreatedAt *string `pulumi:"createdAt"`
+	// Endpoint URLs exposed by the deployment.
+	Endpoints []GradientaiCustomModelActiveDeploymentEndpoint `pulumi:"endpoints"`
+	// ID of the dedicated inference deployment.
+	Id *string `pulumi:"id"`
+	// Name of the dedicated inference deployment.
+	Name *string `pulumi:"name"`
+	// Region slug of the dedicated inference deployment.
+	RegionSlug *string `pulumi:"regionSlug"`
+	// Current state of the deployment.
+	State *string `pulumi:"state"`
+	// Timestamp when the deployment was last updated.
+	UpdatedAt *string `pulumi:"updatedAt"`
+}
+
+// GradientaiCustomModelActiveDeploymentInput is an input type that accepts GradientaiCustomModelActiveDeploymentArgs and GradientaiCustomModelActiveDeploymentOutput values.
+// You can construct a concrete instance of `GradientaiCustomModelActiveDeploymentInput` via:
+//
+//	GradientaiCustomModelActiveDeploymentArgs{...}
+type GradientaiCustomModelActiveDeploymentInput interface {
+	pulumi.Input
+
+	ToGradientaiCustomModelActiveDeploymentOutput() GradientaiCustomModelActiveDeploymentOutput
+	ToGradientaiCustomModelActiveDeploymentOutputWithContext(context.Context) GradientaiCustomModelActiveDeploymentOutput
+}
+
+type GradientaiCustomModelActiveDeploymentArgs struct {
+	// Timestamp when the deployment was created.
+	CreatedAt pulumi.StringPtrInput `pulumi:"createdAt"`
+	// Endpoint URLs exposed by the deployment.
+	Endpoints GradientaiCustomModelActiveDeploymentEndpointArrayInput `pulumi:"endpoints"`
+	// ID of the dedicated inference deployment.
+	Id pulumi.StringPtrInput `pulumi:"id"`
+	// Name of the dedicated inference deployment.
+	Name pulumi.StringPtrInput `pulumi:"name"`
+	// Region slug of the dedicated inference deployment.
+	RegionSlug pulumi.StringPtrInput `pulumi:"regionSlug"`
+	// Current state of the deployment.
+	State pulumi.StringPtrInput `pulumi:"state"`
+	// Timestamp when the deployment was last updated.
+	UpdatedAt pulumi.StringPtrInput `pulumi:"updatedAt"`
+}
+
+func (GradientaiCustomModelActiveDeploymentArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*GradientaiCustomModelActiveDeployment)(nil)).Elem()
+}
+
+func (i GradientaiCustomModelActiveDeploymentArgs) ToGradientaiCustomModelActiveDeploymentOutput() GradientaiCustomModelActiveDeploymentOutput {
+	return i.ToGradientaiCustomModelActiveDeploymentOutputWithContext(context.Background())
+}
+
+func (i GradientaiCustomModelActiveDeploymentArgs) ToGradientaiCustomModelActiveDeploymentOutputWithContext(ctx context.Context) GradientaiCustomModelActiveDeploymentOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GradientaiCustomModelActiveDeploymentOutput)
+}
+
+// GradientaiCustomModelActiveDeploymentArrayInput is an input type that accepts GradientaiCustomModelActiveDeploymentArray and GradientaiCustomModelActiveDeploymentArrayOutput values.
+// You can construct a concrete instance of `GradientaiCustomModelActiveDeploymentArrayInput` via:
+//
+//	GradientaiCustomModelActiveDeploymentArray{ GradientaiCustomModelActiveDeploymentArgs{...} }
+type GradientaiCustomModelActiveDeploymentArrayInput interface {
+	pulumi.Input
+
+	ToGradientaiCustomModelActiveDeploymentArrayOutput() GradientaiCustomModelActiveDeploymentArrayOutput
+	ToGradientaiCustomModelActiveDeploymentArrayOutputWithContext(context.Context) GradientaiCustomModelActiveDeploymentArrayOutput
+}
+
+type GradientaiCustomModelActiveDeploymentArray []GradientaiCustomModelActiveDeploymentInput
+
+func (GradientaiCustomModelActiveDeploymentArray) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]GradientaiCustomModelActiveDeployment)(nil)).Elem()
+}
+
+func (i GradientaiCustomModelActiveDeploymentArray) ToGradientaiCustomModelActiveDeploymentArrayOutput() GradientaiCustomModelActiveDeploymentArrayOutput {
+	return i.ToGradientaiCustomModelActiveDeploymentArrayOutputWithContext(context.Background())
+}
+
+func (i GradientaiCustomModelActiveDeploymentArray) ToGradientaiCustomModelActiveDeploymentArrayOutputWithContext(ctx context.Context) GradientaiCustomModelActiveDeploymentArrayOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GradientaiCustomModelActiveDeploymentArrayOutput)
+}
+
+type GradientaiCustomModelActiveDeploymentOutput struct{ *pulumi.OutputState }
+
+func (GradientaiCustomModelActiveDeploymentOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*GradientaiCustomModelActiveDeployment)(nil)).Elem()
+}
+
+func (o GradientaiCustomModelActiveDeploymentOutput) ToGradientaiCustomModelActiveDeploymentOutput() GradientaiCustomModelActiveDeploymentOutput {
+	return o
+}
+
+func (o GradientaiCustomModelActiveDeploymentOutput) ToGradientaiCustomModelActiveDeploymentOutputWithContext(ctx context.Context) GradientaiCustomModelActiveDeploymentOutput {
+	return o
+}
+
+// Timestamp when the deployment was created.
+func (o GradientaiCustomModelActiveDeploymentOutput) CreatedAt() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelActiveDeployment) *string { return v.CreatedAt }).(pulumi.StringPtrOutput)
+}
+
+// Endpoint URLs exposed by the deployment.
+func (o GradientaiCustomModelActiveDeploymentOutput) Endpoints() GradientaiCustomModelActiveDeploymentEndpointArrayOutput {
+	return o.ApplyT(func(v GradientaiCustomModelActiveDeployment) []GradientaiCustomModelActiveDeploymentEndpoint {
+		return v.Endpoints
+	}).(GradientaiCustomModelActiveDeploymentEndpointArrayOutput)
+}
+
+// ID of the dedicated inference deployment.
+func (o GradientaiCustomModelActiveDeploymentOutput) Id() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelActiveDeployment) *string { return v.Id }).(pulumi.StringPtrOutput)
+}
+
+// Name of the dedicated inference deployment.
+func (o GradientaiCustomModelActiveDeploymentOutput) Name() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelActiveDeployment) *string { return v.Name }).(pulumi.StringPtrOutput)
+}
+
+// Region slug of the dedicated inference deployment.
+func (o GradientaiCustomModelActiveDeploymentOutput) RegionSlug() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelActiveDeployment) *string { return v.RegionSlug }).(pulumi.StringPtrOutput)
+}
+
+// Current state of the deployment.
+func (o GradientaiCustomModelActiveDeploymentOutput) State() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelActiveDeployment) *string { return v.State }).(pulumi.StringPtrOutput)
+}
+
+// Timestamp when the deployment was last updated.
+func (o GradientaiCustomModelActiveDeploymentOutput) UpdatedAt() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelActiveDeployment) *string { return v.UpdatedAt }).(pulumi.StringPtrOutput)
+}
+
+type GradientaiCustomModelActiveDeploymentArrayOutput struct{ *pulumi.OutputState }
+
+func (GradientaiCustomModelActiveDeploymentArrayOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]GradientaiCustomModelActiveDeployment)(nil)).Elem()
+}
+
+func (o GradientaiCustomModelActiveDeploymentArrayOutput) ToGradientaiCustomModelActiveDeploymentArrayOutput() GradientaiCustomModelActiveDeploymentArrayOutput {
+	return o
+}
+
+func (o GradientaiCustomModelActiveDeploymentArrayOutput) ToGradientaiCustomModelActiveDeploymentArrayOutputWithContext(ctx context.Context) GradientaiCustomModelActiveDeploymentArrayOutput {
+	return o
+}
+
+func (o GradientaiCustomModelActiveDeploymentArrayOutput) Index(i pulumi.IntInput) GradientaiCustomModelActiveDeploymentOutput {
+	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GradientaiCustomModelActiveDeployment {
+		return vs[0].([]GradientaiCustomModelActiveDeployment)[vs[1].(int)]
+	}).(GradientaiCustomModelActiveDeploymentOutput)
+}
+
+type GradientaiCustomModelActiveDeploymentEndpoint struct {
+	// Private endpoint FQDN.
+	PrivateEndpointFqdn *string `pulumi:"privateEndpointFqdn"`
+	// Public endpoint FQDN, if enabled.
+	PublicEndpointFqdn *string `pulumi:"publicEndpointFqdn"`
+}
+
+// GradientaiCustomModelActiveDeploymentEndpointInput is an input type that accepts GradientaiCustomModelActiveDeploymentEndpointArgs and GradientaiCustomModelActiveDeploymentEndpointOutput values.
+// You can construct a concrete instance of `GradientaiCustomModelActiveDeploymentEndpointInput` via:
+//
+//	GradientaiCustomModelActiveDeploymentEndpointArgs{...}
+type GradientaiCustomModelActiveDeploymentEndpointInput interface {
+	pulumi.Input
+
+	ToGradientaiCustomModelActiveDeploymentEndpointOutput() GradientaiCustomModelActiveDeploymentEndpointOutput
+	ToGradientaiCustomModelActiveDeploymentEndpointOutputWithContext(context.Context) GradientaiCustomModelActiveDeploymentEndpointOutput
+}
+
+type GradientaiCustomModelActiveDeploymentEndpointArgs struct {
+	// Private endpoint FQDN.
+	PrivateEndpointFqdn pulumi.StringPtrInput `pulumi:"privateEndpointFqdn"`
+	// Public endpoint FQDN, if enabled.
+	PublicEndpointFqdn pulumi.StringPtrInput `pulumi:"publicEndpointFqdn"`
+}
+
+func (GradientaiCustomModelActiveDeploymentEndpointArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*GradientaiCustomModelActiveDeploymentEndpoint)(nil)).Elem()
+}
+
+func (i GradientaiCustomModelActiveDeploymentEndpointArgs) ToGradientaiCustomModelActiveDeploymentEndpointOutput() GradientaiCustomModelActiveDeploymentEndpointOutput {
+	return i.ToGradientaiCustomModelActiveDeploymentEndpointOutputWithContext(context.Background())
+}
+
+func (i GradientaiCustomModelActiveDeploymentEndpointArgs) ToGradientaiCustomModelActiveDeploymentEndpointOutputWithContext(ctx context.Context) GradientaiCustomModelActiveDeploymentEndpointOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GradientaiCustomModelActiveDeploymentEndpointOutput)
+}
+
+// GradientaiCustomModelActiveDeploymentEndpointArrayInput is an input type that accepts GradientaiCustomModelActiveDeploymentEndpointArray and GradientaiCustomModelActiveDeploymentEndpointArrayOutput values.
+// You can construct a concrete instance of `GradientaiCustomModelActiveDeploymentEndpointArrayInput` via:
+//
+//	GradientaiCustomModelActiveDeploymentEndpointArray{ GradientaiCustomModelActiveDeploymentEndpointArgs{...} }
+type GradientaiCustomModelActiveDeploymentEndpointArrayInput interface {
+	pulumi.Input
+
+	ToGradientaiCustomModelActiveDeploymentEndpointArrayOutput() GradientaiCustomModelActiveDeploymentEndpointArrayOutput
+	ToGradientaiCustomModelActiveDeploymentEndpointArrayOutputWithContext(context.Context) GradientaiCustomModelActiveDeploymentEndpointArrayOutput
+}
+
+type GradientaiCustomModelActiveDeploymentEndpointArray []GradientaiCustomModelActiveDeploymentEndpointInput
+
+func (GradientaiCustomModelActiveDeploymentEndpointArray) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]GradientaiCustomModelActiveDeploymentEndpoint)(nil)).Elem()
+}
+
+func (i GradientaiCustomModelActiveDeploymentEndpointArray) ToGradientaiCustomModelActiveDeploymentEndpointArrayOutput() GradientaiCustomModelActiveDeploymentEndpointArrayOutput {
+	return i.ToGradientaiCustomModelActiveDeploymentEndpointArrayOutputWithContext(context.Background())
+}
+
+func (i GradientaiCustomModelActiveDeploymentEndpointArray) ToGradientaiCustomModelActiveDeploymentEndpointArrayOutputWithContext(ctx context.Context) GradientaiCustomModelActiveDeploymentEndpointArrayOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GradientaiCustomModelActiveDeploymentEndpointArrayOutput)
+}
+
+type GradientaiCustomModelActiveDeploymentEndpointOutput struct{ *pulumi.OutputState }
+
+func (GradientaiCustomModelActiveDeploymentEndpointOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*GradientaiCustomModelActiveDeploymentEndpoint)(nil)).Elem()
+}
+
+func (o GradientaiCustomModelActiveDeploymentEndpointOutput) ToGradientaiCustomModelActiveDeploymentEndpointOutput() GradientaiCustomModelActiveDeploymentEndpointOutput {
+	return o
+}
+
+func (o GradientaiCustomModelActiveDeploymentEndpointOutput) ToGradientaiCustomModelActiveDeploymentEndpointOutputWithContext(ctx context.Context) GradientaiCustomModelActiveDeploymentEndpointOutput {
+	return o
+}
+
+// Private endpoint FQDN.
+func (o GradientaiCustomModelActiveDeploymentEndpointOutput) PrivateEndpointFqdn() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelActiveDeploymentEndpoint) *string { return v.PrivateEndpointFqdn }).(pulumi.StringPtrOutput)
+}
+
+// Public endpoint FQDN, if enabled.
+func (o GradientaiCustomModelActiveDeploymentEndpointOutput) PublicEndpointFqdn() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelActiveDeploymentEndpoint) *string { return v.PublicEndpointFqdn }).(pulumi.StringPtrOutput)
+}
+
+type GradientaiCustomModelActiveDeploymentEndpointArrayOutput struct{ *pulumi.OutputState }
+
+func (GradientaiCustomModelActiveDeploymentEndpointArrayOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]GradientaiCustomModelActiveDeploymentEndpoint)(nil)).Elem()
+}
+
+func (o GradientaiCustomModelActiveDeploymentEndpointArrayOutput) ToGradientaiCustomModelActiveDeploymentEndpointArrayOutput() GradientaiCustomModelActiveDeploymentEndpointArrayOutput {
+	return o
+}
+
+func (o GradientaiCustomModelActiveDeploymentEndpointArrayOutput) ToGradientaiCustomModelActiveDeploymentEndpointArrayOutputWithContext(ctx context.Context) GradientaiCustomModelActiveDeploymentEndpointArrayOutput {
+	return o
+}
+
+func (o GradientaiCustomModelActiveDeploymentEndpointArrayOutput) Index(i pulumi.IntInput) GradientaiCustomModelActiveDeploymentEndpointOutput {
+	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GradientaiCustomModelActiveDeploymentEndpoint {
+		return vs[0].([]GradientaiCustomModelActiveDeploymentEndpoint)[vs[1].(int)]
+	}).(GradientaiCustomModelActiveDeploymentEndpointOutput)
+}
+
+type GradientaiCustomModelSourceRef struct {
+	// Access type for the source repository. One of ACCESS_TYPE_PUBLIC, ACCESS_TYPE_PRIVATE, ACCESS_TYPE_GATED.
+	AccessType *string `pulumi:"accessType"`
+	// Spaces bucket name for SOURCE_TYPE_SPACES_BUCKET sources.
+	Bucket *string `pulumi:"bucket"`
+	// Commit SHA to pin for the import. If omitted, the API resolves and returns the SHA actually imported.
+	CommitSha *string `pulumi:"commitSha"`
+	// HuggingFace token used to access ACCESS_TYPE_PRIVATE or ACCESS_TYPE_GATED repositories. Write-only.
+	HfToken *string `pulumi:"hfToken"`
+	// Key prefix inside the source bucket.
+	Prefix *string `pulumi:"prefix"`
+	// Region of the source bucket.
+	Region *string `pulumi:"region"`
+	// Repository identifier (e.g. the HuggingFace repo). Required for SOURCE_TYPE_HUGGINGFACE sources.
+	RepoId *string `pulumi:"repoId"`
+}
+
+// GradientaiCustomModelSourceRefInput is an input type that accepts GradientaiCustomModelSourceRefArgs and GradientaiCustomModelSourceRefOutput values.
+// You can construct a concrete instance of `GradientaiCustomModelSourceRefInput` via:
+//
+//	GradientaiCustomModelSourceRefArgs{...}
+type GradientaiCustomModelSourceRefInput interface {
+	pulumi.Input
+
+	ToGradientaiCustomModelSourceRefOutput() GradientaiCustomModelSourceRefOutput
+	ToGradientaiCustomModelSourceRefOutputWithContext(context.Context) GradientaiCustomModelSourceRefOutput
+}
+
+type GradientaiCustomModelSourceRefArgs struct {
+	// Access type for the source repository. One of ACCESS_TYPE_PUBLIC, ACCESS_TYPE_PRIVATE, ACCESS_TYPE_GATED.
+	AccessType pulumi.StringPtrInput `pulumi:"accessType"`
+	// Spaces bucket name for SOURCE_TYPE_SPACES_BUCKET sources.
+	Bucket pulumi.StringPtrInput `pulumi:"bucket"`
+	// Commit SHA to pin for the import. If omitted, the API resolves and returns the SHA actually imported.
+	CommitSha pulumi.StringPtrInput `pulumi:"commitSha"`
+	// HuggingFace token used to access ACCESS_TYPE_PRIVATE or ACCESS_TYPE_GATED repositories. Write-only.
+	HfToken pulumi.StringPtrInput `pulumi:"hfToken"`
+	// Key prefix inside the source bucket.
+	Prefix pulumi.StringPtrInput `pulumi:"prefix"`
+	// Region of the source bucket.
+	Region pulumi.StringPtrInput `pulumi:"region"`
+	// Repository identifier (e.g. the HuggingFace repo). Required for SOURCE_TYPE_HUGGINGFACE sources.
+	RepoId pulumi.StringPtrInput `pulumi:"repoId"`
+}
+
+func (GradientaiCustomModelSourceRefArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*GradientaiCustomModelSourceRef)(nil)).Elem()
+}
+
+func (i GradientaiCustomModelSourceRefArgs) ToGradientaiCustomModelSourceRefOutput() GradientaiCustomModelSourceRefOutput {
+	return i.ToGradientaiCustomModelSourceRefOutputWithContext(context.Background())
+}
+
+func (i GradientaiCustomModelSourceRefArgs) ToGradientaiCustomModelSourceRefOutputWithContext(ctx context.Context) GradientaiCustomModelSourceRefOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GradientaiCustomModelSourceRefOutput)
+}
+
+func (i GradientaiCustomModelSourceRefArgs) ToGradientaiCustomModelSourceRefPtrOutput() GradientaiCustomModelSourceRefPtrOutput {
+	return i.ToGradientaiCustomModelSourceRefPtrOutputWithContext(context.Background())
+}
+
+func (i GradientaiCustomModelSourceRefArgs) ToGradientaiCustomModelSourceRefPtrOutputWithContext(ctx context.Context) GradientaiCustomModelSourceRefPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GradientaiCustomModelSourceRefOutput).ToGradientaiCustomModelSourceRefPtrOutputWithContext(ctx)
+}
+
+// GradientaiCustomModelSourceRefPtrInput is an input type that accepts GradientaiCustomModelSourceRefArgs, GradientaiCustomModelSourceRefPtr and GradientaiCustomModelSourceRefPtrOutput values.
+// You can construct a concrete instance of `GradientaiCustomModelSourceRefPtrInput` via:
+//
+//	        GradientaiCustomModelSourceRefArgs{...}
+//
+//	or:
+//
+//	        nil
+type GradientaiCustomModelSourceRefPtrInput interface {
+	pulumi.Input
+
+	ToGradientaiCustomModelSourceRefPtrOutput() GradientaiCustomModelSourceRefPtrOutput
+	ToGradientaiCustomModelSourceRefPtrOutputWithContext(context.Context) GradientaiCustomModelSourceRefPtrOutput
+}
+
+type gradientaiCustomModelSourceRefPtrType GradientaiCustomModelSourceRefArgs
+
+func GradientaiCustomModelSourceRefPtr(v *GradientaiCustomModelSourceRefArgs) GradientaiCustomModelSourceRefPtrInput {
+	return (*gradientaiCustomModelSourceRefPtrType)(v)
+}
+
+func (*gradientaiCustomModelSourceRefPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**GradientaiCustomModelSourceRef)(nil)).Elem()
+}
+
+func (i *gradientaiCustomModelSourceRefPtrType) ToGradientaiCustomModelSourceRefPtrOutput() GradientaiCustomModelSourceRefPtrOutput {
+	return i.ToGradientaiCustomModelSourceRefPtrOutputWithContext(context.Background())
+}
+
+func (i *gradientaiCustomModelSourceRefPtrType) ToGradientaiCustomModelSourceRefPtrOutputWithContext(ctx context.Context) GradientaiCustomModelSourceRefPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GradientaiCustomModelSourceRefPtrOutput)
+}
+
+type GradientaiCustomModelSourceRefOutput struct{ *pulumi.OutputState }
+
+func (GradientaiCustomModelSourceRefOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*GradientaiCustomModelSourceRef)(nil)).Elem()
+}
+
+func (o GradientaiCustomModelSourceRefOutput) ToGradientaiCustomModelSourceRefOutput() GradientaiCustomModelSourceRefOutput {
+	return o
+}
+
+func (o GradientaiCustomModelSourceRefOutput) ToGradientaiCustomModelSourceRefOutputWithContext(ctx context.Context) GradientaiCustomModelSourceRefOutput {
+	return o
+}
+
+func (o GradientaiCustomModelSourceRefOutput) ToGradientaiCustomModelSourceRefPtrOutput() GradientaiCustomModelSourceRefPtrOutput {
+	return o.ToGradientaiCustomModelSourceRefPtrOutputWithContext(context.Background())
+}
+
+func (o GradientaiCustomModelSourceRefOutput) ToGradientaiCustomModelSourceRefPtrOutputWithContext(ctx context.Context) GradientaiCustomModelSourceRefPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v GradientaiCustomModelSourceRef) *GradientaiCustomModelSourceRef {
+		return &v
+	}).(GradientaiCustomModelSourceRefPtrOutput)
+}
+
+// Access type for the source repository. One of ACCESS_TYPE_PUBLIC, ACCESS_TYPE_PRIVATE, ACCESS_TYPE_GATED.
+func (o GradientaiCustomModelSourceRefOutput) AccessType() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelSourceRef) *string { return v.AccessType }).(pulumi.StringPtrOutput)
+}
+
+// Spaces bucket name for SOURCE_TYPE_SPACES_BUCKET sources.
+func (o GradientaiCustomModelSourceRefOutput) Bucket() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelSourceRef) *string { return v.Bucket }).(pulumi.StringPtrOutput)
+}
+
+// Commit SHA to pin for the import. If omitted, the API resolves and returns the SHA actually imported.
+func (o GradientaiCustomModelSourceRefOutput) CommitSha() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelSourceRef) *string { return v.CommitSha }).(pulumi.StringPtrOutput)
+}
+
+// HuggingFace token used to access ACCESS_TYPE_PRIVATE or ACCESS_TYPE_GATED repositories. Write-only.
+func (o GradientaiCustomModelSourceRefOutput) HfToken() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelSourceRef) *string { return v.HfToken }).(pulumi.StringPtrOutput)
+}
+
+// Key prefix inside the source bucket.
+func (o GradientaiCustomModelSourceRefOutput) Prefix() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelSourceRef) *string { return v.Prefix }).(pulumi.StringPtrOutput)
+}
+
+// Region of the source bucket.
+func (o GradientaiCustomModelSourceRefOutput) Region() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelSourceRef) *string { return v.Region }).(pulumi.StringPtrOutput)
+}
+
+// Repository identifier (e.g. the HuggingFace repo). Required for SOURCE_TYPE_HUGGINGFACE sources.
+func (o GradientaiCustomModelSourceRefOutput) RepoId() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GradientaiCustomModelSourceRef) *string { return v.RepoId }).(pulumi.StringPtrOutput)
+}
+
+type GradientaiCustomModelSourceRefPtrOutput struct{ *pulumi.OutputState }
+
+func (GradientaiCustomModelSourceRefPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**GradientaiCustomModelSourceRef)(nil)).Elem()
+}
+
+func (o GradientaiCustomModelSourceRefPtrOutput) ToGradientaiCustomModelSourceRefPtrOutput() GradientaiCustomModelSourceRefPtrOutput {
+	return o
+}
+
+func (o GradientaiCustomModelSourceRefPtrOutput) ToGradientaiCustomModelSourceRefPtrOutputWithContext(ctx context.Context) GradientaiCustomModelSourceRefPtrOutput {
+	return o
+}
+
+func (o GradientaiCustomModelSourceRefPtrOutput) Elem() GradientaiCustomModelSourceRefOutput {
+	return o.ApplyT(func(v *GradientaiCustomModelSourceRef) GradientaiCustomModelSourceRef {
+		if v != nil {
+			return *v
+		}
+		var ret GradientaiCustomModelSourceRef
+		return ret
+	}).(GradientaiCustomModelSourceRefOutput)
+}
+
+// Access type for the source repository. One of ACCESS_TYPE_PUBLIC, ACCESS_TYPE_PRIVATE, ACCESS_TYPE_GATED.
+func (o GradientaiCustomModelSourceRefPtrOutput) AccessType() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GradientaiCustomModelSourceRef) *string {
+		if v == nil {
+			return nil
+		}
+		return v.AccessType
+	}).(pulumi.StringPtrOutput)
+}
+
+// Spaces bucket name for SOURCE_TYPE_SPACES_BUCKET sources.
+func (o GradientaiCustomModelSourceRefPtrOutput) Bucket() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GradientaiCustomModelSourceRef) *string {
+		if v == nil {
+			return nil
+		}
+		return v.Bucket
+	}).(pulumi.StringPtrOutput)
+}
+
+// Commit SHA to pin for the import. If omitted, the API resolves and returns the SHA actually imported.
+func (o GradientaiCustomModelSourceRefPtrOutput) CommitSha() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GradientaiCustomModelSourceRef) *string {
+		if v == nil {
+			return nil
+		}
+		return v.CommitSha
+	}).(pulumi.StringPtrOutput)
+}
+
+// HuggingFace token used to access ACCESS_TYPE_PRIVATE or ACCESS_TYPE_GATED repositories. Write-only.
+func (o GradientaiCustomModelSourceRefPtrOutput) HfToken() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GradientaiCustomModelSourceRef) *string {
+		if v == nil {
+			return nil
+		}
+		return v.HfToken
+	}).(pulumi.StringPtrOutput)
+}
+
+// Key prefix inside the source bucket.
+func (o GradientaiCustomModelSourceRefPtrOutput) Prefix() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GradientaiCustomModelSourceRef) *string {
+		if v == nil {
+			return nil
+		}
+		return v.Prefix
+	}).(pulumi.StringPtrOutput)
+}
+
+// Region of the source bucket.
+func (o GradientaiCustomModelSourceRefPtrOutput) Region() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GradientaiCustomModelSourceRef) *string {
+		if v == nil {
+			return nil
+		}
+		return v.Region
+	}).(pulumi.StringPtrOutput)
+}
+
+// Repository identifier (e.g. the HuggingFace repo). Required for SOURCE_TYPE_HUGGINGFACE sources.
+func (o GradientaiCustomModelSourceRefPtrOutput) RepoId() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GradientaiCustomModelSourceRef) *string {
+		if v == nil {
+			return nil
+		}
+		return v.RepoId
+	}).(pulumi.StringPtrOutput)
+}
+
 type GradientaiKnowledgeBaseDataSourceType struct {
 	// Created At timestamp for the Knowledge Base
 	CreatedAt *string `pulumi:"createdAt"`
@@ -34592,7 +35797,7 @@ func (o GradientaiOpenaiApiKeyModelVersionArrayOutput) Index(i pulumi.IntInput) 
 }
 
 type KubernetesClusterAmdGpuDeviceMetricsExporterPlugin struct {
-	// Boolean flag whether the component is enabled or not.
+	// Boolean flag whether the CoreDNS Autoscaler is enabled or not.
 	Enabled bool `pulumi:"enabled"`
 }
 
@@ -34608,7 +35813,7 @@ type KubernetesClusterAmdGpuDeviceMetricsExporterPluginInput interface {
 }
 
 type KubernetesClusterAmdGpuDeviceMetricsExporterPluginArgs struct {
-	// Boolean flag whether the component is enabled or not.
+	// Boolean flag whether the CoreDNS Autoscaler is enabled or not.
 	Enabled pulumi.BoolInput `pulumi:"enabled"`
 }
 
@@ -34689,7 +35894,7 @@ func (o KubernetesClusterAmdGpuDeviceMetricsExporterPluginOutput) ToKubernetesCl
 	}).(KubernetesClusterAmdGpuDeviceMetricsExporterPluginPtrOutput)
 }
 
-// Boolean flag whether the component is enabled or not.
+// Boolean flag whether the CoreDNS Autoscaler is enabled or not.
 func (o KubernetesClusterAmdGpuDeviceMetricsExporterPluginOutput) Enabled() pulumi.BoolOutput {
 	return o.ApplyT(func(v KubernetesClusterAmdGpuDeviceMetricsExporterPlugin) bool { return v.Enabled }).(pulumi.BoolOutput)
 }
@@ -34718,7 +35923,7 @@ func (o KubernetesClusterAmdGpuDeviceMetricsExporterPluginPtrOutput) Elem() Kube
 	}).(KubernetesClusterAmdGpuDeviceMetricsExporterPluginOutput)
 }
 
-// Boolean flag whether the component is enabled or not.
+// Boolean flag whether the CoreDNS Autoscaler is enabled or not.
 func (o KubernetesClusterAmdGpuDeviceMetricsExporterPluginPtrOutput) Enabled() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v *KubernetesClusterAmdGpuDeviceMetricsExporterPlugin) *bool {
 		if v == nil {
@@ -34870,10 +36075,9 @@ func (o KubernetesClusterAmdGpuDevicePluginPtrOutput) Enabled() pulumi.BoolPtrOu
 }
 
 type KubernetesClusterClusterAutoscalerConfiguration struct {
+	// A list of cluster autoscaler expander strategies to apply in order when selecting which node pool to scale up. Valid values are `random`, `priority`, and `least-waste`. The autoscaler uses each expander from the list to narrow the selection until a single node pool remains. If multiple node pools remain after all expanders are applied, one is chosen at random. When using the `priority` expander, configure priorities in the `cluster-autoscaler-priority-expander` ConfigMap in the `kube-system` namespace (see [Configuring Priority Expander](https://docs.digitalocean.com/products/kubernetes/how-to/autoscale/#configuring-priority-expander)).
 	Expanders []string `pulumi:"expanders"`
 	// String setting how long a node should be unneeded before it's eligible for scale down.
-	//
-	// This resource supports customized create timeouts. The default timeout is 30 minutes.
 	ScaleDownUnneededTime *string `pulumi:"scaleDownUnneededTime"`
 	// Float setting the Node utilization level, defined as sum of requested resources divided by capacity, in which a node can be considered for scale down.
 	ScaleDownUtilizationThreshold *float64 `pulumi:"scaleDownUtilizationThreshold"`
@@ -34891,10 +36095,9 @@ type KubernetesClusterClusterAutoscalerConfigurationInput interface {
 }
 
 type KubernetesClusterClusterAutoscalerConfigurationArgs struct {
+	// A list of cluster autoscaler expander strategies to apply in order when selecting which node pool to scale up. Valid values are `random`, `priority`, and `least-waste`. The autoscaler uses each expander from the list to narrow the selection until a single node pool remains. If multiple node pools remain after all expanders are applied, one is chosen at random. When using the `priority` expander, configure priorities in the `cluster-autoscaler-priority-expander` ConfigMap in the `kube-system` namespace (see [Configuring Priority Expander](https://docs.digitalocean.com/products/kubernetes/how-to/autoscale/#configuring-priority-expander)).
 	Expanders pulumi.StringArrayInput `pulumi:"expanders"`
 	// String setting how long a node should be unneeded before it's eligible for scale down.
-	//
-	// This resource supports customized create timeouts. The default timeout is 30 minutes.
 	ScaleDownUnneededTime pulumi.StringPtrInput `pulumi:"scaleDownUnneededTime"`
 	// Float setting the Node utilization level, defined as sum of requested resources divided by capacity, in which a node can be considered for scale down.
 	ScaleDownUtilizationThreshold pulumi.Float64PtrInput `pulumi:"scaleDownUtilizationThreshold"`
@@ -34951,13 +36154,12 @@ func (o KubernetesClusterClusterAutoscalerConfigurationOutput) ToKubernetesClust
 	return o
 }
 
+// A list of cluster autoscaler expander strategies to apply in order when selecting which node pool to scale up. Valid values are `random`, `priority`, and `least-waste`. The autoscaler uses each expander from the list to narrow the selection until a single node pool remains. If multiple node pools remain after all expanders are applied, one is chosen at random. When using the `priority` expander, configure priorities in the `cluster-autoscaler-priority-expander` ConfigMap in the `kube-system` namespace (see [Configuring Priority Expander](https://docs.digitalocean.com/products/kubernetes/how-to/autoscale/#configuring-priority-expander)).
 func (o KubernetesClusterClusterAutoscalerConfigurationOutput) Expanders() pulumi.StringArrayOutput {
 	return o.ApplyT(func(v KubernetesClusterClusterAutoscalerConfiguration) []string { return v.Expanders }).(pulumi.StringArrayOutput)
 }
 
 // String setting how long a node should be unneeded before it's eligible for scale down.
-//
-// This resource supports customized create timeouts. The default timeout is 30 minutes.
 func (o KubernetesClusterClusterAutoscalerConfigurationOutput) ScaleDownUnneededTime() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v KubernetesClusterClusterAutoscalerConfiguration) *string { return v.ScaleDownUnneededTime }).(pulumi.StringPtrOutput)
 }
@@ -35138,6 +36340,143 @@ func (o KubernetesClusterControlPlaneFirewallPtrOutput) AllowedAddresses() pulum
 // Boolean flag whether the firewall should be enabled or not.
 func (o KubernetesClusterControlPlaneFirewallPtrOutput) Enabled() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v *KubernetesClusterControlPlaneFirewall) *bool {
+		if v == nil {
+			return nil
+		}
+		return &v.Enabled
+	}).(pulumi.BoolPtrOutput)
+}
+
+type KubernetesClusterCorednsAutoscaler struct {
+	// Boolean flag whether the CoreDNS Autoscaler should be enabled or not.
+	Enabled bool `pulumi:"enabled"`
+}
+
+// KubernetesClusterCorednsAutoscalerInput is an input type that accepts KubernetesClusterCorednsAutoscalerArgs and KubernetesClusterCorednsAutoscalerOutput values.
+// You can construct a concrete instance of `KubernetesClusterCorednsAutoscalerInput` via:
+//
+//	KubernetesClusterCorednsAutoscalerArgs{...}
+type KubernetesClusterCorednsAutoscalerInput interface {
+	pulumi.Input
+
+	ToKubernetesClusterCorednsAutoscalerOutput() KubernetesClusterCorednsAutoscalerOutput
+	ToKubernetesClusterCorednsAutoscalerOutputWithContext(context.Context) KubernetesClusterCorednsAutoscalerOutput
+}
+
+type KubernetesClusterCorednsAutoscalerArgs struct {
+	// Boolean flag whether the CoreDNS Autoscaler should be enabled or not.
+	Enabled pulumi.BoolInput `pulumi:"enabled"`
+}
+
+func (KubernetesClusterCorednsAutoscalerArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*KubernetesClusterCorednsAutoscaler)(nil)).Elem()
+}
+
+func (i KubernetesClusterCorednsAutoscalerArgs) ToKubernetesClusterCorednsAutoscalerOutput() KubernetesClusterCorednsAutoscalerOutput {
+	return i.ToKubernetesClusterCorednsAutoscalerOutputWithContext(context.Background())
+}
+
+func (i KubernetesClusterCorednsAutoscalerArgs) ToKubernetesClusterCorednsAutoscalerOutputWithContext(ctx context.Context) KubernetesClusterCorednsAutoscalerOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(KubernetesClusterCorednsAutoscalerOutput)
+}
+
+func (i KubernetesClusterCorednsAutoscalerArgs) ToKubernetesClusterCorednsAutoscalerPtrOutput() KubernetesClusterCorednsAutoscalerPtrOutput {
+	return i.ToKubernetesClusterCorednsAutoscalerPtrOutputWithContext(context.Background())
+}
+
+func (i KubernetesClusterCorednsAutoscalerArgs) ToKubernetesClusterCorednsAutoscalerPtrOutputWithContext(ctx context.Context) KubernetesClusterCorednsAutoscalerPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(KubernetesClusterCorednsAutoscalerOutput).ToKubernetesClusterCorednsAutoscalerPtrOutputWithContext(ctx)
+}
+
+// KubernetesClusterCorednsAutoscalerPtrInput is an input type that accepts KubernetesClusterCorednsAutoscalerArgs, KubernetesClusterCorednsAutoscalerPtr and KubernetesClusterCorednsAutoscalerPtrOutput values.
+// You can construct a concrete instance of `KubernetesClusterCorednsAutoscalerPtrInput` via:
+//
+//	        KubernetesClusterCorednsAutoscalerArgs{...}
+//
+//	or:
+//
+//	        nil
+type KubernetesClusterCorednsAutoscalerPtrInput interface {
+	pulumi.Input
+
+	ToKubernetesClusterCorednsAutoscalerPtrOutput() KubernetesClusterCorednsAutoscalerPtrOutput
+	ToKubernetesClusterCorednsAutoscalerPtrOutputWithContext(context.Context) KubernetesClusterCorednsAutoscalerPtrOutput
+}
+
+type kubernetesClusterCorednsAutoscalerPtrType KubernetesClusterCorednsAutoscalerArgs
+
+func KubernetesClusterCorednsAutoscalerPtr(v *KubernetesClusterCorednsAutoscalerArgs) KubernetesClusterCorednsAutoscalerPtrInput {
+	return (*kubernetesClusterCorednsAutoscalerPtrType)(v)
+}
+
+func (*kubernetesClusterCorednsAutoscalerPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**KubernetesClusterCorednsAutoscaler)(nil)).Elem()
+}
+
+func (i *kubernetesClusterCorednsAutoscalerPtrType) ToKubernetesClusterCorednsAutoscalerPtrOutput() KubernetesClusterCorednsAutoscalerPtrOutput {
+	return i.ToKubernetesClusterCorednsAutoscalerPtrOutputWithContext(context.Background())
+}
+
+func (i *kubernetesClusterCorednsAutoscalerPtrType) ToKubernetesClusterCorednsAutoscalerPtrOutputWithContext(ctx context.Context) KubernetesClusterCorednsAutoscalerPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(KubernetesClusterCorednsAutoscalerPtrOutput)
+}
+
+type KubernetesClusterCorednsAutoscalerOutput struct{ *pulumi.OutputState }
+
+func (KubernetesClusterCorednsAutoscalerOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*KubernetesClusterCorednsAutoscaler)(nil)).Elem()
+}
+
+func (o KubernetesClusterCorednsAutoscalerOutput) ToKubernetesClusterCorednsAutoscalerOutput() KubernetesClusterCorednsAutoscalerOutput {
+	return o
+}
+
+func (o KubernetesClusterCorednsAutoscalerOutput) ToKubernetesClusterCorednsAutoscalerOutputWithContext(ctx context.Context) KubernetesClusterCorednsAutoscalerOutput {
+	return o
+}
+
+func (o KubernetesClusterCorednsAutoscalerOutput) ToKubernetesClusterCorednsAutoscalerPtrOutput() KubernetesClusterCorednsAutoscalerPtrOutput {
+	return o.ToKubernetesClusterCorednsAutoscalerPtrOutputWithContext(context.Background())
+}
+
+func (o KubernetesClusterCorednsAutoscalerOutput) ToKubernetesClusterCorednsAutoscalerPtrOutputWithContext(ctx context.Context) KubernetesClusterCorednsAutoscalerPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v KubernetesClusterCorednsAutoscaler) *KubernetesClusterCorednsAutoscaler {
+		return &v
+	}).(KubernetesClusterCorednsAutoscalerPtrOutput)
+}
+
+// Boolean flag whether the CoreDNS Autoscaler should be enabled or not.
+func (o KubernetesClusterCorednsAutoscalerOutput) Enabled() pulumi.BoolOutput {
+	return o.ApplyT(func(v KubernetesClusterCorednsAutoscaler) bool { return v.Enabled }).(pulumi.BoolOutput)
+}
+
+type KubernetesClusterCorednsAutoscalerPtrOutput struct{ *pulumi.OutputState }
+
+func (KubernetesClusterCorednsAutoscalerPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**KubernetesClusterCorednsAutoscaler)(nil)).Elem()
+}
+
+func (o KubernetesClusterCorednsAutoscalerPtrOutput) ToKubernetesClusterCorednsAutoscalerPtrOutput() KubernetesClusterCorednsAutoscalerPtrOutput {
+	return o
+}
+
+func (o KubernetesClusterCorednsAutoscalerPtrOutput) ToKubernetesClusterCorednsAutoscalerPtrOutputWithContext(ctx context.Context) KubernetesClusterCorednsAutoscalerPtrOutput {
+	return o
+}
+
+func (o KubernetesClusterCorednsAutoscalerPtrOutput) Elem() KubernetesClusterCorednsAutoscalerOutput {
+	return o.ApplyT(func(v *KubernetesClusterCorednsAutoscaler) KubernetesClusterCorednsAutoscaler {
+		if v != nil {
+			return *v
+		}
+		var ret KubernetesClusterCorednsAutoscaler
+		return ret
+	}).(KubernetesClusterCorednsAutoscalerOutput)
+}
+
+// Boolean flag whether the CoreDNS Autoscaler should be enabled or not.
+func (o KubernetesClusterCorednsAutoscalerPtrOutput) Enabled() pulumi.BoolPtrOutput {
+	return o.ApplyT(func(v *KubernetesClusterCorednsAutoscaler) *bool {
 		if v == nil {
 			return nil
 		}
@@ -36216,7 +37555,7 @@ func (o KubernetesClusterNvidiaGpuDevicePluginPtrOutput) Enabled() pulumi.BoolPt
 }
 
 type KubernetesClusterRdmaSharedDevicePlugin struct {
-	// Boolean flag whether the component is enabled or not.
+	// Boolean flag whether the CoreDNS Autoscaler is enabled or not.
 	Enabled bool `pulumi:"enabled"`
 }
 
@@ -36232,7 +37571,7 @@ type KubernetesClusterRdmaSharedDevicePluginInput interface {
 }
 
 type KubernetesClusterRdmaSharedDevicePluginArgs struct {
-	// Boolean flag whether the component is enabled or not.
+	// Boolean flag whether the CoreDNS Autoscaler is enabled or not.
 	Enabled pulumi.BoolInput `pulumi:"enabled"`
 }
 
@@ -36313,7 +37652,7 @@ func (o KubernetesClusterRdmaSharedDevicePluginOutput) ToKubernetesClusterRdmaSh
 	}).(KubernetesClusterRdmaSharedDevicePluginPtrOutput)
 }
 
-// Boolean flag whether the component is enabled or not.
+// Boolean flag whether the CoreDNS Autoscaler is enabled or not.
 func (o KubernetesClusterRdmaSharedDevicePluginOutput) Enabled() pulumi.BoolOutput {
 	return o.ApplyT(func(v KubernetesClusterRdmaSharedDevicePlugin) bool { return v.Enabled }).(pulumi.BoolOutput)
 }
@@ -36342,7 +37681,7 @@ func (o KubernetesClusterRdmaSharedDevicePluginPtrOutput) Elem() KubernetesClust
 	}).(KubernetesClusterRdmaSharedDevicePluginOutput)
 }
 
-// Boolean flag whether the component is enabled or not.
+// Boolean flag whether the CoreDNS Autoscaler is enabled or not.
 func (o KubernetesClusterRdmaSharedDevicePluginPtrOutput) Enabled() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v *KubernetesClusterRdmaSharedDevicePlugin) *bool {
 		if v == nil {
@@ -36490,8 +37829,15 @@ func (o KubernetesClusterRoutingAgentPtrOutput) Enabled() pulumi.BoolPtrOutput {
 }
 
 type KubernetesClusterSso struct {
-	// Boolean flag whether the component is enabled or not.
-	Enabled  *bool `pulumi:"enabled"`
+	// The OIDC client ID for the cluster SSO configuration.
+	//
+	// This resource supports customized create timeouts. The default timeout is 30 minutes.
+	ClientId *string `pulumi:"clientId"`
+	// Boolean flag indicating whether SSO is enabled as an authentication method for the cluster.
+	Enabled bool `pulumi:"enabled"`
+	// The OIDC issuer URL for the cluster SSO configuration.
+	IssuerUrl *string `pulumi:"issuerUrl"`
+	// Boolean flag indicating whether SSO is required as the only authentication method for the cluster. Default: `false`
 	Required *bool `pulumi:"required"`
 }
 
@@ -36507,8 +37853,15 @@ type KubernetesClusterSsoInput interface {
 }
 
 type KubernetesClusterSsoArgs struct {
-	// Boolean flag whether the component is enabled or not.
-	Enabled  pulumi.BoolPtrInput `pulumi:"enabled"`
+	// The OIDC client ID for the cluster SSO configuration.
+	//
+	// This resource supports customized create timeouts. The default timeout is 30 minutes.
+	ClientId pulumi.StringPtrInput `pulumi:"clientId"`
+	// Boolean flag indicating whether SSO is enabled as an authentication method for the cluster.
+	Enabled pulumi.BoolInput `pulumi:"enabled"`
+	// The OIDC issuer URL for the cluster SSO configuration.
+	IssuerUrl pulumi.StringPtrInput `pulumi:"issuerUrl"`
+	// Boolean flag indicating whether SSO is required as the only authentication method for the cluster. Default: `false`
 	Required pulumi.BoolPtrInput `pulumi:"required"`
 }
 
@@ -36563,11 +37916,24 @@ func (o KubernetesClusterSsoOutput) ToKubernetesClusterSsoOutputWithContext(ctx 
 	return o
 }
 
-// Boolean flag whether the component is enabled or not.
-func (o KubernetesClusterSsoOutput) Enabled() pulumi.BoolPtrOutput {
-	return o.ApplyT(func(v KubernetesClusterSso) *bool { return v.Enabled }).(pulumi.BoolPtrOutput)
+// The OIDC client ID for the cluster SSO configuration.
+//
+// This resource supports customized create timeouts. The default timeout is 30 minutes.
+func (o KubernetesClusterSsoOutput) ClientId() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v KubernetesClusterSso) *string { return v.ClientId }).(pulumi.StringPtrOutput)
 }
 
+// Boolean flag indicating whether SSO is enabled as an authentication method for the cluster.
+func (o KubernetesClusterSsoOutput) Enabled() pulumi.BoolOutput {
+	return o.ApplyT(func(v KubernetesClusterSso) bool { return v.Enabled }).(pulumi.BoolOutput)
+}
+
+// The OIDC issuer URL for the cluster SSO configuration.
+func (o KubernetesClusterSsoOutput) IssuerUrl() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v KubernetesClusterSso) *string { return v.IssuerUrl }).(pulumi.StringPtrOutput)
+}
+
+// Boolean flag indicating whether SSO is required as the only authentication method for the cluster. Default: `false`
 func (o KubernetesClusterSsoOutput) Required() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v KubernetesClusterSso) *bool { return v.Required }).(pulumi.BoolPtrOutput)
 }
@@ -36853,6 +38219,8 @@ type LoadBalancerDomain struct {
 	// **Deprecated** The certificate ID to be used for TLS handshaking.
 	CertificateId *string `pulumi:"certificateId"`
 	// The certificate name to be used for TLS handshaking.
+	//
+	// After create and after update when `domains` changes, the provider polls the load balancer (for up to 15 minutes) until each non-managed domain’s `certificateName` reported by the API matches the configuration. That reduces race conditions when replacing `Certificate` resources that use `createBeforeDestroy`.
 	CertificateName *string `pulumi:"certificateName"`
 	// Control flag to specify whether the domain is managed by DigitalOcean.
 	IsManaged *bool `pulumi:"isManaged"`
@@ -36879,6 +38247,8 @@ type LoadBalancerDomainArgs struct {
 	// **Deprecated** The certificate ID to be used for TLS handshaking.
 	CertificateId pulumi.StringPtrInput `pulumi:"certificateId"`
 	// The certificate name to be used for TLS handshaking.
+	//
+	// After create and after update when `domains` changes, the provider polls the load balancer (for up to 15 minutes) until each non-managed domain’s `certificateName` reported by the API matches the configuration. That reduces race conditions when replacing `Certificate` resources that use `createBeforeDestroy`.
 	CertificateName pulumi.StringPtrInput `pulumi:"certificateName"`
 	// Control flag to specify whether the domain is managed by DigitalOcean.
 	IsManaged pulumi.BoolPtrInput `pulumi:"isManaged"`
@@ -36947,6 +38317,8 @@ func (o LoadBalancerDomainOutput) CertificateId() pulumi.StringPtrOutput {
 }
 
 // The certificate name to be used for TLS handshaking.
+//
+// After create and after update when `domains` changes, the provider polls the load balancer (for up to 15 minutes) until each non-managed domain’s `certificateName` reported by the API matches the configuration. That reduces race conditions when replacing `Certificate` resources that use `createBeforeDestroy`.
 func (o LoadBalancerDomainOutput) CertificateName() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v LoadBalancerDomain) *string { return v.CertificateName }).(pulumi.StringPtrOutput)
 }
@@ -38342,6 +39714,219 @@ func (o MonitorAlertAlertsSlackArrayOutput) Index(i pulumi.IntInput) MonitorAler
 	}).(MonitorAlertAlertsSlackOutput)
 }
 
+type NfsAccessPointAccessPolicy struct {
+	// Anonymous GID mapped for NFS clients. Defaults to `65534`.
+	Anongid *int `pulumi:"anongid"`
+	// Anonymous UID mapped for NFS clients. Defaults to `65534`.
+	Anonuid *int `pulumi:"anonuid"`
+	// Whether identity enforcement is enabled. Defaults to `false`.
+	IdentityEnforcementEnabled *bool `pulumi:"identityEnforcementEnabled"`
+	// List of NFS protocols. Defaults to `["NFS4"]`.
+	Protocols []string `pulumi:"protocols"`
+	// Squash configuration. Valid values are `NO_SQUASH`, `ROOT_SQUASH`, and `ALL_SQUASH`. Defaults to `ROOT_SQUASH`.
+	SquashConfig *string `pulumi:"squashConfig"`
+}
+
+// NfsAccessPointAccessPolicyInput is an input type that accepts NfsAccessPointAccessPolicyArgs and NfsAccessPointAccessPolicyOutput values.
+// You can construct a concrete instance of `NfsAccessPointAccessPolicyInput` via:
+//
+//	NfsAccessPointAccessPolicyArgs{...}
+type NfsAccessPointAccessPolicyInput interface {
+	pulumi.Input
+
+	ToNfsAccessPointAccessPolicyOutput() NfsAccessPointAccessPolicyOutput
+	ToNfsAccessPointAccessPolicyOutputWithContext(context.Context) NfsAccessPointAccessPolicyOutput
+}
+
+type NfsAccessPointAccessPolicyArgs struct {
+	// Anonymous GID mapped for NFS clients. Defaults to `65534`.
+	Anongid pulumi.IntPtrInput `pulumi:"anongid"`
+	// Anonymous UID mapped for NFS clients. Defaults to `65534`.
+	Anonuid pulumi.IntPtrInput `pulumi:"anonuid"`
+	// Whether identity enforcement is enabled. Defaults to `false`.
+	IdentityEnforcementEnabled pulumi.BoolPtrInput `pulumi:"identityEnforcementEnabled"`
+	// List of NFS protocols. Defaults to `["NFS4"]`.
+	Protocols pulumi.StringArrayInput `pulumi:"protocols"`
+	// Squash configuration. Valid values are `NO_SQUASH`, `ROOT_SQUASH`, and `ALL_SQUASH`. Defaults to `ROOT_SQUASH`.
+	SquashConfig pulumi.StringPtrInput `pulumi:"squashConfig"`
+}
+
+func (NfsAccessPointAccessPolicyArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*NfsAccessPointAccessPolicy)(nil)).Elem()
+}
+
+func (i NfsAccessPointAccessPolicyArgs) ToNfsAccessPointAccessPolicyOutput() NfsAccessPointAccessPolicyOutput {
+	return i.ToNfsAccessPointAccessPolicyOutputWithContext(context.Background())
+}
+
+func (i NfsAccessPointAccessPolicyArgs) ToNfsAccessPointAccessPolicyOutputWithContext(ctx context.Context) NfsAccessPointAccessPolicyOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(NfsAccessPointAccessPolicyOutput)
+}
+
+func (i NfsAccessPointAccessPolicyArgs) ToNfsAccessPointAccessPolicyPtrOutput() NfsAccessPointAccessPolicyPtrOutput {
+	return i.ToNfsAccessPointAccessPolicyPtrOutputWithContext(context.Background())
+}
+
+func (i NfsAccessPointAccessPolicyArgs) ToNfsAccessPointAccessPolicyPtrOutputWithContext(ctx context.Context) NfsAccessPointAccessPolicyPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(NfsAccessPointAccessPolicyOutput).ToNfsAccessPointAccessPolicyPtrOutputWithContext(ctx)
+}
+
+// NfsAccessPointAccessPolicyPtrInput is an input type that accepts NfsAccessPointAccessPolicyArgs, NfsAccessPointAccessPolicyPtr and NfsAccessPointAccessPolicyPtrOutput values.
+// You can construct a concrete instance of `NfsAccessPointAccessPolicyPtrInput` via:
+//
+//	        NfsAccessPointAccessPolicyArgs{...}
+//
+//	or:
+//
+//	        nil
+type NfsAccessPointAccessPolicyPtrInput interface {
+	pulumi.Input
+
+	ToNfsAccessPointAccessPolicyPtrOutput() NfsAccessPointAccessPolicyPtrOutput
+	ToNfsAccessPointAccessPolicyPtrOutputWithContext(context.Context) NfsAccessPointAccessPolicyPtrOutput
+}
+
+type nfsAccessPointAccessPolicyPtrType NfsAccessPointAccessPolicyArgs
+
+func NfsAccessPointAccessPolicyPtr(v *NfsAccessPointAccessPolicyArgs) NfsAccessPointAccessPolicyPtrInput {
+	return (*nfsAccessPointAccessPolicyPtrType)(v)
+}
+
+func (*nfsAccessPointAccessPolicyPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**NfsAccessPointAccessPolicy)(nil)).Elem()
+}
+
+func (i *nfsAccessPointAccessPolicyPtrType) ToNfsAccessPointAccessPolicyPtrOutput() NfsAccessPointAccessPolicyPtrOutput {
+	return i.ToNfsAccessPointAccessPolicyPtrOutputWithContext(context.Background())
+}
+
+func (i *nfsAccessPointAccessPolicyPtrType) ToNfsAccessPointAccessPolicyPtrOutputWithContext(ctx context.Context) NfsAccessPointAccessPolicyPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(NfsAccessPointAccessPolicyPtrOutput)
+}
+
+type NfsAccessPointAccessPolicyOutput struct{ *pulumi.OutputState }
+
+func (NfsAccessPointAccessPolicyOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*NfsAccessPointAccessPolicy)(nil)).Elem()
+}
+
+func (o NfsAccessPointAccessPolicyOutput) ToNfsAccessPointAccessPolicyOutput() NfsAccessPointAccessPolicyOutput {
+	return o
+}
+
+func (o NfsAccessPointAccessPolicyOutput) ToNfsAccessPointAccessPolicyOutputWithContext(ctx context.Context) NfsAccessPointAccessPolicyOutput {
+	return o
+}
+
+func (o NfsAccessPointAccessPolicyOutput) ToNfsAccessPointAccessPolicyPtrOutput() NfsAccessPointAccessPolicyPtrOutput {
+	return o.ToNfsAccessPointAccessPolicyPtrOutputWithContext(context.Background())
+}
+
+func (o NfsAccessPointAccessPolicyOutput) ToNfsAccessPointAccessPolicyPtrOutputWithContext(ctx context.Context) NfsAccessPointAccessPolicyPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v NfsAccessPointAccessPolicy) *NfsAccessPointAccessPolicy {
+		return &v
+	}).(NfsAccessPointAccessPolicyPtrOutput)
+}
+
+// Anonymous GID mapped for NFS clients. Defaults to `65534`.
+func (o NfsAccessPointAccessPolicyOutput) Anongid() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v NfsAccessPointAccessPolicy) *int { return v.Anongid }).(pulumi.IntPtrOutput)
+}
+
+// Anonymous UID mapped for NFS clients. Defaults to `65534`.
+func (o NfsAccessPointAccessPolicyOutput) Anonuid() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v NfsAccessPointAccessPolicy) *int { return v.Anonuid }).(pulumi.IntPtrOutput)
+}
+
+// Whether identity enforcement is enabled. Defaults to `false`.
+func (o NfsAccessPointAccessPolicyOutput) IdentityEnforcementEnabled() pulumi.BoolPtrOutput {
+	return o.ApplyT(func(v NfsAccessPointAccessPolicy) *bool { return v.IdentityEnforcementEnabled }).(pulumi.BoolPtrOutput)
+}
+
+// List of NFS protocols. Defaults to `["NFS4"]`.
+func (o NfsAccessPointAccessPolicyOutput) Protocols() pulumi.StringArrayOutput {
+	return o.ApplyT(func(v NfsAccessPointAccessPolicy) []string { return v.Protocols }).(pulumi.StringArrayOutput)
+}
+
+// Squash configuration. Valid values are `NO_SQUASH`, `ROOT_SQUASH`, and `ALL_SQUASH`. Defaults to `ROOT_SQUASH`.
+func (o NfsAccessPointAccessPolicyOutput) SquashConfig() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v NfsAccessPointAccessPolicy) *string { return v.SquashConfig }).(pulumi.StringPtrOutput)
+}
+
+type NfsAccessPointAccessPolicyPtrOutput struct{ *pulumi.OutputState }
+
+func (NfsAccessPointAccessPolicyPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**NfsAccessPointAccessPolicy)(nil)).Elem()
+}
+
+func (o NfsAccessPointAccessPolicyPtrOutput) ToNfsAccessPointAccessPolicyPtrOutput() NfsAccessPointAccessPolicyPtrOutput {
+	return o
+}
+
+func (o NfsAccessPointAccessPolicyPtrOutput) ToNfsAccessPointAccessPolicyPtrOutputWithContext(ctx context.Context) NfsAccessPointAccessPolicyPtrOutput {
+	return o
+}
+
+func (o NfsAccessPointAccessPolicyPtrOutput) Elem() NfsAccessPointAccessPolicyOutput {
+	return o.ApplyT(func(v *NfsAccessPointAccessPolicy) NfsAccessPointAccessPolicy {
+		if v != nil {
+			return *v
+		}
+		var ret NfsAccessPointAccessPolicy
+		return ret
+	}).(NfsAccessPointAccessPolicyOutput)
+}
+
+// Anonymous GID mapped for NFS clients. Defaults to `65534`.
+func (o NfsAccessPointAccessPolicyPtrOutput) Anongid() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *NfsAccessPointAccessPolicy) *int {
+		if v == nil {
+			return nil
+		}
+		return v.Anongid
+	}).(pulumi.IntPtrOutput)
+}
+
+// Anonymous UID mapped for NFS clients. Defaults to `65534`.
+func (o NfsAccessPointAccessPolicyPtrOutput) Anonuid() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *NfsAccessPointAccessPolicy) *int {
+		if v == nil {
+			return nil
+		}
+		return v.Anonuid
+	}).(pulumi.IntPtrOutput)
+}
+
+// Whether identity enforcement is enabled. Defaults to `false`.
+func (o NfsAccessPointAccessPolicyPtrOutput) IdentityEnforcementEnabled() pulumi.BoolPtrOutput {
+	return o.ApplyT(func(v *NfsAccessPointAccessPolicy) *bool {
+		if v == nil {
+			return nil
+		}
+		return v.IdentityEnforcementEnabled
+	}).(pulumi.BoolPtrOutput)
+}
+
+// List of NFS protocols. Defaults to `["NFS4"]`.
+func (o NfsAccessPointAccessPolicyPtrOutput) Protocols() pulumi.StringArrayOutput {
+	return o.ApplyT(func(v *NfsAccessPointAccessPolicy) []string {
+		if v == nil {
+			return nil
+		}
+		return v.Protocols
+	}).(pulumi.StringArrayOutput)
+}
+
+// Squash configuration. Valid values are `NO_SQUASH`, `ROOT_SQUASH`, and `ALL_SQUASH`. Defaults to `ROOT_SQUASH`.
+func (o NfsAccessPointAccessPolicyPtrOutput) SquashConfig() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *NfsAccessPointAccessPolicy) *string {
+		if v == nil {
+			return nil
+		}
+		return v.SquashConfig
+	}).(pulumi.StringPtrOutput)
+}
+
 type PartnerAttachmentBgp struct {
 	AuthKey       *string `pulumi:"authKey"`
 	LocalRouterIp *string `pulumi:"localRouterIp"`
@@ -39713,6 +41298,287 @@ func (o UptimeAlertNotificationSlackArrayOutput) Index(i pulumi.IntInput) Uptime
 	return pulumi.All(o, i).ApplyT(func(vs []interface{}) UptimeAlertNotificationSlack {
 		return vs[0].([]UptimeAlertNotificationSlack)[vs[1].(int)]
 	}).(UptimeAlertNotificationSlackOutput)
+}
+
+type VectorDatabaseConfig struct {
+	// The default vector quantization method applied to new collections.
+	DefaultQuantization *string `pulumi:"defaultQuantization"`
+	// Whether Weaviate's auto-schema feature is enabled.
+	EnableAutoSchema *bool `pulumi:"enableAutoSchema"`
+	// The Weaviate engine version used by the vector database.
+	WeaviateVersion *string `pulumi:"weaviateVersion"`
+}
+
+// VectorDatabaseConfigInput is an input type that accepts VectorDatabaseConfigArgs and VectorDatabaseConfigOutput values.
+// You can construct a concrete instance of `VectorDatabaseConfigInput` via:
+//
+//	VectorDatabaseConfigArgs{...}
+type VectorDatabaseConfigInput interface {
+	pulumi.Input
+
+	ToVectorDatabaseConfigOutput() VectorDatabaseConfigOutput
+	ToVectorDatabaseConfigOutputWithContext(context.Context) VectorDatabaseConfigOutput
+}
+
+type VectorDatabaseConfigArgs struct {
+	// The default vector quantization method applied to new collections.
+	DefaultQuantization pulumi.StringPtrInput `pulumi:"defaultQuantization"`
+	// Whether Weaviate's auto-schema feature is enabled.
+	EnableAutoSchema pulumi.BoolPtrInput `pulumi:"enableAutoSchema"`
+	// The Weaviate engine version used by the vector database.
+	WeaviateVersion pulumi.StringPtrInput `pulumi:"weaviateVersion"`
+}
+
+func (VectorDatabaseConfigArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*VectorDatabaseConfig)(nil)).Elem()
+}
+
+func (i VectorDatabaseConfigArgs) ToVectorDatabaseConfigOutput() VectorDatabaseConfigOutput {
+	return i.ToVectorDatabaseConfigOutputWithContext(context.Background())
+}
+
+func (i VectorDatabaseConfigArgs) ToVectorDatabaseConfigOutputWithContext(ctx context.Context) VectorDatabaseConfigOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VectorDatabaseConfigOutput)
+}
+
+func (i VectorDatabaseConfigArgs) ToVectorDatabaseConfigPtrOutput() VectorDatabaseConfigPtrOutput {
+	return i.ToVectorDatabaseConfigPtrOutputWithContext(context.Background())
+}
+
+func (i VectorDatabaseConfigArgs) ToVectorDatabaseConfigPtrOutputWithContext(ctx context.Context) VectorDatabaseConfigPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VectorDatabaseConfigOutput).ToVectorDatabaseConfigPtrOutputWithContext(ctx)
+}
+
+// VectorDatabaseConfigPtrInput is an input type that accepts VectorDatabaseConfigArgs, VectorDatabaseConfigPtr and VectorDatabaseConfigPtrOutput values.
+// You can construct a concrete instance of `VectorDatabaseConfigPtrInput` via:
+//
+//	        VectorDatabaseConfigArgs{...}
+//
+//	or:
+//
+//	        nil
+type VectorDatabaseConfigPtrInput interface {
+	pulumi.Input
+
+	ToVectorDatabaseConfigPtrOutput() VectorDatabaseConfigPtrOutput
+	ToVectorDatabaseConfigPtrOutputWithContext(context.Context) VectorDatabaseConfigPtrOutput
+}
+
+type vectorDatabaseConfigPtrType VectorDatabaseConfigArgs
+
+func VectorDatabaseConfigPtr(v *VectorDatabaseConfigArgs) VectorDatabaseConfigPtrInput {
+	return (*vectorDatabaseConfigPtrType)(v)
+}
+
+func (*vectorDatabaseConfigPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**VectorDatabaseConfig)(nil)).Elem()
+}
+
+func (i *vectorDatabaseConfigPtrType) ToVectorDatabaseConfigPtrOutput() VectorDatabaseConfigPtrOutput {
+	return i.ToVectorDatabaseConfigPtrOutputWithContext(context.Background())
+}
+
+func (i *vectorDatabaseConfigPtrType) ToVectorDatabaseConfigPtrOutputWithContext(ctx context.Context) VectorDatabaseConfigPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VectorDatabaseConfigPtrOutput)
+}
+
+type VectorDatabaseConfigOutput struct{ *pulumi.OutputState }
+
+func (VectorDatabaseConfigOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*VectorDatabaseConfig)(nil)).Elem()
+}
+
+func (o VectorDatabaseConfigOutput) ToVectorDatabaseConfigOutput() VectorDatabaseConfigOutput {
+	return o
+}
+
+func (o VectorDatabaseConfigOutput) ToVectorDatabaseConfigOutputWithContext(ctx context.Context) VectorDatabaseConfigOutput {
+	return o
+}
+
+func (o VectorDatabaseConfigOutput) ToVectorDatabaseConfigPtrOutput() VectorDatabaseConfigPtrOutput {
+	return o.ToVectorDatabaseConfigPtrOutputWithContext(context.Background())
+}
+
+func (o VectorDatabaseConfigOutput) ToVectorDatabaseConfigPtrOutputWithContext(ctx context.Context) VectorDatabaseConfigPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v VectorDatabaseConfig) *VectorDatabaseConfig {
+		return &v
+	}).(VectorDatabaseConfigPtrOutput)
+}
+
+// The default vector quantization method applied to new collections.
+func (o VectorDatabaseConfigOutput) DefaultQuantization() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v VectorDatabaseConfig) *string { return v.DefaultQuantization }).(pulumi.StringPtrOutput)
+}
+
+// Whether Weaviate's auto-schema feature is enabled.
+func (o VectorDatabaseConfigOutput) EnableAutoSchema() pulumi.BoolPtrOutput {
+	return o.ApplyT(func(v VectorDatabaseConfig) *bool { return v.EnableAutoSchema }).(pulumi.BoolPtrOutput)
+}
+
+// The Weaviate engine version used by the vector database.
+func (o VectorDatabaseConfigOutput) WeaviateVersion() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v VectorDatabaseConfig) *string { return v.WeaviateVersion }).(pulumi.StringPtrOutput)
+}
+
+type VectorDatabaseConfigPtrOutput struct{ *pulumi.OutputState }
+
+func (VectorDatabaseConfigPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**VectorDatabaseConfig)(nil)).Elem()
+}
+
+func (o VectorDatabaseConfigPtrOutput) ToVectorDatabaseConfigPtrOutput() VectorDatabaseConfigPtrOutput {
+	return o
+}
+
+func (o VectorDatabaseConfigPtrOutput) ToVectorDatabaseConfigPtrOutputWithContext(ctx context.Context) VectorDatabaseConfigPtrOutput {
+	return o
+}
+
+func (o VectorDatabaseConfigPtrOutput) Elem() VectorDatabaseConfigOutput {
+	return o.ApplyT(func(v *VectorDatabaseConfig) VectorDatabaseConfig {
+		if v != nil {
+			return *v
+		}
+		var ret VectorDatabaseConfig
+		return ret
+	}).(VectorDatabaseConfigOutput)
+}
+
+// The default vector quantization method applied to new collections.
+func (o VectorDatabaseConfigPtrOutput) DefaultQuantization() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *VectorDatabaseConfig) *string {
+		if v == nil {
+			return nil
+		}
+		return v.DefaultQuantization
+	}).(pulumi.StringPtrOutput)
+}
+
+// Whether Weaviate's auto-schema feature is enabled.
+func (o VectorDatabaseConfigPtrOutput) EnableAutoSchema() pulumi.BoolPtrOutput {
+	return o.ApplyT(func(v *VectorDatabaseConfig) *bool {
+		if v == nil {
+			return nil
+		}
+		return v.EnableAutoSchema
+	}).(pulumi.BoolPtrOutput)
+}
+
+// The Weaviate engine version used by the vector database.
+func (o VectorDatabaseConfigPtrOutput) WeaviateVersion() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *VectorDatabaseConfig) *string {
+		if v == nil {
+			return nil
+		}
+		return v.WeaviateVersion
+	}).(pulumi.StringPtrOutput)
+}
+
+type VectorDatabaseEndpoint struct {
+	// The gRPC endpoint used to connect to the vector database.
+	Grpc *string `pulumi:"grpc"`
+	// The HTTP endpoint used to connect to the vector database.
+	Http *string `pulumi:"http"`
+}
+
+// VectorDatabaseEndpointInput is an input type that accepts VectorDatabaseEndpointArgs and VectorDatabaseEndpointOutput values.
+// You can construct a concrete instance of `VectorDatabaseEndpointInput` via:
+//
+//	VectorDatabaseEndpointArgs{...}
+type VectorDatabaseEndpointInput interface {
+	pulumi.Input
+
+	ToVectorDatabaseEndpointOutput() VectorDatabaseEndpointOutput
+	ToVectorDatabaseEndpointOutputWithContext(context.Context) VectorDatabaseEndpointOutput
+}
+
+type VectorDatabaseEndpointArgs struct {
+	// The gRPC endpoint used to connect to the vector database.
+	Grpc pulumi.StringPtrInput `pulumi:"grpc"`
+	// The HTTP endpoint used to connect to the vector database.
+	Http pulumi.StringPtrInput `pulumi:"http"`
+}
+
+func (VectorDatabaseEndpointArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*VectorDatabaseEndpoint)(nil)).Elem()
+}
+
+func (i VectorDatabaseEndpointArgs) ToVectorDatabaseEndpointOutput() VectorDatabaseEndpointOutput {
+	return i.ToVectorDatabaseEndpointOutputWithContext(context.Background())
+}
+
+func (i VectorDatabaseEndpointArgs) ToVectorDatabaseEndpointOutputWithContext(ctx context.Context) VectorDatabaseEndpointOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VectorDatabaseEndpointOutput)
+}
+
+// VectorDatabaseEndpointArrayInput is an input type that accepts VectorDatabaseEndpointArray and VectorDatabaseEndpointArrayOutput values.
+// You can construct a concrete instance of `VectorDatabaseEndpointArrayInput` via:
+//
+//	VectorDatabaseEndpointArray{ VectorDatabaseEndpointArgs{...} }
+type VectorDatabaseEndpointArrayInput interface {
+	pulumi.Input
+
+	ToVectorDatabaseEndpointArrayOutput() VectorDatabaseEndpointArrayOutput
+	ToVectorDatabaseEndpointArrayOutputWithContext(context.Context) VectorDatabaseEndpointArrayOutput
+}
+
+type VectorDatabaseEndpointArray []VectorDatabaseEndpointInput
+
+func (VectorDatabaseEndpointArray) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]VectorDatabaseEndpoint)(nil)).Elem()
+}
+
+func (i VectorDatabaseEndpointArray) ToVectorDatabaseEndpointArrayOutput() VectorDatabaseEndpointArrayOutput {
+	return i.ToVectorDatabaseEndpointArrayOutputWithContext(context.Background())
+}
+
+func (i VectorDatabaseEndpointArray) ToVectorDatabaseEndpointArrayOutputWithContext(ctx context.Context) VectorDatabaseEndpointArrayOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VectorDatabaseEndpointArrayOutput)
+}
+
+type VectorDatabaseEndpointOutput struct{ *pulumi.OutputState }
+
+func (VectorDatabaseEndpointOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*VectorDatabaseEndpoint)(nil)).Elem()
+}
+
+func (o VectorDatabaseEndpointOutput) ToVectorDatabaseEndpointOutput() VectorDatabaseEndpointOutput {
+	return o
+}
+
+func (o VectorDatabaseEndpointOutput) ToVectorDatabaseEndpointOutputWithContext(ctx context.Context) VectorDatabaseEndpointOutput {
+	return o
+}
+
+// The gRPC endpoint used to connect to the vector database.
+func (o VectorDatabaseEndpointOutput) Grpc() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v VectorDatabaseEndpoint) *string { return v.Grpc }).(pulumi.StringPtrOutput)
+}
+
+// The HTTP endpoint used to connect to the vector database.
+func (o VectorDatabaseEndpointOutput) Http() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v VectorDatabaseEndpoint) *string { return v.Http }).(pulumi.StringPtrOutput)
+}
+
+type VectorDatabaseEndpointArrayOutput struct{ *pulumi.OutputState }
+
+func (VectorDatabaseEndpointArrayOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]VectorDatabaseEndpoint)(nil)).Elem()
+}
+
+func (o VectorDatabaseEndpointArrayOutput) ToVectorDatabaseEndpointArrayOutput() VectorDatabaseEndpointArrayOutput {
+	return o
+}
+
+func (o VectorDatabaseEndpointArrayOutput) ToVectorDatabaseEndpointArrayOutputWithContext(ctx context.Context) VectorDatabaseEndpointArrayOutput {
+	return o
+}
+
+func (o VectorDatabaseEndpointArrayOutput) Index(i pulumi.IntInput) VectorDatabaseEndpointOutput {
+	return pulumi.All(o, i).ApplyT(func(vs []interface{}) VectorDatabaseEndpoint {
+		return vs[0].([]VectorDatabaseEndpoint)[vs[1].(int)]
+	}).(VectorDatabaseEndpointOutput)
 }
 
 type VpcNatGatewayEgress struct {
@@ -44074,8 +45940,8 @@ func (o GetAppSpecFunctionRouteArrayOutput) Index(i pulumi.IntInput) GetAppSpecF
 
 type GetAppSpecIngress struct {
 	// The type of the alert to configure. Component app alert policies can be: `CPU_UTILIZATION`, `MEM_UTILIZATION`, or `RESTART_COUNT`.
-	Rules        []GetAppSpecIngressRule       `pulumi:"rules"`
-	SecureHeader GetAppSpecIngressSecureHeader `pulumi:"secureHeader"`
+	Rules        []GetAppSpecIngressRule        `pulumi:"rules"`
+	SecureHeader *GetAppSpecIngressSecureHeader `pulumi:"secureHeader"`
 }
 
 // GetAppSpecIngressInput is an input type that accepts GetAppSpecIngressArgs and GetAppSpecIngressOutput values.
@@ -44091,8 +45957,8 @@ type GetAppSpecIngressInput interface {
 
 type GetAppSpecIngressArgs struct {
 	// The type of the alert to configure. Component app alert policies can be: `CPU_UTILIZATION`, `MEM_UTILIZATION`, or `RESTART_COUNT`.
-	Rules        GetAppSpecIngressRuleArrayInput    `pulumi:"rules"`
-	SecureHeader GetAppSpecIngressSecureHeaderInput `pulumi:"secureHeader"`
+	Rules        GetAppSpecIngressRuleArrayInput       `pulumi:"rules"`
+	SecureHeader GetAppSpecIngressSecureHeaderPtrInput `pulumi:"secureHeader"`
 }
 
 func (GetAppSpecIngressArgs) ElementType() reflect.Type {
@@ -44126,15 +45992,15 @@ func (o GetAppSpecIngressOutput) Rules() GetAppSpecIngressRuleArrayOutput {
 	return o.ApplyT(func(v GetAppSpecIngress) []GetAppSpecIngressRule { return v.Rules }).(GetAppSpecIngressRuleArrayOutput)
 }
 
-func (o GetAppSpecIngressOutput) SecureHeader() GetAppSpecIngressSecureHeaderOutput {
-	return o.ApplyT(func(v GetAppSpecIngress) GetAppSpecIngressSecureHeader { return v.SecureHeader }).(GetAppSpecIngressSecureHeaderOutput)
+func (o GetAppSpecIngressOutput) SecureHeader() GetAppSpecIngressSecureHeaderPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngress) *GetAppSpecIngressSecureHeader { return v.SecureHeader }).(GetAppSpecIngressSecureHeaderPtrOutput)
 }
 
 type GetAppSpecIngressRule struct {
-	Component GetAppSpecIngressRuleComponent `pulumi:"component"`
+	Component *GetAppSpecIngressRuleComponent `pulumi:"component"`
 	// The [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) policies of the app.
-	Cors     GetAppSpecIngressRuleCors      `pulumi:"cors"`
-	Match    GetAppSpecIngressRuleMatch     `pulumi:"match"`
+	Cors     *GetAppSpecIngressRuleCors     `pulumi:"cors"`
+	Match    *GetAppSpecIngressRuleMatch    `pulumi:"match"`
 	Redirect *GetAppSpecIngressRuleRedirect `pulumi:"redirect"`
 }
 
@@ -44150,10 +46016,10 @@ type GetAppSpecIngressRuleInput interface {
 }
 
 type GetAppSpecIngressRuleArgs struct {
-	Component GetAppSpecIngressRuleComponentInput `pulumi:"component"`
+	Component GetAppSpecIngressRuleComponentPtrInput `pulumi:"component"`
 	// The [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) policies of the app.
-	Cors     GetAppSpecIngressRuleCorsInput        `pulumi:"cors"`
-	Match    GetAppSpecIngressRuleMatchInput       `pulumi:"match"`
+	Cors     GetAppSpecIngressRuleCorsPtrInput     `pulumi:"cors"`
+	Match    GetAppSpecIngressRuleMatchPtrInput    `pulumi:"match"`
 	Redirect GetAppSpecIngressRuleRedirectPtrInput `pulumi:"redirect"`
 }
 
@@ -44208,17 +46074,17 @@ func (o GetAppSpecIngressRuleOutput) ToGetAppSpecIngressRuleOutputWithContext(ct
 	return o
 }
 
-func (o GetAppSpecIngressRuleOutput) Component() GetAppSpecIngressRuleComponentOutput {
-	return o.ApplyT(func(v GetAppSpecIngressRule) GetAppSpecIngressRuleComponent { return v.Component }).(GetAppSpecIngressRuleComponentOutput)
+func (o GetAppSpecIngressRuleOutput) Component() GetAppSpecIngressRuleComponentPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressRule) *GetAppSpecIngressRuleComponent { return v.Component }).(GetAppSpecIngressRuleComponentPtrOutput)
 }
 
 // The [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) policies of the app.
-func (o GetAppSpecIngressRuleOutput) Cors() GetAppSpecIngressRuleCorsOutput {
-	return o.ApplyT(func(v GetAppSpecIngressRule) GetAppSpecIngressRuleCors { return v.Cors }).(GetAppSpecIngressRuleCorsOutput)
+func (o GetAppSpecIngressRuleOutput) Cors() GetAppSpecIngressRuleCorsPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressRule) *GetAppSpecIngressRuleCors { return v.Cors }).(GetAppSpecIngressRuleCorsPtrOutput)
 }
 
-func (o GetAppSpecIngressRuleOutput) Match() GetAppSpecIngressRuleMatchOutput {
-	return o.ApplyT(func(v GetAppSpecIngressRule) GetAppSpecIngressRuleMatch { return v.Match }).(GetAppSpecIngressRuleMatchOutput)
+func (o GetAppSpecIngressRuleOutput) Match() GetAppSpecIngressRuleMatchPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressRule) *GetAppSpecIngressRuleMatch { return v.Match }).(GetAppSpecIngressRuleMatchPtrOutput)
 }
 
 func (o GetAppSpecIngressRuleOutput) Redirect() GetAppSpecIngressRuleRedirectPtrOutput {
@@ -44247,10 +46113,10 @@ func (o GetAppSpecIngressRuleArrayOutput) Index(i pulumi.IntInput) GetAppSpecIng
 
 type GetAppSpecIngressRuleComponent struct {
 	// The name of the component.
-	Name string `pulumi:"name"`
+	Name *string `pulumi:"name"`
 	// An optional flag to preserve the path that is forwarded to the backend service.
-	PreservePathPrefix bool   `pulumi:"preservePathPrefix"`
-	Rewrite            string `pulumi:"rewrite"`
+	PreservePathPrefix *bool   `pulumi:"preservePathPrefix"`
+	Rewrite            *string `pulumi:"rewrite"`
 }
 
 // GetAppSpecIngressRuleComponentInput is an input type that accepts GetAppSpecIngressRuleComponentArgs and GetAppSpecIngressRuleComponentOutput values.
@@ -44266,10 +46132,10 @@ type GetAppSpecIngressRuleComponentInput interface {
 
 type GetAppSpecIngressRuleComponentArgs struct {
 	// The name of the component.
-	Name pulumi.StringInput `pulumi:"name"`
+	Name pulumi.StringPtrInput `pulumi:"name"`
 	// An optional flag to preserve the path that is forwarded to the backend service.
-	PreservePathPrefix pulumi.BoolInput   `pulumi:"preservePathPrefix"`
-	Rewrite            pulumi.StringInput `pulumi:"rewrite"`
+	PreservePathPrefix pulumi.BoolPtrInput   `pulumi:"preservePathPrefix"`
+	Rewrite            pulumi.StringPtrInput `pulumi:"rewrite"`
 }
 
 func (GetAppSpecIngressRuleComponentArgs) ElementType() reflect.Type {
@@ -44282,6 +46148,47 @@ func (i GetAppSpecIngressRuleComponentArgs) ToGetAppSpecIngressRuleComponentOutp
 
 func (i GetAppSpecIngressRuleComponentArgs) ToGetAppSpecIngressRuleComponentOutputWithContext(ctx context.Context) GetAppSpecIngressRuleComponentOutput {
 	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleComponentOutput)
+}
+
+func (i GetAppSpecIngressRuleComponentArgs) ToGetAppSpecIngressRuleComponentPtrOutput() GetAppSpecIngressRuleComponentPtrOutput {
+	return i.ToGetAppSpecIngressRuleComponentPtrOutputWithContext(context.Background())
+}
+
+func (i GetAppSpecIngressRuleComponentArgs) ToGetAppSpecIngressRuleComponentPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleComponentPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleComponentOutput).ToGetAppSpecIngressRuleComponentPtrOutputWithContext(ctx)
+}
+
+// GetAppSpecIngressRuleComponentPtrInput is an input type that accepts GetAppSpecIngressRuleComponentArgs, GetAppSpecIngressRuleComponentPtr and GetAppSpecIngressRuleComponentPtrOutput values.
+// You can construct a concrete instance of `GetAppSpecIngressRuleComponentPtrInput` via:
+//
+//	        GetAppSpecIngressRuleComponentArgs{...}
+//
+//	or:
+//
+//	        nil
+type GetAppSpecIngressRuleComponentPtrInput interface {
+	pulumi.Input
+
+	ToGetAppSpecIngressRuleComponentPtrOutput() GetAppSpecIngressRuleComponentPtrOutput
+	ToGetAppSpecIngressRuleComponentPtrOutputWithContext(context.Context) GetAppSpecIngressRuleComponentPtrOutput
+}
+
+type getAppSpecIngressRuleComponentPtrType GetAppSpecIngressRuleComponentArgs
+
+func GetAppSpecIngressRuleComponentPtr(v *GetAppSpecIngressRuleComponentArgs) GetAppSpecIngressRuleComponentPtrInput {
+	return (*getAppSpecIngressRuleComponentPtrType)(v)
+}
+
+func (*getAppSpecIngressRuleComponentPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressRuleComponent)(nil)).Elem()
+}
+
+func (i *getAppSpecIngressRuleComponentPtrType) ToGetAppSpecIngressRuleComponentPtrOutput() GetAppSpecIngressRuleComponentPtrOutput {
+	return i.ToGetAppSpecIngressRuleComponentPtrOutputWithContext(context.Background())
+}
+
+func (i *getAppSpecIngressRuleComponentPtrType) ToGetAppSpecIngressRuleComponentPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleComponentPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleComponentPtrOutput)
 }
 
 type GetAppSpecIngressRuleComponentOutput struct{ *pulumi.OutputState }
@@ -44298,18 +46205,81 @@ func (o GetAppSpecIngressRuleComponentOutput) ToGetAppSpecIngressRuleComponentOu
 	return o
 }
 
+func (o GetAppSpecIngressRuleComponentOutput) ToGetAppSpecIngressRuleComponentPtrOutput() GetAppSpecIngressRuleComponentPtrOutput {
+	return o.ToGetAppSpecIngressRuleComponentPtrOutputWithContext(context.Background())
+}
+
+func (o GetAppSpecIngressRuleComponentOutput) ToGetAppSpecIngressRuleComponentPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleComponentPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v GetAppSpecIngressRuleComponent) *GetAppSpecIngressRuleComponent {
+		return &v
+	}).(GetAppSpecIngressRuleComponentPtrOutput)
+}
+
 // The name of the component.
-func (o GetAppSpecIngressRuleComponentOutput) Name() pulumi.StringOutput {
-	return o.ApplyT(func(v GetAppSpecIngressRuleComponent) string { return v.Name }).(pulumi.StringOutput)
+func (o GetAppSpecIngressRuleComponentOutput) Name() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressRuleComponent) *string { return v.Name }).(pulumi.StringPtrOutput)
 }
 
 // An optional flag to preserve the path that is forwarded to the backend service.
-func (o GetAppSpecIngressRuleComponentOutput) PreservePathPrefix() pulumi.BoolOutput {
-	return o.ApplyT(func(v GetAppSpecIngressRuleComponent) bool { return v.PreservePathPrefix }).(pulumi.BoolOutput)
+func (o GetAppSpecIngressRuleComponentOutput) PreservePathPrefix() pulumi.BoolPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressRuleComponent) *bool { return v.PreservePathPrefix }).(pulumi.BoolPtrOutput)
 }
 
-func (o GetAppSpecIngressRuleComponentOutput) Rewrite() pulumi.StringOutput {
-	return o.ApplyT(func(v GetAppSpecIngressRuleComponent) string { return v.Rewrite }).(pulumi.StringOutput)
+func (o GetAppSpecIngressRuleComponentOutput) Rewrite() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressRuleComponent) *string { return v.Rewrite }).(pulumi.StringPtrOutput)
+}
+
+type GetAppSpecIngressRuleComponentPtrOutput struct{ *pulumi.OutputState }
+
+func (GetAppSpecIngressRuleComponentPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressRuleComponent)(nil)).Elem()
+}
+
+func (o GetAppSpecIngressRuleComponentPtrOutput) ToGetAppSpecIngressRuleComponentPtrOutput() GetAppSpecIngressRuleComponentPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressRuleComponentPtrOutput) ToGetAppSpecIngressRuleComponentPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleComponentPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressRuleComponentPtrOutput) Elem() GetAppSpecIngressRuleComponentOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleComponent) GetAppSpecIngressRuleComponent {
+		if v != nil {
+			return *v
+		}
+		var ret GetAppSpecIngressRuleComponent
+		return ret
+	}).(GetAppSpecIngressRuleComponentOutput)
+}
+
+// The name of the component.
+func (o GetAppSpecIngressRuleComponentPtrOutput) Name() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleComponent) *string {
+		if v == nil {
+			return nil
+		}
+		return v.Name
+	}).(pulumi.StringPtrOutput)
+}
+
+// An optional flag to preserve the path that is forwarded to the backend service.
+func (o GetAppSpecIngressRuleComponentPtrOutput) PreservePathPrefix() pulumi.BoolPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleComponent) *bool {
+		if v == nil {
+			return nil
+		}
+		return v.PreservePathPrefix
+	}).(pulumi.BoolPtrOutput)
+}
+
+func (o GetAppSpecIngressRuleComponentPtrOutput) Rewrite() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleComponent) *string {
+		if v == nil {
+			return nil
+		}
+		return v.Rewrite
+	}).(pulumi.StringPtrOutput)
 }
 
 type GetAppSpecIngressRuleCors struct {
@@ -44365,6 +46335,47 @@ func (i GetAppSpecIngressRuleCorsArgs) ToGetAppSpecIngressRuleCorsOutputWithCont
 	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleCorsOutput)
 }
 
+func (i GetAppSpecIngressRuleCorsArgs) ToGetAppSpecIngressRuleCorsPtrOutput() GetAppSpecIngressRuleCorsPtrOutput {
+	return i.ToGetAppSpecIngressRuleCorsPtrOutputWithContext(context.Background())
+}
+
+func (i GetAppSpecIngressRuleCorsArgs) ToGetAppSpecIngressRuleCorsPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleCorsPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleCorsOutput).ToGetAppSpecIngressRuleCorsPtrOutputWithContext(ctx)
+}
+
+// GetAppSpecIngressRuleCorsPtrInput is an input type that accepts GetAppSpecIngressRuleCorsArgs, GetAppSpecIngressRuleCorsPtr and GetAppSpecIngressRuleCorsPtrOutput values.
+// You can construct a concrete instance of `GetAppSpecIngressRuleCorsPtrInput` via:
+//
+//	        GetAppSpecIngressRuleCorsArgs{...}
+//
+//	or:
+//
+//	        nil
+type GetAppSpecIngressRuleCorsPtrInput interface {
+	pulumi.Input
+
+	ToGetAppSpecIngressRuleCorsPtrOutput() GetAppSpecIngressRuleCorsPtrOutput
+	ToGetAppSpecIngressRuleCorsPtrOutputWithContext(context.Context) GetAppSpecIngressRuleCorsPtrOutput
+}
+
+type getAppSpecIngressRuleCorsPtrType GetAppSpecIngressRuleCorsArgs
+
+func GetAppSpecIngressRuleCorsPtr(v *GetAppSpecIngressRuleCorsArgs) GetAppSpecIngressRuleCorsPtrInput {
+	return (*getAppSpecIngressRuleCorsPtrType)(v)
+}
+
+func (*getAppSpecIngressRuleCorsPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressRuleCors)(nil)).Elem()
+}
+
+func (i *getAppSpecIngressRuleCorsPtrType) ToGetAppSpecIngressRuleCorsPtrOutput() GetAppSpecIngressRuleCorsPtrOutput {
+	return i.ToGetAppSpecIngressRuleCorsPtrOutputWithContext(context.Background())
+}
+
+func (i *getAppSpecIngressRuleCorsPtrType) ToGetAppSpecIngressRuleCorsPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleCorsPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleCorsPtrOutput)
+}
+
 type GetAppSpecIngressRuleCorsOutput struct{ *pulumi.OutputState }
 
 func (GetAppSpecIngressRuleCorsOutput) ElementType() reflect.Type {
@@ -44377,6 +46388,16 @@ func (o GetAppSpecIngressRuleCorsOutput) ToGetAppSpecIngressRuleCorsOutput() Get
 
 func (o GetAppSpecIngressRuleCorsOutput) ToGetAppSpecIngressRuleCorsOutputWithContext(ctx context.Context) GetAppSpecIngressRuleCorsOutput {
 	return o
+}
+
+func (o GetAppSpecIngressRuleCorsOutput) ToGetAppSpecIngressRuleCorsPtrOutput() GetAppSpecIngressRuleCorsPtrOutput {
+	return o.ToGetAppSpecIngressRuleCorsPtrOutputWithContext(context.Background())
+}
+
+func (o GetAppSpecIngressRuleCorsOutput) ToGetAppSpecIngressRuleCorsPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleCorsPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v GetAppSpecIngressRuleCors) *GetAppSpecIngressRuleCors {
+		return &v
+	}).(GetAppSpecIngressRuleCorsPtrOutput)
 }
 
 // Whether browsers should expose the response to the client-side JavaScript code when the request's credentials mode is `include`. This configures the `Access-Control-Allow-Credentials` header.
@@ -44407,6 +46428,90 @@ func (o GetAppSpecIngressRuleCorsOutput) ExposeHeaders() pulumi.StringArrayOutpu
 // An optional duration specifying how long browsers can cache the results of a preflight request. This configures the Access-Control-Max-Age header. Example: `5h30m`.
 func (o GetAppSpecIngressRuleCorsOutput) MaxAge() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v GetAppSpecIngressRuleCors) *string { return v.MaxAge }).(pulumi.StringPtrOutput)
+}
+
+type GetAppSpecIngressRuleCorsPtrOutput struct{ *pulumi.OutputState }
+
+func (GetAppSpecIngressRuleCorsPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressRuleCors)(nil)).Elem()
+}
+
+func (o GetAppSpecIngressRuleCorsPtrOutput) ToGetAppSpecIngressRuleCorsPtrOutput() GetAppSpecIngressRuleCorsPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressRuleCorsPtrOutput) ToGetAppSpecIngressRuleCorsPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleCorsPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressRuleCorsPtrOutput) Elem() GetAppSpecIngressRuleCorsOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleCors) GetAppSpecIngressRuleCors {
+		if v != nil {
+			return *v
+		}
+		var ret GetAppSpecIngressRuleCors
+		return ret
+	}).(GetAppSpecIngressRuleCorsOutput)
+}
+
+// Whether browsers should expose the response to the client-side JavaScript code when the request's credentials mode is `include`. This configures the `Access-Control-Allow-Credentials` header.
+func (o GetAppSpecIngressRuleCorsPtrOutput) AllowCredentials() pulumi.BoolPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleCors) *bool {
+		if v == nil {
+			return nil
+		}
+		return v.AllowCredentials
+	}).(pulumi.BoolPtrOutput)
+}
+
+// The set of allowed HTTP request headers. This configures the `Access-Control-Allow-Headers` header.
+func (o GetAppSpecIngressRuleCorsPtrOutput) AllowHeaders() pulumi.StringArrayOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleCors) []string {
+		if v == nil {
+			return nil
+		}
+		return v.AllowHeaders
+	}).(pulumi.StringArrayOutput)
+}
+
+// The set of allowed HTTP methods. This configures the `Access-Control-Allow-Methods` header.
+func (o GetAppSpecIngressRuleCorsPtrOutput) AllowMethods() pulumi.StringArrayOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleCors) []string {
+		if v == nil {
+			return nil
+		}
+		return v.AllowMethods
+	}).(pulumi.StringArrayOutput)
+}
+
+// The `Access-Control-Allow-Origin` can be
+func (o GetAppSpecIngressRuleCorsPtrOutput) AllowOrigins() GetAppSpecIngressRuleCorsAllowOriginsPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleCors) *GetAppSpecIngressRuleCorsAllowOrigins {
+		if v == nil {
+			return nil
+		}
+		return v.AllowOrigins
+	}).(GetAppSpecIngressRuleCorsAllowOriginsPtrOutput)
+}
+
+// The set of HTTP response headers that browsers are allowed to access. This configures the `Access-Control-Expose-Headers` header.
+func (o GetAppSpecIngressRuleCorsPtrOutput) ExposeHeaders() pulumi.StringArrayOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleCors) []string {
+		if v == nil {
+			return nil
+		}
+		return v.ExposeHeaders
+	}).(pulumi.StringArrayOutput)
+}
+
+// An optional duration specifying how long browsers can cache the results of a preflight request. This configures the Access-Control-Max-Age header. Example: `5h30m`.
+func (o GetAppSpecIngressRuleCorsPtrOutput) MaxAge() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleCors) *string {
+		if v == nil {
+			return nil
+		}
+		return v.MaxAge
+	}).(pulumi.StringPtrOutput)
 }
 
 type GetAppSpecIngressRuleCorsAllowOrigins struct {
@@ -44593,9 +46698,9 @@ func (o GetAppSpecIngressRuleCorsAllowOriginsPtrOutput) Regex() pulumi.StringPtr
 }
 
 type GetAppSpecIngressRuleMatch struct {
-	Authority GetAppSpecIngressRuleMatchAuthority `pulumi:"authority"`
+	Authority *GetAppSpecIngressRuleMatchAuthority `pulumi:"authority"`
 	// Paths must start with `/` and must be unique within the app.
-	Path GetAppSpecIngressRuleMatchPath `pulumi:"path"`
+	Path *GetAppSpecIngressRuleMatchPath `pulumi:"path"`
 }
 
 // GetAppSpecIngressRuleMatchInput is an input type that accepts GetAppSpecIngressRuleMatchArgs and GetAppSpecIngressRuleMatchOutput values.
@@ -44610,9 +46715,9 @@ type GetAppSpecIngressRuleMatchInput interface {
 }
 
 type GetAppSpecIngressRuleMatchArgs struct {
-	Authority GetAppSpecIngressRuleMatchAuthorityInput `pulumi:"authority"`
+	Authority GetAppSpecIngressRuleMatchAuthorityPtrInput `pulumi:"authority"`
 	// Paths must start with `/` and must be unique within the app.
-	Path GetAppSpecIngressRuleMatchPathInput `pulumi:"path"`
+	Path GetAppSpecIngressRuleMatchPathPtrInput `pulumi:"path"`
 }
 
 func (GetAppSpecIngressRuleMatchArgs) ElementType() reflect.Type {
@@ -44625,6 +46730,47 @@ func (i GetAppSpecIngressRuleMatchArgs) ToGetAppSpecIngressRuleMatchOutput() Get
 
 func (i GetAppSpecIngressRuleMatchArgs) ToGetAppSpecIngressRuleMatchOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchOutput {
 	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleMatchOutput)
+}
+
+func (i GetAppSpecIngressRuleMatchArgs) ToGetAppSpecIngressRuleMatchPtrOutput() GetAppSpecIngressRuleMatchPtrOutput {
+	return i.ToGetAppSpecIngressRuleMatchPtrOutputWithContext(context.Background())
+}
+
+func (i GetAppSpecIngressRuleMatchArgs) ToGetAppSpecIngressRuleMatchPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleMatchOutput).ToGetAppSpecIngressRuleMatchPtrOutputWithContext(ctx)
+}
+
+// GetAppSpecIngressRuleMatchPtrInput is an input type that accepts GetAppSpecIngressRuleMatchArgs, GetAppSpecIngressRuleMatchPtr and GetAppSpecIngressRuleMatchPtrOutput values.
+// You can construct a concrete instance of `GetAppSpecIngressRuleMatchPtrInput` via:
+//
+//	        GetAppSpecIngressRuleMatchArgs{...}
+//
+//	or:
+//
+//	        nil
+type GetAppSpecIngressRuleMatchPtrInput interface {
+	pulumi.Input
+
+	ToGetAppSpecIngressRuleMatchPtrOutput() GetAppSpecIngressRuleMatchPtrOutput
+	ToGetAppSpecIngressRuleMatchPtrOutputWithContext(context.Context) GetAppSpecIngressRuleMatchPtrOutput
+}
+
+type getAppSpecIngressRuleMatchPtrType GetAppSpecIngressRuleMatchArgs
+
+func GetAppSpecIngressRuleMatchPtr(v *GetAppSpecIngressRuleMatchArgs) GetAppSpecIngressRuleMatchPtrInput {
+	return (*getAppSpecIngressRuleMatchPtrType)(v)
+}
+
+func (*getAppSpecIngressRuleMatchPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressRuleMatch)(nil)).Elem()
+}
+
+func (i *getAppSpecIngressRuleMatchPtrType) ToGetAppSpecIngressRuleMatchPtrOutput() GetAppSpecIngressRuleMatchPtrOutput {
+	return i.ToGetAppSpecIngressRuleMatchPtrOutputWithContext(context.Background())
+}
+
+func (i *getAppSpecIngressRuleMatchPtrType) ToGetAppSpecIngressRuleMatchPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleMatchPtrOutput)
 }
 
 type GetAppSpecIngressRuleMatchOutput struct{ *pulumi.OutputState }
@@ -44641,18 +46787,71 @@ func (o GetAppSpecIngressRuleMatchOutput) ToGetAppSpecIngressRuleMatchOutputWith
 	return o
 }
 
-func (o GetAppSpecIngressRuleMatchOutput) Authority() GetAppSpecIngressRuleMatchAuthorityOutput {
-	return o.ApplyT(func(v GetAppSpecIngressRuleMatch) GetAppSpecIngressRuleMatchAuthority { return v.Authority }).(GetAppSpecIngressRuleMatchAuthorityOutput)
+func (o GetAppSpecIngressRuleMatchOutput) ToGetAppSpecIngressRuleMatchPtrOutput() GetAppSpecIngressRuleMatchPtrOutput {
+	return o.ToGetAppSpecIngressRuleMatchPtrOutputWithContext(context.Background())
+}
+
+func (o GetAppSpecIngressRuleMatchOutput) ToGetAppSpecIngressRuleMatchPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v GetAppSpecIngressRuleMatch) *GetAppSpecIngressRuleMatch {
+		return &v
+	}).(GetAppSpecIngressRuleMatchPtrOutput)
+}
+
+func (o GetAppSpecIngressRuleMatchOutput) Authority() GetAppSpecIngressRuleMatchAuthorityPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressRuleMatch) *GetAppSpecIngressRuleMatchAuthority { return v.Authority }).(GetAppSpecIngressRuleMatchAuthorityPtrOutput)
 }
 
 // Paths must start with `/` and must be unique within the app.
-func (o GetAppSpecIngressRuleMatchOutput) Path() GetAppSpecIngressRuleMatchPathOutput {
-	return o.ApplyT(func(v GetAppSpecIngressRuleMatch) GetAppSpecIngressRuleMatchPath { return v.Path }).(GetAppSpecIngressRuleMatchPathOutput)
+func (o GetAppSpecIngressRuleMatchOutput) Path() GetAppSpecIngressRuleMatchPathPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressRuleMatch) *GetAppSpecIngressRuleMatchPath { return v.Path }).(GetAppSpecIngressRuleMatchPathPtrOutput)
+}
+
+type GetAppSpecIngressRuleMatchPtrOutput struct{ *pulumi.OutputState }
+
+func (GetAppSpecIngressRuleMatchPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressRuleMatch)(nil)).Elem()
+}
+
+func (o GetAppSpecIngressRuleMatchPtrOutput) ToGetAppSpecIngressRuleMatchPtrOutput() GetAppSpecIngressRuleMatchPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressRuleMatchPtrOutput) ToGetAppSpecIngressRuleMatchPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressRuleMatchPtrOutput) Elem() GetAppSpecIngressRuleMatchOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleMatch) GetAppSpecIngressRuleMatch {
+		if v != nil {
+			return *v
+		}
+		var ret GetAppSpecIngressRuleMatch
+		return ret
+	}).(GetAppSpecIngressRuleMatchOutput)
+}
+
+func (o GetAppSpecIngressRuleMatchPtrOutput) Authority() GetAppSpecIngressRuleMatchAuthorityPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleMatch) *GetAppSpecIngressRuleMatchAuthority {
+		if v == nil {
+			return nil
+		}
+		return v.Authority
+	}).(GetAppSpecIngressRuleMatchAuthorityPtrOutput)
+}
+
+// Paths must start with `/` and must be unique within the app.
+func (o GetAppSpecIngressRuleMatchPtrOutput) Path() GetAppSpecIngressRuleMatchPathPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleMatch) *GetAppSpecIngressRuleMatchPath {
+		if v == nil {
+			return nil
+		}
+		return v.Path
+	}).(GetAppSpecIngressRuleMatchPathPtrOutput)
 }
 
 type GetAppSpecIngressRuleMatchAuthority struct {
 	// The `Access-Control-Allow-Origin` header will be set to the client's origin only if the client's origin exactly matches the value you provide.
-	Exact string `pulumi:"exact"`
+	Exact *string `pulumi:"exact"`
 }
 
 // GetAppSpecIngressRuleMatchAuthorityInput is an input type that accepts GetAppSpecIngressRuleMatchAuthorityArgs and GetAppSpecIngressRuleMatchAuthorityOutput values.
@@ -44668,7 +46867,7 @@ type GetAppSpecIngressRuleMatchAuthorityInput interface {
 
 type GetAppSpecIngressRuleMatchAuthorityArgs struct {
 	// The `Access-Control-Allow-Origin` header will be set to the client's origin only if the client's origin exactly matches the value you provide.
-	Exact pulumi.StringInput `pulumi:"exact"`
+	Exact pulumi.StringPtrInput `pulumi:"exact"`
 }
 
 func (GetAppSpecIngressRuleMatchAuthorityArgs) ElementType() reflect.Type {
@@ -44681,6 +46880,47 @@ func (i GetAppSpecIngressRuleMatchAuthorityArgs) ToGetAppSpecIngressRuleMatchAut
 
 func (i GetAppSpecIngressRuleMatchAuthorityArgs) ToGetAppSpecIngressRuleMatchAuthorityOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchAuthorityOutput {
 	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleMatchAuthorityOutput)
+}
+
+func (i GetAppSpecIngressRuleMatchAuthorityArgs) ToGetAppSpecIngressRuleMatchAuthorityPtrOutput() GetAppSpecIngressRuleMatchAuthorityPtrOutput {
+	return i.ToGetAppSpecIngressRuleMatchAuthorityPtrOutputWithContext(context.Background())
+}
+
+func (i GetAppSpecIngressRuleMatchAuthorityArgs) ToGetAppSpecIngressRuleMatchAuthorityPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchAuthorityPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleMatchAuthorityOutput).ToGetAppSpecIngressRuleMatchAuthorityPtrOutputWithContext(ctx)
+}
+
+// GetAppSpecIngressRuleMatchAuthorityPtrInput is an input type that accepts GetAppSpecIngressRuleMatchAuthorityArgs, GetAppSpecIngressRuleMatchAuthorityPtr and GetAppSpecIngressRuleMatchAuthorityPtrOutput values.
+// You can construct a concrete instance of `GetAppSpecIngressRuleMatchAuthorityPtrInput` via:
+//
+//	        GetAppSpecIngressRuleMatchAuthorityArgs{...}
+//
+//	or:
+//
+//	        nil
+type GetAppSpecIngressRuleMatchAuthorityPtrInput interface {
+	pulumi.Input
+
+	ToGetAppSpecIngressRuleMatchAuthorityPtrOutput() GetAppSpecIngressRuleMatchAuthorityPtrOutput
+	ToGetAppSpecIngressRuleMatchAuthorityPtrOutputWithContext(context.Context) GetAppSpecIngressRuleMatchAuthorityPtrOutput
+}
+
+type getAppSpecIngressRuleMatchAuthorityPtrType GetAppSpecIngressRuleMatchAuthorityArgs
+
+func GetAppSpecIngressRuleMatchAuthorityPtr(v *GetAppSpecIngressRuleMatchAuthorityArgs) GetAppSpecIngressRuleMatchAuthorityPtrInput {
+	return (*getAppSpecIngressRuleMatchAuthorityPtrType)(v)
+}
+
+func (*getAppSpecIngressRuleMatchAuthorityPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressRuleMatchAuthority)(nil)).Elem()
+}
+
+func (i *getAppSpecIngressRuleMatchAuthorityPtrType) ToGetAppSpecIngressRuleMatchAuthorityPtrOutput() GetAppSpecIngressRuleMatchAuthorityPtrOutput {
+	return i.ToGetAppSpecIngressRuleMatchAuthorityPtrOutputWithContext(context.Background())
+}
+
+func (i *getAppSpecIngressRuleMatchAuthorityPtrType) ToGetAppSpecIngressRuleMatchAuthorityPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchAuthorityPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleMatchAuthorityPtrOutput)
 }
 
 type GetAppSpecIngressRuleMatchAuthorityOutput struct{ *pulumi.OutputState }
@@ -44697,14 +46937,58 @@ func (o GetAppSpecIngressRuleMatchAuthorityOutput) ToGetAppSpecIngressRuleMatchA
 	return o
 }
 
+func (o GetAppSpecIngressRuleMatchAuthorityOutput) ToGetAppSpecIngressRuleMatchAuthorityPtrOutput() GetAppSpecIngressRuleMatchAuthorityPtrOutput {
+	return o.ToGetAppSpecIngressRuleMatchAuthorityPtrOutputWithContext(context.Background())
+}
+
+func (o GetAppSpecIngressRuleMatchAuthorityOutput) ToGetAppSpecIngressRuleMatchAuthorityPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchAuthorityPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v GetAppSpecIngressRuleMatchAuthority) *GetAppSpecIngressRuleMatchAuthority {
+		return &v
+	}).(GetAppSpecIngressRuleMatchAuthorityPtrOutput)
+}
+
 // The `Access-Control-Allow-Origin` header will be set to the client's origin only if the client's origin exactly matches the value you provide.
-func (o GetAppSpecIngressRuleMatchAuthorityOutput) Exact() pulumi.StringOutput {
-	return o.ApplyT(func(v GetAppSpecIngressRuleMatchAuthority) string { return v.Exact }).(pulumi.StringOutput)
+func (o GetAppSpecIngressRuleMatchAuthorityOutput) Exact() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressRuleMatchAuthority) *string { return v.Exact }).(pulumi.StringPtrOutput)
+}
+
+type GetAppSpecIngressRuleMatchAuthorityPtrOutput struct{ *pulumi.OutputState }
+
+func (GetAppSpecIngressRuleMatchAuthorityPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressRuleMatchAuthority)(nil)).Elem()
+}
+
+func (o GetAppSpecIngressRuleMatchAuthorityPtrOutput) ToGetAppSpecIngressRuleMatchAuthorityPtrOutput() GetAppSpecIngressRuleMatchAuthorityPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressRuleMatchAuthorityPtrOutput) ToGetAppSpecIngressRuleMatchAuthorityPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchAuthorityPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressRuleMatchAuthorityPtrOutput) Elem() GetAppSpecIngressRuleMatchAuthorityOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleMatchAuthority) GetAppSpecIngressRuleMatchAuthority {
+		if v != nil {
+			return *v
+		}
+		var ret GetAppSpecIngressRuleMatchAuthority
+		return ret
+	}).(GetAppSpecIngressRuleMatchAuthorityOutput)
+}
+
+// The `Access-Control-Allow-Origin` header will be set to the client's origin only if the client's origin exactly matches the value you provide.
+func (o GetAppSpecIngressRuleMatchAuthorityPtrOutput) Exact() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleMatchAuthority) *string {
+		if v == nil {
+			return nil
+		}
+		return v.Exact
+	}).(pulumi.StringPtrOutput)
 }
 
 type GetAppSpecIngressRuleMatchPath struct {
 	// The `Access-Control-Allow-Origin` header will be set to the client's origin if the beginning of the client's origin matches the value you provide.
-	Prefix string `pulumi:"prefix"`
+	Prefix *string `pulumi:"prefix"`
 }
 
 // GetAppSpecIngressRuleMatchPathInput is an input type that accepts GetAppSpecIngressRuleMatchPathArgs and GetAppSpecIngressRuleMatchPathOutput values.
@@ -44720,7 +47004,7 @@ type GetAppSpecIngressRuleMatchPathInput interface {
 
 type GetAppSpecIngressRuleMatchPathArgs struct {
 	// The `Access-Control-Allow-Origin` header will be set to the client's origin if the beginning of the client's origin matches the value you provide.
-	Prefix pulumi.StringInput `pulumi:"prefix"`
+	Prefix pulumi.StringPtrInput `pulumi:"prefix"`
 }
 
 func (GetAppSpecIngressRuleMatchPathArgs) ElementType() reflect.Type {
@@ -44733,6 +47017,47 @@ func (i GetAppSpecIngressRuleMatchPathArgs) ToGetAppSpecIngressRuleMatchPathOutp
 
 func (i GetAppSpecIngressRuleMatchPathArgs) ToGetAppSpecIngressRuleMatchPathOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchPathOutput {
 	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleMatchPathOutput)
+}
+
+func (i GetAppSpecIngressRuleMatchPathArgs) ToGetAppSpecIngressRuleMatchPathPtrOutput() GetAppSpecIngressRuleMatchPathPtrOutput {
+	return i.ToGetAppSpecIngressRuleMatchPathPtrOutputWithContext(context.Background())
+}
+
+func (i GetAppSpecIngressRuleMatchPathArgs) ToGetAppSpecIngressRuleMatchPathPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchPathPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleMatchPathOutput).ToGetAppSpecIngressRuleMatchPathPtrOutputWithContext(ctx)
+}
+
+// GetAppSpecIngressRuleMatchPathPtrInput is an input type that accepts GetAppSpecIngressRuleMatchPathArgs, GetAppSpecIngressRuleMatchPathPtr and GetAppSpecIngressRuleMatchPathPtrOutput values.
+// You can construct a concrete instance of `GetAppSpecIngressRuleMatchPathPtrInput` via:
+//
+//	        GetAppSpecIngressRuleMatchPathArgs{...}
+//
+//	or:
+//
+//	        nil
+type GetAppSpecIngressRuleMatchPathPtrInput interface {
+	pulumi.Input
+
+	ToGetAppSpecIngressRuleMatchPathPtrOutput() GetAppSpecIngressRuleMatchPathPtrOutput
+	ToGetAppSpecIngressRuleMatchPathPtrOutputWithContext(context.Context) GetAppSpecIngressRuleMatchPathPtrOutput
+}
+
+type getAppSpecIngressRuleMatchPathPtrType GetAppSpecIngressRuleMatchPathArgs
+
+func GetAppSpecIngressRuleMatchPathPtr(v *GetAppSpecIngressRuleMatchPathArgs) GetAppSpecIngressRuleMatchPathPtrInput {
+	return (*getAppSpecIngressRuleMatchPathPtrType)(v)
+}
+
+func (*getAppSpecIngressRuleMatchPathPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressRuleMatchPath)(nil)).Elem()
+}
+
+func (i *getAppSpecIngressRuleMatchPathPtrType) ToGetAppSpecIngressRuleMatchPathPtrOutput() GetAppSpecIngressRuleMatchPathPtrOutput {
+	return i.ToGetAppSpecIngressRuleMatchPathPtrOutputWithContext(context.Background())
+}
+
+func (i *getAppSpecIngressRuleMatchPathPtrType) ToGetAppSpecIngressRuleMatchPathPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchPathPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressRuleMatchPathPtrOutput)
 }
 
 type GetAppSpecIngressRuleMatchPathOutput struct{ *pulumi.OutputState }
@@ -44749,9 +47074,53 @@ func (o GetAppSpecIngressRuleMatchPathOutput) ToGetAppSpecIngressRuleMatchPathOu
 	return o
 }
 
+func (o GetAppSpecIngressRuleMatchPathOutput) ToGetAppSpecIngressRuleMatchPathPtrOutput() GetAppSpecIngressRuleMatchPathPtrOutput {
+	return o.ToGetAppSpecIngressRuleMatchPathPtrOutputWithContext(context.Background())
+}
+
+func (o GetAppSpecIngressRuleMatchPathOutput) ToGetAppSpecIngressRuleMatchPathPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchPathPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v GetAppSpecIngressRuleMatchPath) *GetAppSpecIngressRuleMatchPath {
+		return &v
+	}).(GetAppSpecIngressRuleMatchPathPtrOutput)
+}
+
 // The `Access-Control-Allow-Origin` header will be set to the client's origin if the beginning of the client's origin matches the value you provide.
-func (o GetAppSpecIngressRuleMatchPathOutput) Prefix() pulumi.StringOutput {
-	return o.ApplyT(func(v GetAppSpecIngressRuleMatchPath) string { return v.Prefix }).(pulumi.StringOutput)
+func (o GetAppSpecIngressRuleMatchPathOutput) Prefix() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressRuleMatchPath) *string { return v.Prefix }).(pulumi.StringPtrOutput)
+}
+
+type GetAppSpecIngressRuleMatchPathPtrOutput struct{ *pulumi.OutputState }
+
+func (GetAppSpecIngressRuleMatchPathPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressRuleMatchPath)(nil)).Elem()
+}
+
+func (o GetAppSpecIngressRuleMatchPathPtrOutput) ToGetAppSpecIngressRuleMatchPathPtrOutput() GetAppSpecIngressRuleMatchPathPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressRuleMatchPathPtrOutput) ToGetAppSpecIngressRuleMatchPathPtrOutputWithContext(ctx context.Context) GetAppSpecIngressRuleMatchPathPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressRuleMatchPathPtrOutput) Elem() GetAppSpecIngressRuleMatchPathOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleMatchPath) GetAppSpecIngressRuleMatchPath {
+		if v != nil {
+			return *v
+		}
+		var ret GetAppSpecIngressRuleMatchPath
+		return ret
+	}).(GetAppSpecIngressRuleMatchPathOutput)
+}
+
+// The `Access-Control-Allow-Origin` header will be set to the client's origin if the beginning of the client's origin matches the value you provide.
+func (o GetAppSpecIngressRuleMatchPathPtrOutput) Prefix() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressRuleMatchPath) *string {
+		if v == nil {
+			return nil
+		}
+		return v.Prefix
+	}).(pulumi.StringPtrOutput)
 }
 
 type GetAppSpecIngressRuleRedirect struct {
@@ -44949,9 +47318,9 @@ func (o GetAppSpecIngressRuleRedirectPtrOutput) Uri() pulumi.StringPtrOutput {
 
 type GetAppSpecIngressSecureHeader struct {
 	// The name of the environment variable.
-	Key string `pulumi:"key"`
+	Key *string `pulumi:"key"`
 	// The threshold for the type of the warning.
-	Value string `pulumi:"value"`
+	Value *string `pulumi:"value"`
 }
 
 // GetAppSpecIngressSecureHeaderInput is an input type that accepts GetAppSpecIngressSecureHeaderArgs and GetAppSpecIngressSecureHeaderOutput values.
@@ -44967,9 +47336,9 @@ type GetAppSpecIngressSecureHeaderInput interface {
 
 type GetAppSpecIngressSecureHeaderArgs struct {
 	// The name of the environment variable.
-	Key pulumi.StringInput `pulumi:"key"`
+	Key pulumi.StringPtrInput `pulumi:"key"`
 	// The threshold for the type of the warning.
-	Value pulumi.StringInput `pulumi:"value"`
+	Value pulumi.StringPtrInput `pulumi:"value"`
 }
 
 func (GetAppSpecIngressSecureHeaderArgs) ElementType() reflect.Type {
@@ -44982,6 +47351,47 @@ func (i GetAppSpecIngressSecureHeaderArgs) ToGetAppSpecIngressSecureHeaderOutput
 
 func (i GetAppSpecIngressSecureHeaderArgs) ToGetAppSpecIngressSecureHeaderOutputWithContext(ctx context.Context) GetAppSpecIngressSecureHeaderOutput {
 	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressSecureHeaderOutput)
+}
+
+func (i GetAppSpecIngressSecureHeaderArgs) ToGetAppSpecIngressSecureHeaderPtrOutput() GetAppSpecIngressSecureHeaderPtrOutput {
+	return i.ToGetAppSpecIngressSecureHeaderPtrOutputWithContext(context.Background())
+}
+
+func (i GetAppSpecIngressSecureHeaderArgs) ToGetAppSpecIngressSecureHeaderPtrOutputWithContext(ctx context.Context) GetAppSpecIngressSecureHeaderPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressSecureHeaderOutput).ToGetAppSpecIngressSecureHeaderPtrOutputWithContext(ctx)
+}
+
+// GetAppSpecIngressSecureHeaderPtrInput is an input type that accepts GetAppSpecIngressSecureHeaderArgs, GetAppSpecIngressSecureHeaderPtr and GetAppSpecIngressSecureHeaderPtrOutput values.
+// You can construct a concrete instance of `GetAppSpecIngressSecureHeaderPtrInput` via:
+//
+//	        GetAppSpecIngressSecureHeaderArgs{...}
+//
+//	or:
+//
+//	        nil
+type GetAppSpecIngressSecureHeaderPtrInput interface {
+	pulumi.Input
+
+	ToGetAppSpecIngressSecureHeaderPtrOutput() GetAppSpecIngressSecureHeaderPtrOutput
+	ToGetAppSpecIngressSecureHeaderPtrOutputWithContext(context.Context) GetAppSpecIngressSecureHeaderPtrOutput
+}
+
+type getAppSpecIngressSecureHeaderPtrType GetAppSpecIngressSecureHeaderArgs
+
+func GetAppSpecIngressSecureHeaderPtr(v *GetAppSpecIngressSecureHeaderArgs) GetAppSpecIngressSecureHeaderPtrInput {
+	return (*getAppSpecIngressSecureHeaderPtrType)(v)
+}
+
+func (*getAppSpecIngressSecureHeaderPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressSecureHeader)(nil)).Elem()
+}
+
+func (i *getAppSpecIngressSecureHeaderPtrType) ToGetAppSpecIngressSecureHeaderPtrOutput() GetAppSpecIngressSecureHeaderPtrOutput {
+	return i.ToGetAppSpecIngressSecureHeaderPtrOutputWithContext(context.Background())
+}
+
+func (i *getAppSpecIngressSecureHeaderPtrType) ToGetAppSpecIngressSecureHeaderPtrOutputWithContext(ctx context.Context) GetAppSpecIngressSecureHeaderPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecIngressSecureHeaderPtrOutput)
 }
 
 type GetAppSpecIngressSecureHeaderOutput struct{ *pulumi.OutputState }
@@ -44998,14 +47408,68 @@ func (o GetAppSpecIngressSecureHeaderOutput) ToGetAppSpecIngressSecureHeaderOutp
 	return o
 }
 
+func (o GetAppSpecIngressSecureHeaderOutput) ToGetAppSpecIngressSecureHeaderPtrOutput() GetAppSpecIngressSecureHeaderPtrOutput {
+	return o.ToGetAppSpecIngressSecureHeaderPtrOutputWithContext(context.Background())
+}
+
+func (o GetAppSpecIngressSecureHeaderOutput) ToGetAppSpecIngressSecureHeaderPtrOutputWithContext(ctx context.Context) GetAppSpecIngressSecureHeaderPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v GetAppSpecIngressSecureHeader) *GetAppSpecIngressSecureHeader {
+		return &v
+	}).(GetAppSpecIngressSecureHeaderPtrOutput)
+}
+
 // The name of the environment variable.
-func (o GetAppSpecIngressSecureHeaderOutput) Key() pulumi.StringOutput {
-	return o.ApplyT(func(v GetAppSpecIngressSecureHeader) string { return v.Key }).(pulumi.StringOutput)
+func (o GetAppSpecIngressSecureHeaderOutput) Key() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressSecureHeader) *string { return v.Key }).(pulumi.StringPtrOutput)
 }
 
 // The threshold for the type of the warning.
-func (o GetAppSpecIngressSecureHeaderOutput) Value() pulumi.StringOutput {
-	return o.ApplyT(func(v GetAppSpecIngressSecureHeader) string { return v.Value }).(pulumi.StringOutput)
+func (o GetAppSpecIngressSecureHeaderOutput) Value() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GetAppSpecIngressSecureHeader) *string { return v.Value }).(pulumi.StringPtrOutput)
+}
+
+type GetAppSpecIngressSecureHeaderPtrOutput struct{ *pulumi.OutputState }
+
+func (GetAppSpecIngressSecureHeaderPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecIngressSecureHeader)(nil)).Elem()
+}
+
+func (o GetAppSpecIngressSecureHeaderPtrOutput) ToGetAppSpecIngressSecureHeaderPtrOutput() GetAppSpecIngressSecureHeaderPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressSecureHeaderPtrOutput) ToGetAppSpecIngressSecureHeaderPtrOutputWithContext(ctx context.Context) GetAppSpecIngressSecureHeaderPtrOutput {
+	return o
+}
+
+func (o GetAppSpecIngressSecureHeaderPtrOutput) Elem() GetAppSpecIngressSecureHeaderOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressSecureHeader) GetAppSpecIngressSecureHeader {
+		if v != nil {
+			return *v
+		}
+		var ret GetAppSpecIngressSecureHeader
+		return ret
+	}).(GetAppSpecIngressSecureHeaderOutput)
+}
+
+// The name of the environment variable.
+func (o GetAppSpecIngressSecureHeaderPtrOutput) Key() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressSecureHeader) *string {
+		if v == nil {
+			return nil
+		}
+		return v.Key
+	}).(pulumi.StringPtrOutput)
+}
+
+// The threshold for the type of the warning.
+func (o GetAppSpecIngressSecureHeaderPtrOutput) Value() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecIngressSecureHeader) *string {
+		if v == nil {
+			return nil
+		}
+		return v.Value
+	}).(pulumi.StringPtrOutput)
 }
 
 type GetAppSpecJob struct {
@@ -48081,7 +50545,8 @@ type GetAppSpecService struct {
 	// The instance size to use for this component.
 	InstanceSizeSlug *string `pulumi:"instanceSizeSlug"`
 	// A list of ports on which this service will listen for internal traffic.
-	InternalPorts []int `pulumi:"internalPorts"`
+	InternalPorts       []int                                 `pulumi:"internalPorts"`
+	LivenessHealthCheck *GetAppSpecServiceLivenessHealthCheck `pulumi:"livenessHealthCheck"`
 	// Describes a log forwarding destination.
 	LogDestinations []GetAppSpecServiceLogDestination `pulumi:"logDestinations"`
 	// The name of the component.
@@ -48089,7 +50554,7 @@ type GetAppSpecService struct {
 	// Deprecated: Service level routes are deprecated in favor of ingresses
 	Routes []GetAppSpecServiceRoute `pulumi:"routes"`
 	// An optional run command to override the component's default.
-	RunCommand string `pulumi:"runCommand"`
+	RunCommand *string `pulumi:"runCommand"`
 	// An optional path to the working directory to use for the build.
 	SourceDir *string `pulumi:"sourceDir"`
 	// Contains a component's termination parameters.
@@ -48143,7 +50608,8 @@ type GetAppSpecServiceArgs struct {
 	// The instance size to use for this component.
 	InstanceSizeSlug pulumi.StringPtrInput `pulumi:"instanceSizeSlug"`
 	// A list of ports on which this service will listen for internal traffic.
-	InternalPorts pulumi.IntArrayInput `pulumi:"internalPorts"`
+	InternalPorts       pulumi.IntArrayInput                         `pulumi:"internalPorts"`
+	LivenessHealthCheck GetAppSpecServiceLivenessHealthCheckPtrInput `pulumi:"livenessHealthCheck"`
 	// Describes a log forwarding destination.
 	LogDestinations GetAppSpecServiceLogDestinationArrayInput `pulumi:"logDestinations"`
 	// The name of the component.
@@ -48151,7 +50617,7 @@ type GetAppSpecServiceArgs struct {
 	// Deprecated: Service level routes are deprecated in favor of ingresses
 	Routes GetAppSpecServiceRouteArrayInput `pulumi:"routes"`
 	// An optional run command to override the component's default.
-	RunCommand pulumi.StringInput `pulumi:"runCommand"`
+	RunCommand pulumi.StringPtrInput `pulumi:"runCommand"`
 	// An optional path to the working directory to use for the build.
 	SourceDir pulumi.StringPtrInput `pulumi:"sourceDir"`
 	// Contains a component's termination parameters.
@@ -48296,6 +50762,10 @@ func (o GetAppSpecServiceOutput) InternalPorts() pulumi.IntArrayOutput {
 	return o.ApplyT(func(v GetAppSpecService) []int { return v.InternalPorts }).(pulumi.IntArrayOutput)
 }
 
+func (o GetAppSpecServiceOutput) LivenessHealthCheck() GetAppSpecServiceLivenessHealthCheckPtrOutput {
+	return o.ApplyT(func(v GetAppSpecService) *GetAppSpecServiceLivenessHealthCheck { return v.LivenessHealthCheck }).(GetAppSpecServiceLivenessHealthCheckPtrOutput)
+}
+
 // Describes a log forwarding destination.
 func (o GetAppSpecServiceOutput) LogDestinations() GetAppSpecServiceLogDestinationArrayOutput {
 	return o.ApplyT(func(v GetAppSpecService) []GetAppSpecServiceLogDestination { return v.LogDestinations }).(GetAppSpecServiceLogDestinationArrayOutput)
@@ -48312,8 +50782,8 @@ func (o GetAppSpecServiceOutput) Routes() GetAppSpecServiceRouteArrayOutput {
 }
 
 // An optional run command to override the component's default.
-func (o GetAppSpecServiceOutput) RunCommand() pulumi.StringOutput {
-	return o.ApplyT(func(v GetAppSpecService) string { return v.RunCommand }).(pulumi.StringOutput)
+func (o GetAppSpecServiceOutput) RunCommand() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GetAppSpecService) *string { return v.RunCommand }).(pulumi.StringPtrOutput)
 }
 
 // An optional path to the working directory to use for the build.
@@ -51007,6 +53477,257 @@ func (o GetAppSpecServiceImageDeployOnPushArrayOutput) Index(i pulumi.IntInput) 
 	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetAppSpecServiceImageDeployOnPush {
 		return vs[0].([]GetAppSpecServiceImageDeployOnPush)[vs[1].(int)]
 	}).(GetAppSpecServiceImageDeployOnPushOutput)
+}
+
+type GetAppSpecServiceLivenessHealthCheck struct {
+	// The number of failed health checks before considered unhealthy.
+	FailureThreshold *int `pulumi:"failureThreshold"`
+	// The route path used for the HTTP health check ping.
+	HttpPath *string `pulumi:"httpPath"`
+	// The number of seconds to wait before beginning health checks.
+	InitialDelaySeconds *int `pulumi:"initialDelaySeconds"`
+	// The number of seconds to wait between health checks.
+	PeriodSeconds *int `pulumi:"periodSeconds"`
+	// The port on which the health check will be performed. If not set, the health check will be performed on the component's http_port.
+	Port *int `pulumi:"port"`
+	// The number of successful health checks before considered healthy.
+	SuccessThreshold *int `pulumi:"successThreshold"`
+	// The number of seconds after which the check times out.
+	TimeoutSeconds *int `pulumi:"timeoutSeconds"`
+}
+
+// GetAppSpecServiceLivenessHealthCheckInput is an input type that accepts GetAppSpecServiceLivenessHealthCheckArgs and GetAppSpecServiceLivenessHealthCheckOutput values.
+// You can construct a concrete instance of `GetAppSpecServiceLivenessHealthCheckInput` via:
+//
+//	GetAppSpecServiceLivenessHealthCheckArgs{...}
+type GetAppSpecServiceLivenessHealthCheckInput interface {
+	pulumi.Input
+
+	ToGetAppSpecServiceLivenessHealthCheckOutput() GetAppSpecServiceLivenessHealthCheckOutput
+	ToGetAppSpecServiceLivenessHealthCheckOutputWithContext(context.Context) GetAppSpecServiceLivenessHealthCheckOutput
+}
+
+type GetAppSpecServiceLivenessHealthCheckArgs struct {
+	// The number of failed health checks before considered unhealthy.
+	FailureThreshold pulumi.IntPtrInput `pulumi:"failureThreshold"`
+	// The route path used for the HTTP health check ping.
+	HttpPath pulumi.StringPtrInput `pulumi:"httpPath"`
+	// The number of seconds to wait before beginning health checks.
+	InitialDelaySeconds pulumi.IntPtrInput `pulumi:"initialDelaySeconds"`
+	// The number of seconds to wait between health checks.
+	PeriodSeconds pulumi.IntPtrInput `pulumi:"periodSeconds"`
+	// The port on which the health check will be performed. If not set, the health check will be performed on the component's http_port.
+	Port pulumi.IntPtrInput `pulumi:"port"`
+	// The number of successful health checks before considered healthy.
+	SuccessThreshold pulumi.IntPtrInput `pulumi:"successThreshold"`
+	// The number of seconds after which the check times out.
+	TimeoutSeconds pulumi.IntPtrInput `pulumi:"timeoutSeconds"`
+}
+
+func (GetAppSpecServiceLivenessHealthCheckArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*GetAppSpecServiceLivenessHealthCheck)(nil)).Elem()
+}
+
+func (i GetAppSpecServiceLivenessHealthCheckArgs) ToGetAppSpecServiceLivenessHealthCheckOutput() GetAppSpecServiceLivenessHealthCheckOutput {
+	return i.ToGetAppSpecServiceLivenessHealthCheckOutputWithContext(context.Background())
+}
+
+func (i GetAppSpecServiceLivenessHealthCheckArgs) ToGetAppSpecServiceLivenessHealthCheckOutputWithContext(ctx context.Context) GetAppSpecServiceLivenessHealthCheckOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecServiceLivenessHealthCheckOutput)
+}
+
+func (i GetAppSpecServiceLivenessHealthCheckArgs) ToGetAppSpecServiceLivenessHealthCheckPtrOutput() GetAppSpecServiceLivenessHealthCheckPtrOutput {
+	return i.ToGetAppSpecServiceLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (i GetAppSpecServiceLivenessHealthCheckArgs) ToGetAppSpecServiceLivenessHealthCheckPtrOutputWithContext(ctx context.Context) GetAppSpecServiceLivenessHealthCheckPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecServiceLivenessHealthCheckOutput).ToGetAppSpecServiceLivenessHealthCheckPtrOutputWithContext(ctx)
+}
+
+// GetAppSpecServiceLivenessHealthCheckPtrInput is an input type that accepts GetAppSpecServiceLivenessHealthCheckArgs, GetAppSpecServiceLivenessHealthCheckPtr and GetAppSpecServiceLivenessHealthCheckPtrOutput values.
+// You can construct a concrete instance of `GetAppSpecServiceLivenessHealthCheckPtrInput` via:
+//
+//	        GetAppSpecServiceLivenessHealthCheckArgs{...}
+//
+//	or:
+//
+//	        nil
+type GetAppSpecServiceLivenessHealthCheckPtrInput interface {
+	pulumi.Input
+
+	ToGetAppSpecServiceLivenessHealthCheckPtrOutput() GetAppSpecServiceLivenessHealthCheckPtrOutput
+	ToGetAppSpecServiceLivenessHealthCheckPtrOutputWithContext(context.Context) GetAppSpecServiceLivenessHealthCheckPtrOutput
+}
+
+type getAppSpecServiceLivenessHealthCheckPtrType GetAppSpecServiceLivenessHealthCheckArgs
+
+func GetAppSpecServiceLivenessHealthCheckPtr(v *GetAppSpecServiceLivenessHealthCheckArgs) GetAppSpecServiceLivenessHealthCheckPtrInput {
+	return (*getAppSpecServiceLivenessHealthCheckPtrType)(v)
+}
+
+func (*getAppSpecServiceLivenessHealthCheckPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecServiceLivenessHealthCheck)(nil)).Elem()
+}
+
+func (i *getAppSpecServiceLivenessHealthCheckPtrType) ToGetAppSpecServiceLivenessHealthCheckPtrOutput() GetAppSpecServiceLivenessHealthCheckPtrOutput {
+	return i.ToGetAppSpecServiceLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (i *getAppSpecServiceLivenessHealthCheckPtrType) ToGetAppSpecServiceLivenessHealthCheckPtrOutputWithContext(ctx context.Context) GetAppSpecServiceLivenessHealthCheckPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecServiceLivenessHealthCheckPtrOutput)
+}
+
+type GetAppSpecServiceLivenessHealthCheckOutput struct{ *pulumi.OutputState }
+
+func (GetAppSpecServiceLivenessHealthCheckOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*GetAppSpecServiceLivenessHealthCheck)(nil)).Elem()
+}
+
+func (o GetAppSpecServiceLivenessHealthCheckOutput) ToGetAppSpecServiceLivenessHealthCheckOutput() GetAppSpecServiceLivenessHealthCheckOutput {
+	return o
+}
+
+func (o GetAppSpecServiceLivenessHealthCheckOutput) ToGetAppSpecServiceLivenessHealthCheckOutputWithContext(ctx context.Context) GetAppSpecServiceLivenessHealthCheckOutput {
+	return o
+}
+
+func (o GetAppSpecServiceLivenessHealthCheckOutput) ToGetAppSpecServiceLivenessHealthCheckPtrOutput() GetAppSpecServiceLivenessHealthCheckPtrOutput {
+	return o.ToGetAppSpecServiceLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (o GetAppSpecServiceLivenessHealthCheckOutput) ToGetAppSpecServiceLivenessHealthCheckPtrOutputWithContext(ctx context.Context) GetAppSpecServiceLivenessHealthCheckPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v GetAppSpecServiceLivenessHealthCheck) *GetAppSpecServiceLivenessHealthCheck {
+		return &v
+	}).(GetAppSpecServiceLivenessHealthCheckPtrOutput)
+}
+
+// The number of failed health checks before considered unhealthy.
+func (o GetAppSpecServiceLivenessHealthCheckOutput) FailureThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecServiceLivenessHealthCheck) *int { return v.FailureThreshold }).(pulumi.IntPtrOutput)
+}
+
+// The route path used for the HTTP health check ping.
+func (o GetAppSpecServiceLivenessHealthCheckOutput) HttpPath() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GetAppSpecServiceLivenessHealthCheck) *string { return v.HttpPath }).(pulumi.StringPtrOutput)
+}
+
+// The number of seconds to wait before beginning health checks.
+func (o GetAppSpecServiceLivenessHealthCheckOutput) InitialDelaySeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecServiceLivenessHealthCheck) *int { return v.InitialDelaySeconds }).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds to wait between health checks.
+func (o GetAppSpecServiceLivenessHealthCheckOutput) PeriodSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecServiceLivenessHealthCheck) *int { return v.PeriodSeconds }).(pulumi.IntPtrOutput)
+}
+
+// The port on which the health check will be performed. If not set, the health check will be performed on the component's http_port.
+func (o GetAppSpecServiceLivenessHealthCheckOutput) Port() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecServiceLivenessHealthCheck) *int { return v.Port }).(pulumi.IntPtrOutput)
+}
+
+// The number of successful health checks before considered healthy.
+func (o GetAppSpecServiceLivenessHealthCheckOutput) SuccessThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecServiceLivenessHealthCheck) *int { return v.SuccessThreshold }).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds after which the check times out.
+func (o GetAppSpecServiceLivenessHealthCheckOutput) TimeoutSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecServiceLivenessHealthCheck) *int { return v.TimeoutSeconds }).(pulumi.IntPtrOutput)
+}
+
+type GetAppSpecServiceLivenessHealthCheckPtrOutput struct{ *pulumi.OutputState }
+
+func (GetAppSpecServiceLivenessHealthCheckPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecServiceLivenessHealthCheck)(nil)).Elem()
+}
+
+func (o GetAppSpecServiceLivenessHealthCheckPtrOutput) ToGetAppSpecServiceLivenessHealthCheckPtrOutput() GetAppSpecServiceLivenessHealthCheckPtrOutput {
+	return o
+}
+
+func (o GetAppSpecServiceLivenessHealthCheckPtrOutput) ToGetAppSpecServiceLivenessHealthCheckPtrOutputWithContext(ctx context.Context) GetAppSpecServiceLivenessHealthCheckPtrOutput {
+	return o
+}
+
+func (o GetAppSpecServiceLivenessHealthCheckPtrOutput) Elem() GetAppSpecServiceLivenessHealthCheckOutput {
+	return o.ApplyT(func(v *GetAppSpecServiceLivenessHealthCheck) GetAppSpecServiceLivenessHealthCheck {
+		if v != nil {
+			return *v
+		}
+		var ret GetAppSpecServiceLivenessHealthCheck
+		return ret
+	}).(GetAppSpecServiceLivenessHealthCheckOutput)
+}
+
+// The number of failed health checks before considered unhealthy.
+func (o GetAppSpecServiceLivenessHealthCheckPtrOutput) FailureThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.FailureThreshold
+	}).(pulumi.IntPtrOutput)
+}
+
+// The route path used for the HTTP health check ping.
+func (o GetAppSpecServiceLivenessHealthCheckPtrOutput) HttpPath() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecServiceLivenessHealthCheck) *string {
+		if v == nil {
+			return nil
+		}
+		return v.HttpPath
+	}).(pulumi.StringPtrOutput)
+}
+
+// The number of seconds to wait before beginning health checks.
+func (o GetAppSpecServiceLivenessHealthCheckPtrOutput) InitialDelaySeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.InitialDelaySeconds
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds to wait between health checks.
+func (o GetAppSpecServiceLivenessHealthCheckPtrOutput) PeriodSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.PeriodSeconds
+	}).(pulumi.IntPtrOutput)
+}
+
+// The port on which the health check will be performed. If not set, the health check will be performed on the component's http_port.
+func (o GetAppSpecServiceLivenessHealthCheckPtrOutput) Port() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.Port
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of successful health checks before considered healthy.
+func (o GetAppSpecServiceLivenessHealthCheckPtrOutput) SuccessThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.SuccessThreshold
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds after which the check times out.
+func (o GetAppSpecServiceLivenessHealthCheckPtrOutput) TimeoutSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecServiceLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.TimeoutSeconds
+	}).(pulumi.IntPtrOutput)
 }
 
 type GetAppSpecServiceLogDestination struct {
@@ -53877,7 +56598,8 @@ type GetAppSpecWorker struct {
 	// The amount of instances that this component should be scaled to.
 	InstanceCount *int `pulumi:"instanceCount"`
 	// The instance size to use for this component.
-	InstanceSizeSlug *string `pulumi:"instanceSizeSlug"`
+	InstanceSizeSlug    *string                              `pulumi:"instanceSizeSlug"`
+	LivenessHealthCheck *GetAppSpecWorkerLivenessHealthCheck `pulumi:"livenessHealthCheck"`
 	// Describes a log forwarding destination.
 	LogDestinations []GetAppSpecWorkerLogDestination `pulumi:"logDestinations"`
 	// The name of the component.
@@ -53927,7 +56649,8 @@ type GetAppSpecWorkerArgs struct {
 	// The amount of instances that this component should be scaled to.
 	InstanceCount pulumi.IntPtrInput `pulumi:"instanceCount"`
 	// The instance size to use for this component.
-	InstanceSizeSlug pulumi.StringPtrInput `pulumi:"instanceSizeSlug"`
+	InstanceSizeSlug    pulumi.StringPtrInput                       `pulumi:"instanceSizeSlug"`
+	LivenessHealthCheck GetAppSpecWorkerLivenessHealthCheckPtrInput `pulumi:"livenessHealthCheck"`
 	// Describes a log forwarding destination.
 	LogDestinations GetAppSpecWorkerLogDestinationArrayInput `pulumi:"logDestinations"`
 	// The name of the component.
@@ -54054,6 +56777,10 @@ func (o GetAppSpecWorkerOutput) InstanceCount() pulumi.IntPtrOutput {
 // The instance size to use for this component.
 func (o GetAppSpecWorkerOutput) InstanceSizeSlug() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v GetAppSpecWorker) *string { return v.InstanceSizeSlug }).(pulumi.StringPtrOutput)
+}
+
+func (o GetAppSpecWorkerOutput) LivenessHealthCheck() GetAppSpecWorkerLivenessHealthCheckPtrOutput {
+	return o.ApplyT(func(v GetAppSpecWorker) *GetAppSpecWorkerLivenessHealthCheck { return v.LivenessHealthCheck }).(GetAppSpecWorkerLivenessHealthCheckPtrOutput)
 }
 
 // Describes a log forwarding destination.
@@ -56098,6 +58825,257 @@ func (o GetAppSpecWorkerImageDeployOnPushArrayOutput) Index(i pulumi.IntInput) G
 	}).(GetAppSpecWorkerImageDeployOnPushOutput)
 }
 
+type GetAppSpecWorkerLivenessHealthCheck struct {
+	// The number of failed health checks before considered unhealthy.
+	FailureThreshold *int `pulumi:"failureThreshold"`
+	// The route path used for the HTTP health check ping.
+	HttpPath *string `pulumi:"httpPath"`
+	// The number of seconds to wait before beginning health checks.
+	InitialDelaySeconds *int `pulumi:"initialDelaySeconds"`
+	// The number of seconds to wait between health checks.
+	PeriodSeconds *int `pulumi:"periodSeconds"`
+	// The port on which the health check will be performed. If not set, the health check will be performed on the component's http_port.
+	Port *int `pulumi:"port"`
+	// The number of successful health checks before considered healthy.
+	SuccessThreshold *int `pulumi:"successThreshold"`
+	// The number of seconds after which the check times out.
+	TimeoutSeconds *int `pulumi:"timeoutSeconds"`
+}
+
+// GetAppSpecWorkerLivenessHealthCheckInput is an input type that accepts GetAppSpecWorkerLivenessHealthCheckArgs and GetAppSpecWorkerLivenessHealthCheckOutput values.
+// You can construct a concrete instance of `GetAppSpecWorkerLivenessHealthCheckInput` via:
+//
+//	GetAppSpecWorkerLivenessHealthCheckArgs{...}
+type GetAppSpecWorkerLivenessHealthCheckInput interface {
+	pulumi.Input
+
+	ToGetAppSpecWorkerLivenessHealthCheckOutput() GetAppSpecWorkerLivenessHealthCheckOutput
+	ToGetAppSpecWorkerLivenessHealthCheckOutputWithContext(context.Context) GetAppSpecWorkerLivenessHealthCheckOutput
+}
+
+type GetAppSpecWorkerLivenessHealthCheckArgs struct {
+	// The number of failed health checks before considered unhealthy.
+	FailureThreshold pulumi.IntPtrInput `pulumi:"failureThreshold"`
+	// The route path used for the HTTP health check ping.
+	HttpPath pulumi.StringPtrInput `pulumi:"httpPath"`
+	// The number of seconds to wait before beginning health checks.
+	InitialDelaySeconds pulumi.IntPtrInput `pulumi:"initialDelaySeconds"`
+	// The number of seconds to wait between health checks.
+	PeriodSeconds pulumi.IntPtrInput `pulumi:"periodSeconds"`
+	// The port on which the health check will be performed. If not set, the health check will be performed on the component's http_port.
+	Port pulumi.IntPtrInput `pulumi:"port"`
+	// The number of successful health checks before considered healthy.
+	SuccessThreshold pulumi.IntPtrInput `pulumi:"successThreshold"`
+	// The number of seconds after which the check times out.
+	TimeoutSeconds pulumi.IntPtrInput `pulumi:"timeoutSeconds"`
+}
+
+func (GetAppSpecWorkerLivenessHealthCheckArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*GetAppSpecWorkerLivenessHealthCheck)(nil)).Elem()
+}
+
+func (i GetAppSpecWorkerLivenessHealthCheckArgs) ToGetAppSpecWorkerLivenessHealthCheckOutput() GetAppSpecWorkerLivenessHealthCheckOutput {
+	return i.ToGetAppSpecWorkerLivenessHealthCheckOutputWithContext(context.Background())
+}
+
+func (i GetAppSpecWorkerLivenessHealthCheckArgs) ToGetAppSpecWorkerLivenessHealthCheckOutputWithContext(ctx context.Context) GetAppSpecWorkerLivenessHealthCheckOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecWorkerLivenessHealthCheckOutput)
+}
+
+func (i GetAppSpecWorkerLivenessHealthCheckArgs) ToGetAppSpecWorkerLivenessHealthCheckPtrOutput() GetAppSpecWorkerLivenessHealthCheckPtrOutput {
+	return i.ToGetAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (i GetAppSpecWorkerLivenessHealthCheckArgs) ToGetAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(ctx context.Context) GetAppSpecWorkerLivenessHealthCheckPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecWorkerLivenessHealthCheckOutput).ToGetAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(ctx)
+}
+
+// GetAppSpecWorkerLivenessHealthCheckPtrInput is an input type that accepts GetAppSpecWorkerLivenessHealthCheckArgs, GetAppSpecWorkerLivenessHealthCheckPtr and GetAppSpecWorkerLivenessHealthCheckPtrOutput values.
+// You can construct a concrete instance of `GetAppSpecWorkerLivenessHealthCheckPtrInput` via:
+//
+//	        GetAppSpecWorkerLivenessHealthCheckArgs{...}
+//
+//	or:
+//
+//	        nil
+type GetAppSpecWorkerLivenessHealthCheckPtrInput interface {
+	pulumi.Input
+
+	ToGetAppSpecWorkerLivenessHealthCheckPtrOutput() GetAppSpecWorkerLivenessHealthCheckPtrOutput
+	ToGetAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(context.Context) GetAppSpecWorkerLivenessHealthCheckPtrOutput
+}
+
+type getAppSpecWorkerLivenessHealthCheckPtrType GetAppSpecWorkerLivenessHealthCheckArgs
+
+func GetAppSpecWorkerLivenessHealthCheckPtr(v *GetAppSpecWorkerLivenessHealthCheckArgs) GetAppSpecWorkerLivenessHealthCheckPtrInput {
+	return (*getAppSpecWorkerLivenessHealthCheckPtrType)(v)
+}
+
+func (*getAppSpecWorkerLivenessHealthCheckPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecWorkerLivenessHealthCheck)(nil)).Elem()
+}
+
+func (i *getAppSpecWorkerLivenessHealthCheckPtrType) ToGetAppSpecWorkerLivenessHealthCheckPtrOutput() GetAppSpecWorkerLivenessHealthCheckPtrOutput {
+	return i.ToGetAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (i *getAppSpecWorkerLivenessHealthCheckPtrType) ToGetAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(ctx context.Context) GetAppSpecWorkerLivenessHealthCheckPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetAppSpecWorkerLivenessHealthCheckPtrOutput)
+}
+
+type GetAppSpecWorkerLivenessHealthCheckOutput struct{ *pulumi.OutputState }
+
+func (GetAppSpecWorkerLivenessHealthCheckOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*GetAppSpecWorkerLivenessHealthCheck)(nil)).Elem()
+}
+
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) ToGetAppSpecWorkerLivenessHealthCheckOutput() GetAppSpecWorkerLivenessHealthCheckOutput {
+	return o
+}
+
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) ToGetAppSpecWorkerLivenessHealthCheckOutputWithContext(ctx context.Context) GetAppSpecWorkerLivenessHealthCheckOutput {
+	return o
+}
+
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) ToGetAppSpecWorkerLivenessHealthCheckPtrOutput() GetAppSpecWorkerLivenessHealthCheckPtrOutput {
+	return o.ToGetAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(context.Background())
+}
+
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) ToGetAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(ctx context.Context) GetAppSpecWorkerLivenessHealthCheckPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v GetAppSpecWorkerLivenessHealthCheck) *GetAppSpecWorkerLivenessHealthCheck {
+		return &v
+	}).(GetAppSpecWorkerLivenessHealthCheckPtrOutput)
+}
+
+// The number of failed health checks before considered unhealthy.
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) FailureThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecWorkerLivenessHealthCheck) *int { return v.FailureThreshold }).(pulumi.IntPtrOutput)
+}
+
+// The route path used for the HTTP health check ping.
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) HttpPath() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v GetAppSpecWorkerLivenessHealthCheck) *string { return v.HttpPath }).(pulumi.StringPtrOutput)
+}
+
+// The number of seconds to wait before beginning health checks.
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) InitialDelaySeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecWorkerLivenessHealthCheck) *int { return v.InitialDelaySeconds }).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds to wait between health checks.
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) PeriodSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecWorkerLivenessHealthCheck) *int { return v.PeriodSeconds }).(pulumi.IntPtrOutput)
+}
+
+// The port on which the health check will be performed. If not set, the health check will be performed on the component's http_port.
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) Port() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecWorkerLivenessHealthCheck) *int { return v.Port }).(pulumi.IntPtrOutput)
+}
+
+// The number of successful health checks before considered healthy.
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) SuccessThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecWorkerLivenessHealthCheck) *int { return v.SuccessThreshold }).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds after which the check times out.
+func (o GetAppSpecWorkerLivenessHealthCheckOutput) TimeoutSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v GetAppSpecWorkerLivenessHealthCheck) *int { return v.TimeoutSeconds }).(pulumi.IntPtrOutput)
+}
+
+type GetAppSpecWorkerLivenessHealthCheckPtrOutput struct{ *pulumi.OutputState }
+
+func (GetAppSpecWorkerLivenessHealthCheckPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**GetAppSpecWorkerLivenessHealthCheck)(nil)).Elem()
+}
+
+func (o GetAppSpecWorkerLivenessHealthCheckPtrOutput) ToGetAppSpecWorkerLivenessHealthCheckPtrOutput() GetAppSpecWorkerLivenessHealthCheckPtrOutput {
+	return o
+}
+
+func (o GetAppSpecWorkerLivenessHealthCheckPtrOutput) ToGetAppSpecWorkerLivenessHealthCheckPtrOutputWithContext(ctx context.Context) GetAppSpecWorkerLivenessHealthCheckPtrOutput {
+	return o
+}
+
+func (o GetAppSpecWorkerLivenessHealthCheckPtrOutput) Elem() GetAppSpecWorkerLivenessHealthCheckOutput {
+	return o.ApplyT(func(v *GetAppSpecWorkerLivenessHealthCheck) GetAppSpecWorkerLivenessHealthCheck {
+		if v != nil {
+			return *v
+		}
+		var ret GetAppSpecWorkerLivenessHealthCheck
+		return ret
+	}).(GetAppSpecWorkerLivenessHealthCheckOutput)
+}
+
+// The number of failed health checks before considered unhealthy.
+func (o GetAppSpecWorkerLivenessHealthCheckPtrOutput) FailureThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.FailureThreshold
+	}).(pulumi.IntPtrOutput)
+}
+
+// The route path used for the HTTP health check ping.
+func (o GetAppSpecWorkerLivenessHealthCheckPtrOutput) HttpPath() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecWorkerLivenessHealthCheck) *string {
+		if v == nil {
+			return nil
+		}
+		return v.HttpPath
+	}).(pulumi.StringPtrOutput)
+}
+
+// The number of seconds to wait before beginning health checks.
+func (o GetAppSpecWorkerLivenessHealthCheckPtrOutput) InitialDelaySeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.InitialDelaySeconds
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds to wait between health checks.
+func (o GetAppSpecWorkerLivenessHealthCheckPtrOutput) PeriodSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.PeriodSeconds
+	}).(pulumi.IntPtrOutput)
+}
+
+// The port on which the health check will be performed. If not set, the health check will be performed on the component's http_port.
+func (o GetAppSpecWorkerLivenessHealthCheckPtrOutput) Port() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.Port
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of successful health checks before considered healthy.
+func (o GetAppSpecWorkerLivenessHealthCheckPtrOutput) SuccessThreshold() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.SuccessThreshold
+	}).(pulumi.IntPtrOutput)
+}
+
+// The number of seconds after which the check times out.
+func (o GetAppSpecWorkerLivenessHealthCheckPtrOutput) TimeoutSeconds() pulumi.IntPtrOutput {
+	return o.ApplyT(func(v *GetAppSpecWorkerLivenessHealthCheck) *int {
+		if v == nil {
+			return nil
+		}
+		return v.TimeoutSeconds
+	}).(pulumi.IntPtrOutput)
+}
+
 type GetAppSpecWorkerLogDestination struct {
 	// Datadog configuration.
 	Datadog *GetAppSpecWorkerLogDestinationDatadog `pulumi:"datadog"`
@@ -57378,6 +60356,121 @@ func (o GetDatabaseClusterMaintenanceWindowArrayOutput) Index(i pulumi.IntInput)
 	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetDatabaseClusterMaintenanceWindow {
 		return vs[0].([]GetDatabaseClusterMaintenanceWindow)[vs[1].(int)]
 	}).(GetDatabaseClusterMaintenanceWindowOutput)
+}
+
+type GetDatabaseClusterStorageAutoscale struct {
+	// Whether storage autoscaling is enabled for the cluster.
+	Enabled bool `pulumi:"enabled"`
+	// The amount of storage, in GiB, to add when autoscaling is triggered.
+	IncrementGib int `pulumi:"incrementGib"`
+	// The storage utilization percentage at which autoscaling is triggered.
+	ThresholdPercent int `pulumi:"thresholdPercent"`
+}
+
+// GetDatabaseClusterStorageAutoscaleInput is an input type that accepts GetDatabaseClusterStorageAutoscaleArgs and GetDatabaseClusterStorageAutoscaleOutput values.
+// You can construct a concrete instance of `GetDatabaseClusterStorageAutoscaleInput` via:
+//
+//	GetDatabaseClusterStorageAutoscaleArgs{...}
+type GetDatabaseClusterStorageAutoscaleInput interface {
+	pulumi.Input
+
+	ToGetDatabaseClusterStorageAutoscaleOutput() GetDatabaseClusterStorageAutoscaleOutput
+	ToGetDatabaseClusterStorageAutoscaleOutputWithContext(context.Context) GetDatabaseClusterStorageAutoscaleOutput
+}
+
+type GetDatabaseClusterStorageAutoscaleArgs struct {
+	// Whether storage autoscaling is enabled for the cluster.
+	Enabled pulumi.BoolInput `pulumi:"enabled"`
+	// The amount of storage, in GiB, to add when autoscaling is triggered.
+	IncrementGib pulumi.IntInput `pulumi:"incrementGib"`
+	// The storage utilization percentage at which autoscaling is triggered.
+	ThresholdPercent pulumi.IntInput `pulumi:"thresholdPercent"`
+}
+
+func (GetDatabaseClusterStorageAutoscaleArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*GetDatabaseClusterStorageAutoscale)(nil)).Elem()
+}
+
+func (i GetDatabaseClusterStorageAutoscaleArgs) ToGetDatabaseClusterStorageAutoscaleOutput() GetDatabaseClusterStorageAutoscaleOutput {
+	return i.ToGetDatabaseClusterStorageAutoscaleOutputWithContext(context.Background())
+}
+
+func (i GetDatabaseClusterStorageAutoscaleArgs) ToGetDatabaseClusterStorageAutoscaleOutputWithContext(ctx context.Context) GetDatabaseClusterStorageAutoscaleOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetDatabaseClusterStorageAutoscaleOutput)
+}
+
+// GetDatabaseClusterStorageAutoscaleArrayInput is an input type that accepts GetDatabaseClusterStorageAutoscaleArray and GetDatabaseClusterStorageAutoscaleArrayOutput values.
+// You can construct a concrete instance of `GetDatabaseClusterStorageAutoscaleArrayInput` via:
+//
+//	GetDatabaseClusterStorageAutoscaleArray{ GetDatabaseClusterStorageAutoscaleArgs{...} }
+type GetDatabaseClusterStorageAutoscaleArrayInput interface {
+	pulumi.Input
+
+	ToGetDatabaseClusterStorageAutoscaleArrayOutput() GetDatabaseClusterStorageAutoscaleArrayOutput
+	ToGetDatabaseClusterStorageAutoscaleArrayOutputWithContext(context.Context) GetDatabaseClusterStorageAutoscaleArrayOutput
+}
+
+type GetDatabaseClusterStorageAutoscaleArray []GetDatabaseClusterStorageAutoscaleInput
+
+func (GetDatabaseClusterStorageAutoscaleArray) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]GetDatabaseClusterStorageAutoscale)(nil)).Elem()
+}
+
+func (i GetDatabaseClusterStorageAutoscaleArray) ToGetDatabaseClusterStorageAutoscaleArrayOutput() GetDatabaseClusterStorageAutoscaleArrayOutput {
+	return i.ToGetDatabaseClusterStorageAutoscaleArrayOutputWithContext(context.Background())
+}
+
+func (i GetDatabaseClusterStorageAutoscaleArray) ToGetDatabaseClusterStorageAutoscaleArrayOutputWithContext(ctx context.Context) GetDatabaseClusterStorageAutoscaleArrayOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(GetDatabaseClusterStorageAutoscaleArrayOutput)
+}
+
+type GetDatabaseClusterStorageAutoscaleOutput struct{ *pulumi.OutputState }
+
+func (GetDatabaseClusterStorageAutoscaleOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*GetDatabaseClusterStorageAutoscale)(nil)).Elem()
+}
+
+func (o GetDatabaseClusterStorageAutoscaleOutput) ToGetDatabaseClusterStorageAutoscaleOutput() GetDatabaseClusterStorageAutoscaleOutput {
+	return o
+}
+
+func (o GetDatabaseClusterStorageAutoscaleOutput) ToGetDatabaseClusterStorageAutoscaleOutputWithContext(ctx context.Context) GetDatabaseClusterStorageAutoscaleOutput {
+	return o
+}
+
+// Whether storage autoscaling is enabled for the cluster.
+func (o GetDatabaseClusterStorageAutoscaleOutput) Enabled() pulumi.BoolOutput {
+	return o.ApplyT(func(v GetDatabaseClusterStorageAutoscale) bool { return v.Enabled }).(pulumi.BoolOutput)
+}
+
+// The amount of storage, in GiB, to add when autoscaling is triggered.
+func (o GetDatabaseClusterStorageAutoscaleOutput) IncrementGib() pulumi.IntOutput {
+	return o.ApplyT(func(v GetDatabaseClusterStorageAutoscale) int { return v.IncrementGib }).(pulumi.IntOutput)
+}
+
+// The storage utilization percentage at which autoscaling is triggered.
+func (o GetDatabaseClusterStorageAutoscaleOutput) ThresholdPercent() pulumi.IntOutput {
+	return o.ApplyT(func(v GetDatabaseClusterStorageAutoscale) int { return v.ThresholdPercent }).(pulumi.IntOutput)
+}
+
+type GetDatabaseClusterStorageAutoscaleArrayOutput struct{ *pulumi.OutputState }
+
+func (GetDatabaseClusterStorageAutoscaleArrayOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]GetDatabaseClusterStorageAutoscale)(nil)).Elem()
+}
+
+func (o GetDatabaseClusterStorageAutoscaleArrayOutput) ToGetDatabaseClusterStorageAutoscaleArrayOutput() GetDatabaseClusterStorageAutoscaleArrayOutput {
+	return o
+}
+
+func (o GetDatabaseClusterStorageAutoscaleArrayOutput) ToGetDatabaseClusterStorageAutoscaleArrayOutputWithContext(ctx context.Context) GetDatabaseClusterStorageAutoscaleArrayOutput {
+	return o
+}
+
+func (o GetDatabaseClusterStorageAutoscaleArrayOutput) Index(i pulumi.IntInput) GetDatabaseClusterStorageAutoscaleOutput {
+	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetDatabaseClusterStorageAutoscale {
+		return vs[0].([]GetDatabaseClusterStorageAutoscale)[vs[1].(int)]
+	}).(GetDatabaseClusterStorageAutoscaleOutput)
 }
 
 type GetDatabaseUserSetting struct {
@@ -76048,2103 +79141,6 @@ func (o GetGenaiAgentsByOpenaiApiKeyAgentDeploymentArrayOutput) Index(i pulumi.I
 	}).(GetGenaiAgentsByOpenaiApiKeyAgentDeploymentOutput)
 }
 
-type GetGenaiAgentsByOpenaiApiKeyAgentFunction struct {
-	// API Key value
-	ApiKey *string `pulumi:"apiKey"`
-	// Created At timestamp for the Function
-	CreatedAt string `pulumi:"createdAt"`
-	// Description of the Function
-	Description *string `pulumi:"description"`
-	// Name of function
-	Faasname *string `pulumi:"faasname"`
-	// Namespace of function
-	Faasnamespace *string `pulumi:"faasnamespace"`
-	// Guardrail UUID for the Function
-	GuardrailUuid *string `pulumi:"guardrailUuid"`
-	// Name of function
-	Name *string `pulumi:"name"`
-	// Updated At timestamp for the Agent
-	UpdatedAt string `pulumi:"updatedAt"`
-	// Url of the Deployment
-	Url *string `pulumi:"url"`
-	// API Key value
-	Uuid *string `pulumi:"uuid"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentFunctionInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentFunctionArgs and GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentFunctionInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentFunctionArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentFunctionInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput() GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentFunctionArgs struct {
-	// API Key value
-	ApiKey pulumi.StringPtrInput `pulumi:"apiKey"`
-	// Created At timestamp for the Function
-	CreatedAt pulumi.StringInput `pulumi:"createdAt"`
-	// Description of the Function
-	Description pulumi.StringPtrInput `pulumi:"description"`
-	// Name of function
-	Faasname pulumi.StringPtrInput `pulumi:"faasname"`
-	// Namespace of function
-	Faasnamespace pulumi.StringPtrInput `pulumi:"faasnamespace"`
-	// Guardrail UUID for the Function
-	GuardrailUuid pulumi.StringPtrInput `pulumi:"guardrailUuid"`
-	// Name of function
-	Name pulumi.StringPtrInput `pulumi:"name"`
-	// Updated At timestamp for the Agent
-	UpdatedAt pulumi.StringInput `pulumi:"updatedAt"`
-	// Url of the Deployment
-	Url pulumi.StringPtrInput `pulumi:"url"`
-	// API Key value
-	Uuid pulumi.StringPtrInput `pulumi:"uuid"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentFunctionArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentFunction)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentFunctionArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput() GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentFunctionArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentFunctionArray and GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentFunctionArray{ GetGenaiAgentsByOpenaiApiKeyAgentFunctionArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentFunctionArray []GetGenaiAgentsByOpenaiApiKeyAgentFunctionInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentFunctionArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentFunction)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentFunctionArray) ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentFunctionArray) ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentFunction)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput() GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput {
-	return o
-}
-
-// API Key value
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) ApiKey() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentFunction) *string { return v.ApiKey }).(pulumi.StringPtrOutput)
-}
-
-// Created At timestamp for the Function
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) CreatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentFunction) string { return v.CreatedAt }).(pulumi.StringOutput)
-}
-
-// Description of the Function
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) Description() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentFunction) *string { return v.Description }).(pulumi.StringPtrOutput)
-}
-
-// Name of function
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) Faasname() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentFunction) *string { return v.Faasname }).(pulumi.StringPtrOutput)
-}
-
-// Namespace of function
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) Faasnamespace() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentFunction) *string { return v.Faasnamespace }).(pulumi.StringPtrOutput)
-}
-
-// Guardrail UUID for the Function
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) GuardrailUuid() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentFunction) *string { return v.GuardrailUuid }).(pulumi.StringPtrOutput)
-}
-
-// Name of function
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) Name() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentFunction) *string { return v.Name }).(pulumi.StringPtrOutput)
-}
-
-// Updated At timestamp for the Agent
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) UpdatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentFunction) string { return v.UpdatedAt }).(pulumi.StringOutput)
-}
-
-// Url of the Deployment
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) Url() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentFunction) *string { return v.Url }).(pulumi.StringPtrOutput)
-}
-
-// API Key value
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput) Uuid() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentFunction) *string { return v.Uuid }).(pulumi.StringPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentFunction)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentFunction {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentFunction)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase struct {
-	// Timestamp when the Knowledge Base was added to the Agent
-	AddedToAgentAt string `pulumi:"addedToAgentAt"`
-	// Created At timestamp for the Knowledge Base
-	CreatedAt string `pulumi:"createdAt"`
-	// Database ID of the Knowledge Base
-	DatabaseId *string `pulumi:"databaseId"`
-	// Embedding model UUID for the Knowledge Base
-	EmbeddingModelUuid *string `pulumi:"embeddingModelUuid"`
-	// Indicates if the Knowledge Base is public
-	IsPublic *bool `pulumi:"isPublic"`
-	// Last indexing job for the Knowledge Base
-	LastIndexingJob *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob `pulumi:"lastIndexingJob"`
-	// Name of the Knowledge Base
-	Name *string `pulumi:"name"`
-	// Project ID of the Knowledge Base
-	ProjectId *string `pulumi:"projectId"`
-	// Region of the Knowledge Base
-	Region *string `pulumi:"region"`
-	// List of tags
-	Tags []string `pulumi:"tags"`
-	// Timestamp when the Knowledge Base was updated
-	UpdatedAt string `pulumi:"updatedAt"`
-	// User ID of the Knowledge Base
-	UserId *string `pulumi:"userId"`
-	// UUID of the Knowledge Base
-	Uuid string `pulumi:"uuid"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArgs and GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArgs struct {
-	// Timestamp when the Knowledge Base was added to the Agent
-	AddedToAgentAt pulumi.StringInput `pulumi:"addedToAgentAt"`
-	// Created At timestamp for the Knowledge Base
-	CreatedAt pulumi.StringInput `pulumi:"createdAt"`
-	// Database ID of the Knowledge Base
-	DatabaseId pulumi.StringPtrInput `pulumi:"databaseId"`
-	// Embedding model UUID for the Knowledge Base
-	EmbeddingModelUuid pulumi.StringPtrInput `pulumi:"embeddingModelUuid"`
-	// Indicates if the Knowledge Base is public
-	IsPublic pulumi.BoolPtrInput `pulumi:"isPublic"`
-	// Last indexing job for the Knowledge Base
-	LastIndexingJob GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrInput `pulumi:"lastIndexingJob"`
-	// Name of the Knowledge Base
-	Name pulumi.StringPtrInput `pulumi:"name"`
-	// Project ID of the Knowledge Base
-	ProjectId pulumi.StringPtrInput `pulumi:"projectId"`
-	// Region of the Knowledge Base
-	Region pulumi.StringPtrInput `pulumi:"region"`
-	// List of tags
-	Tags pulumi.StringArrayInput `pulumi:"tags"`
-	// Timestamp when the Knowledge Base was updated
-	UpdatedAt pulumi.StringInput `pulumi:"updatedAt"`
-	// User ID of the Knowledge Base
-	UserId pulumi.StringPtrInput `pulumi:"userId"`
-	// UUID of the Knowledge Base
-	Uuid pulumi.StringInput `pulumi:"uuid"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArray and GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArray{ GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArray []GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArray) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArray) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput {
-	return o
-}
-
-// Timestamp when the Knowledge Base was added to the Agent
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) AddedToAgentAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) string { return v.AddedToAgentAt }).(pulumi.StringOutput)
-}
-
-// Created At timestamp for the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) CreatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) string { return v.CreatedAt }).(pulumi.StringOutput)
-}
-
-// Database ID of the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) DatabaseId() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) *string { return v.DatabaseId }).(pulumi.StringPtrOutput)
-}
-
-// Embedding model UUID for the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) EmbeddingModelUuid() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) *string { return v.EmbeddingModelUuid }).(pulumi.StringPtrOutput)
-}
-
-// Indicates if the Knowledge Base is public
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) IsPublic() pulumi.BoolPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) *bool { return v.IsPublic }).(pulumi.BoolPtrOutput)
-}
-
-// Last indexing job for the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) LastIndexingJob() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob {
-		return v.LastIndexingJob
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput)
-}
-
-// Name of the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) Name() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) *string { return v.Name }).(pulumi.StringPtrOutput)
-}
-
-// Project ID of the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) ProjectId() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) *string { return v.ProjectId }).(pulumi.StringPtrOutput)
-}
-
-// Region of the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) Region() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) *string { return v.Region }).(pulumi.StringPtrOutput)
-}
-
-// List of tags
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) Tags() pulumi.StringArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) []string { return v.Tags }).(pulumi.StringArrayOutput)
-}
-
-// Timestamp when the Knowledge Base was updated
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) UpdatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) string { return v.UpdatedAt }).(pulumi.StringOutput)
-}
-
-// User ID of the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) UserId() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) *string { return v.UserId }).(pulumi.StringPtrOutput)
-}
-
-// UUID of the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput) Uuid() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase) string { return v.Uuid }).(pulumi.StringOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBase)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob struct {
-	// Number of completed datasources in the last indexing job
-	CompletedDatasources *int `pulumi:"completedDatasources"`
-	// Created At timestamp for the last indexing job
-	CreatedAt string `pulumi:"createdAt"`
-	// Datasource UUIDs for the last indexing job
-	DataSourceUuids []string `pulumi:"dataSourceUuids"`
-	// Timestamp when the last indexing job finished
-	FinishedAt string `pulumi:"finishedAt"`
-	// UUID  of the Knowledge Base for the last indexing job
-	KnowledgeBaseUuid string `pulumi:"knowledgeBaseUuid"`
-	// Phase of the last indexing job
-	Phase *string `pulumi:"phase"`
-	// Timestamp when the last indexing job started
-	StartedAt string `pulumi:"startedAt"`
-	// Number of tokens processed in the last indexing job
-	Tokens *int `pulumi:"tokens"`
-	// Total number of datasources in the last indexing job
-	TotalDatasources *int `pulumi:"totalDatasources"`
-	// Timestamp when the last indexing job updated
-	UpdatedAt string `pulumi:"updatedAt"`
-	// UUID  of the last indexing job
-	Uuid *string `pulumi:"uuid"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs and GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs struct {
-	// Number of completed datasources in the last indexing job
-	CompletedDatasources pulumi.IntPtrInput `pulumi:"completedDatasources"`
-	// Created At timestamp for the last indexing job
-	CreatedAt pulumi.StringInput `pulumi:"createdAt"`
-	// Datasource UUIDs for the last indexing job
-	DataSourceUuids pulumi.StringArrayInput `pulumi:"dataSourceUuids"`
-	// Timestamp when the last indexing job finished
-	FinishedAt pulumi.StringInput `pulumi:"finishedAt"`
-	// UUID  of the Knowledge Base for the last indexing job
-	KnowledgeBaseUuid pulumi.StringInput `pulumi:"knowledgeBaseUuid"`
-	// Phase of the last indexing job
-	Phase pulumi.StringPtrInput `pulumi:"phase"`
-	// Timestamp when the last indexing job started
-	StartedAt pulumi.StringInput `pulumi:"startedAt"`
-	// Number of tokens processed in the last indexing job
-	Tokens pulumi.IntPtrInput `pulumi:"tokens"`
-	// Total number of datasources in the last indexing job
-	TotalDatasources pulumi.IntPtrInput `pulumi:"totalDatasources"`
-	// Timestamp when the last indexing job updated
-	UpdatedAt pulumi.StringInput `pulumi:"updatedAt"`
-	// UUID  of the last indexing job
-	Uuid pulumi.StringPtrInput `pulumi:"uuid"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput)
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput).ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutputWithContext(ctx)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs, GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtr and GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrInput` via:
-//
-//	        GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs{...}
-//
-//	or:
-//
-//	        nil
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput
-}
-
-type getGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrType GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs
-
-func GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtr(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrInput {
-	return (*getGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrType)(v)
-}
-
-func (*getGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrType) ElementType() reflect.Type {
-	return reflect.TypeOf((**GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob)(nil)).Elem()
-}
-
-func (i *getGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrType) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutputWithContext(context.Background())
-}
-
-func (i *getGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrType) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput {
-	return o.ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutputWithContext(context.Background())
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput {
-	return o.ApplyTWithContext(ctx, func(_ context.Context, v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob {
-		return &v
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput)
-}
-
-// Number of completed datasources in the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) CompletedDatasources() pulumi.IntPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *int {
-		return v.CompletedDatasources
-	}).(pulumi.IntPtrOutput)
-}
-
-// Created At timestamp for the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) CreatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) string { return v.CreatedAt }).(pulumi.StringOutput)
-}
-
-// Datasource UUIDs for the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) DataSourceUuids() pulumi.StringArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) []string {
-		return v.DataSourceUuids
-	}).(pulumi.StringArrayOutput)
-}
-
-// Timestamp when the last indexing job finished
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) FinishedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) string { return v.FinishedAt }).(pulumi.StringOutput)
-}
-
-// UUID  of the Knowledge Base for the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) KnowledgeBaseUuid() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) string {
-		return v.KnowledgeBaseUuid
-	}).(pulumi.StringOutput)
-}
-
-// Phase of the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) Phase() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *string { return v.Phase }).(pulumi.StringPtrOutput)
-}
-
-// Timestamp when the last indexing job started
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) StartedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) string { return v.StartedAt }).(pulumi.StringOutput)
-}
-
-// Number of tokens processed in the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) Tokens() pulumi.IntPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *int { return v.Tokens }).(pulumi.IntPtrOutput)
-}
-
-// Total number of datasources in the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) TotalDatasources() pulumi.IntPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *int { return v.TotalDatasources }).(pulumi.IntPtrOutput)
-}
-
-// Timestamp when the last indexing job updated
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) UpdatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) string { return v.UpdatedAt }).(pulumi.StringOutput)
-}
-
-// UUID  of the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput) Uuid() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *string { return v.Uuid }).(pulumi.StringPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((**GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) Elem() GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob {
-		if v != nil {
-			return *v
-		}
-		var ret GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob
-		return ret
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput)
-}
-
-// Number of completed datasources in the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) CompletedDatasources() pulumi.IntPtrOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *int {
-		if v == nil {
-			return nil
-		}
-		return v.CompletedDatasources
-	}).(pulumi.IntPtrOutput)
-}
-
-// Created At timestamp for the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) CreatedAt() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *string {
-		if v == nil {
-			return nil
-		}
-		return &v.CreatedAt
-	}).(pulumi.StringPtrOutput)
-}
-
-// Datasource UUIDs for the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) DataSourceUuids() pulumi.StringArrayOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) []string {
-		if v == nil {
-			return nil
-		}
-		return v.DataSourceUuids
-	}).(pulumi.StringArrayOutput)
-}
-
-// Timestamp when the last indexing job finished
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) FinishedAt() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *string {
-		if v == nil {
-			return nil
-		}
-		return &v.FinishedAt
-	}).(pulumi.StringPtrOutput)
-}
-
-// UUID  of the Knowledge Base for the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) KnowledgeBaseUuid() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *string {
-		if v == nil {
-			return nil
-		}
-		return &v.KnowledgeBaseUuid
-	}).(pulumi.StringPtrOutput)
-}
-
-// Phase of the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) Phase() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *string {
-		if v == nil {
-			return nil
-		}
-		return v.Phase
-	}).(pulumi.StringPtrOutput)
-}
-
-// Timestamp when the last indexing job started
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) StartedAt() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *string {
-		if v == nil {
-			return nil
-		}
-		return &v.StartedAt
-	}).(pulumi.StringPtrOutput)
-}
-
-// Number of tokens processed in the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) Tokens() pulumi.IntPtrOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *int {
-		if v == nil {
-			return nil
-		}
-		return v.Tokens
-	}).(pulumi.IntPtrOutput)
-}
-
-// Total number of datasources in the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) TotalDatasources() pulumi.IntPtrOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *int {
-		if v == nil {
-			return nil
-		}
-		return v.TotalDatasources
-	}).(pulumi.IntPtrOutput)
-}
-
-// Timestamp when the last indexing job updated
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) UpdatedAt() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *string {
-		if v == nil {
-			return nil
-		}
-		return &v.UpdatedAt
-	}).(pulumi.StringPtrOutput)
-}
-
-// UUID  of the last indexing job
-func (o GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput) Uuid() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJob) *string {
-		if v == nil {
-			return nil
-		}
-		return v.Uuid
-	}).(pulumi.StringPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModel struct {
-	// Agreement information for the model
-	Agreements []GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement `pulumi:"agreements"`
-	// Created At timestamp for the Knowledge Base
-	CreatedAt string `pulumi:"createdAt"`
-	// Inference name of the model
-	InferenceName *string `pulumi:"inferenceName"`
-	// Infernce version of the model
-	InferenceVersion *string `pulumi:"inferenceVersion"`
-	// Indicates if the Model Base is foundational
-	IsFoundational *bool `pulumi:"isFoundational"`
-	// Name of the Knowledge Base
-	Name *string `pulumi:"name"`
-	// Parent UUID of the Model
-	ParentUuid *string `pulumi:"parentUuid"`
-	// Provider of the Model
-	Provider *string `pulumi:"provider"`
-	// Timestamp when the Knowledge Base was updated
-	UpdatedAt string `pulumi:"updatedAt"`
-	// Indicates if the Model upload is complete
-	UploadComplete *bool `pulumi:"uploadComplete"`
-	// URL of the Model
-	Url *string `pulumi:"url"`
-	// List of Usecases for the Model
-	Usecases []string `pulumi:"usecases"`
-	// URL of the Model
-	Versions []GetGenaiAgentsByOpenaiApiKeyAgentModelVersion `pulumi:"versions"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentModelInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentModelArgs and GetGenaiAgentsByOpenaiApiKeyAgentModelOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentModelInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentModelArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentModelInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelArgs struct {
-	// Agreement information for the model
-	Agreements GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayInput `pulumi:"agreements"`
-	// Created At timestamp for the Knowledge Base
-	CreatedAt pulumi.StringInput `pulumi:"createdAt"`
-	// Inference name of the model
-	InferenceName pulumi.StringPtrInput `pulumi:"inferenceName"`
-	// Infernce version of the model
-	InferenceVersion pulumi.StringPtrInput `pulumi:"inferenceVersion"`
-	// Indicates if the Model Base is foundational
-	IsFoundational pulumi.BoolPtrInput `pulumi:"isFoundational"`
-	// Name of the Knowledge Base
-	Name pulumi.StringPtrInput `pulumi:"name"`
-	// Parent UUID of the Model
-	ParentUuid pulumi.StringPtrInput `pulumi:"parentUuid"`
-	// Provider of the Model
-	Provider pulumi.StringPtrInput `pulumi:"provider"`
-	// Timestamp when the Knowledge Base was updated
-	UpdatedAt pulumi.StringInput `pulumi:"updatedAt"`
-	// Indicates if the Model upload is complete
-	UploadComplete pulumi.BoolPtrInput `pulumi:"uploadComplete"`
-	// URL of the Model
-	Url pulumi.StringPtrInput `pulumi:"url"`
-	// List of Usecases for the Model
-	Usecases pulumi.StringArrayInput `pulumi:"usecases"`
-	// URL of the Model
-	Versions GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayInput `pulumi:"versions"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModel)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentModelOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentModelOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentModelOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentModelOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentModelArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentModelArray and GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentModelArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentModelArray{ GetGenaiAgentsByOpenaiApiKeyAgentModelArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentModelArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelArray []GetGenaiAgentsByOpenaiApiKeyAgentModelInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentModel)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelArray) ToGetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelArray) ToGetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModel)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelOutput {
-	return o
-}
-
-// Agreement information for the model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) Agreements() GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) []GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement {
-		return v.Agreements
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput)
-}
-
-// Created At timestamp for the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) CreatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) string { return v.CreatedAt }).(pulumi.StringOutput)
-}
-
-// Inference name of the model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) InferenceName() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) *string { return v.InferenceName }).(pulumi.StringPtrOutput)
-}
-
-// Infernce version of the model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) InferenceVersion() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) *string { return v.InferenceVersion }).(pulumi.StringPtrOutput)
-}
-
-// Indicates if the Model Base is foundational
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) IsFoundational() pulumi.BoolPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) *bool { return v.IsFoundational }).(pulumi.BoolPtrOutput)
-}
-
-// Name of the Knowledge Base
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) Name() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) *string { return v.Name }).(pulumi.StringPtrOutput)
-}
-
-// Parent UUID of the Model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) ParentUuid() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) *string { return v.ParentUuid }).(pulumi.StringPtrOutput)
-}
-
-// Provider of the Model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) Provider() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) *string { return v.Provider }).(pulumi.StringPtrOutput)
-}
-
-// Timestamp when the Knowledge Base was updated
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) UpdatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) string { return v.UpdatedAt }).(pulumi.StringOutput)
-}
-
-// Indicates if the Model upload is complete
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) UploadComplete() pulumi.BoolPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) *bool { return v.UploadComplete }).(pulumi.BoolPtrOutput)
-}
-
-// URL of the Model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) Url() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) *string { return v.Url }).(pulumi.StringPtrOutput)
-}
-
-// List of Usecases for the Model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) Usecases() pulumi.StringArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) []string { return v.Usecases }).(pulumi.StringArrayOutput)
-}
-
-// URL of the Model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelOutput) Versions() GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModel) []GetGenaiAgentsByOpenaiApiKeyAgentModelVersion {
-		return v.Versions
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentModel)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentModelOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentModel {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentModel)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentModelOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement struct {
-	// Description of the agreement
-	Description *string `pulumi:"description"`
-	// Name of the agreement
-	Name *string `pulumi:"name"`
-	// URL of the agreement
-	Url *string `pulumi:"url"`
-	// UUID of the agreement
-	Uuid *string `pulumi:"uuid"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArgs and GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArgs struct {
-	// Description of the agreement
-	Description pulumi.StringPtrInput `pulumi:"description"`
-	// Name of the agreement
-	Name pulumi.StringPtrInput `pulumi:"name"`
-	// URL of the agreement
-	Url pulumi.StringPtrInput `pulumi:"url"`
-	// UUID of the agreement
-	Uuid pulumi.StringPtrInput `pulumi:"uuid"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArray and GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArray{ GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArray []GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArray) ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArray) ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput {
-	return o
-}
-
-// Description of the agreement
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput) Description() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement) *string { return v.Description }).(pulumi.StringPtrOutput)
-}
-
-// Name of the agreement
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput) Name() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement) *string { return v.Name }).(pulumi.StringPtrOutput)
-}
-
-// URL of the agreement
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput) Url() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement) *string { return v.Url }).(pulumi.StringPtrOutput)
-}
-
-// UUID of the agreement
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput) Uuid() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement) *string { return v.Uuid }).(pulumi.StringPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentModelAgreement)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelVersion struct {
-	// Major version of the model
-	Major *int `pulumi:"major"`
-	// Minor version of the model
-	Minor *int `pulumi:"minor"`
-	// Patch version of the model
-	Patch *int `pulumi:"patch"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentModelVersionInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArgs and GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentModelVersionInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentModelVersionInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArgs struct {
-	// Major version of the model
-	Major pulumi.IntPtrInput `pulumi:"major"`
-	// Minor version of the model
-	Minor pulumi.IntPtrInput `pulumi:"minor"`
-	// Patch version of the model
-	Patch pulumi.IntPtrInput `pulumi:"patch"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModelVersion)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArray and GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArray{ GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArray []GetGenaiAgentsByOpenaiApiKeyAgentModelVersionInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentModelVersion)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArray) ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArray) ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModelVersion)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput {
-	return o
-}
-
-// Major version of the model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput) Major() pulumi.IntPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModelVersion) *int { return v.Major }).(pulumi.IntPtrOutput)
-}
-
-// Minor version of the model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput) Minor() pulumi.IntPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModelVersion) *int { return v.Minor }).(pulumi.IntPtrOutput)
-}
-
-// Patch version of the model
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput) Patch() pulumi.IntPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentModelVersion) *int { return v.Patch }).(pulumi.IntPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentModelVersion)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentModelVersion {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentModelVersion)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKey struct {
-	// OpenAI API Key
-	ApiKey *string `pulumi:"apiKey"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArgs and GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput() GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArgs struct {
-	// OpenAI API Key
-	ApiKey pulumi.StringPtrInput `pulumi:"apiKey"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKey)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput() GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArray and GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArray{ GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArray []GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKey)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArray) ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArray) ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKey)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput() GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput {
-	return o
-}
-
-// OpenAI API Key
-func (o GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput) ApiKey() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKey) *string { return v.ApiKey }).(pulumi.StringPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKey)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKey {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKey)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgent struct {
-	// ID of the child agent
-	AgentId string `pulumi:"agentId"`
-	// Anthropic API Key information
-	AnthropicApiKeys []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey `pulumi:"anthropicApiKeys"`
-	// List of API Key Infos
-	ApiKeyInfos []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo `pulumi:"apiKeyInfos"`
-	// List of API Keys
-	ApiKeys []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKey `pulumi:"apiKeys"`
-	// List of Chatbot Identifiers
-	ChatbotIdentifiers []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifier `pulumi:"chatbotIdentifiers"`
-	// ChatBot configuration
-	Chatbots []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot `pulumi:"chatbots"`
-	// List of API Key Infos
-	Deployments []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentDeployment `pulumi:"deployments"`
-	// Description for the Agent
-	Description *string `pulumi:"description"`
-	// Instruction for the Agent
-	Instruction string `pulumi:"instruction"`
-	// Model UUID of the Agent
-	ModelUuid string `pulumi:"modelUuid"`
-	// Name of the Agent
-	Name string `pulumi:"name"`
-	// Project ID of the Agent
-	ProjectId string `pulumi:"projectId"`
-	// Region where the Agent is deployed
-	Region string `pulumi:"region"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArgs and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArgs struct {
-	// ID of the child agent
-	AgentId pulumi.StringInput `pulumi:"agentId"`
-	// Anthropic API Key information
-	AnthropicApiKeys GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayInput `pulumi:"anthropicApiKeys"`
-	// List of API Key Infos
-	ApiKeyInfos GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayInput `pulumi:"apiKeyInfos"`
-	// List of API Keys
-	ApiKeys GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayInput `pulumi:"apiKeys"`
-	// List of Chatbot Identifiers
-	ChatbotIdentifiers GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayInput `pulumi:"chatbotIdentifiers"`
-	// ChatBot configuration
-	Chatbots GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayInput `pulumi:"chatbots"`
-	// List of API Key Infos
-	Deployments GetGenaiAgentsByOpenaiApiKeyAgentParentAgentDeploymentArrayInput `pulumi:"deployments"`
-	// Description for the Agent
-	Description pulumi.StringPtrInput `pulumi:"description"`
-	// Instruction for the Agent
-	Instruction pulumi.StringInput `pulumi:"instruction"`
-	// Model UUID of the Agent
-	ModelUuid pulumi.StringInput `pulumi:"modelUuid"`
-	// Name of the Agent
-	Name pulumi.StringInput `pulumi:"name"`
-	// Project ID of the Agent
-	ProjectId pulumi.StringInput `pulumi:"projectId"`
-	// Region where the Agent is deployed
-	Region pulumi.StringInput `pulumi:"region"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgent)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArray and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArray{ GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArray []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgent)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgent)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput {
-	return o
-}
-
-// ID of the child agent
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) AgentId() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) string { return v.AgentId }).(pulumi.StringOutput)
-}
-
-// Anthropic API Key information
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) AnthropicApiKeys() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey {
-		return v.AnthropicApiKeys
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput)
-}
-
-// List of API Key Infos
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) ApiKeyInfos() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo {
-		return v.ApiKeyInfos
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput)
-}
-
-// List of API Keys
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) ApiKeys() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKey {
-		return v.ApiKeys
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput)
-}
-
-// List of Chatbot Identifiers
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) ChatbotIdentifiers() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifier {
-		return v.ChatbotIdentifiers
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput)
-}
-
-// ChatBot configuration
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) Chatbots() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot {
-		return v.Chatbots
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput)
-}
-
-// List of API Key Infos
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) Deployments() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentDeploymentArrayOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentDeployment {
-		return v.Deployments
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentDeploymentArrayOutput)
-}
-
-// Description for the Agent
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) Description() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) *string { return v.Description }).(pulumi.StringPtrOutput)
-}
-
-// Instruction for the Agent
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) Instruction() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) string { return v.Instruction }).(pulumi.StringOutput)
-}
-
-// Model UUID of the Agent
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) ModelUuid() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) string { return v.ModelUuid }).(pulumi.StringOutput)
-}
-
-// Name of the Agent
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) Name() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) string { return v.Name }).(pulumi.StringOutput)
-}
-
-// Project ID of the Agent
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) ProjectId() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) string { return v.ProjectId }).(pulumi.StringOutput)
-}
-
-// Region where the Agent is deployed
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput) Region() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgent) string { return v.Region }).(pulumi.StringOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgent)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentParentAgent {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentParentAgent)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey struct {
-	// Timestamp when the API Key was created
-	CreatedAt string `pulumi:"createdAt"`
-	// Created By user ID for the API Key
-	CreatedBy *string `pulumi:"createdBy"`
-	// Deleted At timestamp for the API Key
-	DeletedAt string `pulumi:"deletedAt"`
-	// Name of the API Key
-	Name *string `pulumi:"name"`
-	// Updated At timestamp for the API Key
-	UpdatedAt string `pulumi:"updatedAt"`
-	// API Key value
-	Uuid *string `pulumi:"uuid"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArgs and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArgs struct {
-	// Timestamp when the API Key was created
-	CreatedAt pulumi.StringInput `pulumi:"createdAt"`
-	// Created By user ID for the API Key
-	CreatedBy pulumi.StringPtrInput `pulumi:"createdBy"`
-	// Deleted At timestamp for the API Key
-	DeletedAt pulumi.StringInput `pulumi:"deletedAt"`
-	// Name of the API Key
-	Name pulumi.StringPtrInput `pulumi:"name"`
-	// Updated At timestamp for the API Key
-	UpdatedAt pulumi.StringInput `pulumi:"updatedAt"`
-	// API Key value
-	Uuid pulumi.StringPtrInput `pulumi:"uuid"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArray and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArray{ GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArray []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput {
-	return o
-}
-
-// Timestamp when the API Key was created
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput) CreatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey) string { return v.CreatedAt }).(pulumi.StringOutput)
-}
-
-// Created By user ID for the API Key
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput) CreatedBy() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey) *string { return v.CreatedBy }).(pulumi.StringPtrOutput)
-}
-
-// Deleted At timestamp for the API Key
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput) DeletedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey) string { return v.DeletedAt }).(pulumi.StringOutput)
-}
-
-// Name of the API Key
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput) Name() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey) *string { return v.Name }).(pulumi.StringPtrOutput)
-}
-
-// Updated At timestamp for the API Key
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput) UpdatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey) string { return v.UpdatedAt }).(pulumi.StringOutput)
-}
-
-// API Key value
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput) Uuid() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey) *string { return v.Uuid }).(pulumi.StringPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKey)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKey struct {
-	// API Key value
-	ApiKey *string `pulumi:"apiKey"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArgs and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArgs struct {
-	// API Key value
-	ApiKey pulumi.StringPtrInput `pulumi:"apiKey"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKey)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArray and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArray{ GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArray []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKey)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKey)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput {
-	return o
-}
-
-// API Key value
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput) ApiKey() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKey) *string { return v.ApiKey }).(pulumi.StringPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKey)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKey {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKey)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo struct {
-	// API Key value
-	CreatedAt string `pulumi:"createdAt"`
-	// Created By user ID for the API Key
-	CreatedBy *string `pulumi:"createdBy"`
-	// Deleted At timestamp for the API Key
-	DeletedAt string `pulumi:"deletedAt"`
-	// Name of the API Key
-	Name *string `pulumi:"name"`
-	// Updated At timestamp for the API Key
-	SecretKey *string `pulumi:"secretKey"`
-	// API Key value
-	Uuid *string `pulumi:"uuid"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArgs and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArgs struct {
-	// API Key value
-	CreatedAt pulumi.StringInput `pulumi:"createdAt"`
-	// Created By user ID for the API Key
-	CreatedBy pulumi.StringPtrInput `pulumi:"createdBy"`
-	// Deleted At timestamp for the API Key
-	DeletedAt pulumi.StringInput `pulumi:"deletedAt"`
-	// Name of the API Key
-	Name pulumi.StringPtrInput `pulumi:"name"`
-	// Updated At timestamp for the API Key
-	SecretKey pulumi.StringPtrInput `pulumi:"secretKey"`
-	// API Key value
-	Uuid pulumi.StringPtrInput `pulumi:"uuid"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArray and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArray{ GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArray []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput {
-	return o
-}
-
-// API Key value
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput) CreatedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo) string { return v.CreatedAt }).(pulumi.StringOutput)
-}
-
-// Created By user ID for the API Key
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput) CreatedBy() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo) *string { return v.CreatedBy }).(pulumi.StringPtrOutput)
-}
-
-// Deleted At timestamp for the API Key
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput) DeletedAt() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo) string { return v.DeletedAt }).(pulumi.StringOutput)
-}
-
-// Name of the API Key
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput) Name() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo) *string { return v.Name }).(pulumi.StringPtrOutput)
-}
-
-// Updated At timestamp for the API Key
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput) SecretKey() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo) *string { return v.SecretKey }).(pulumi.StringPtrOutput)
-}
-
-// API Key value
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput) Uuid() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo) *string { return v.Uuid }).(pulumi.StringPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfo)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot struct {
-	// Background color for the chatbot button
-	ButtonBackgroundColor *string `pulumi:"buttonBackgroundColor"`
-	// Logo for the chatbot
-	Logo *string `pulumi:"logo"`
-	// Name of the chatbot
-	Name *string `pulumi:"name"`
-	// Primary color for the chatbot
-	PrimaryColor *string `pulumi:"primaryColor"`
-	// Secondary color for the chatbot
-	SecondaryColor *string `pulumi:"secondaryColor"`
-	// Starting message for the chatbot
-	StartingMessage *string `pulumi:"startingMessage"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArgs and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArgs struct {
-	// Background color for the chatbot button
-	ButtonBackgroundColor pulumi.StringPtrInput `pulumi:"buttonBackgroundColor"`
-	// Logo for the chatbot
-	Logo pulumi.StringPtrInput `pulumi:"logo"`
-	// Name of the chatbot
-	Name pulumi.StringPtrInput `pulumi:"name"`
-	// Primary color for the chatbot
-	PrimaryColor pulumi.StringPtrInput `pulumi:"primaryColor"`
-	// Secondary color for the chatbot
-	SecondaryColor pulumi.StringPtrInput `pulumi:"secondaryColor"`
-	// Starting message for the chatbot
-	StartingMessage pulumi.StringPtrInput `pulumi:"startingMessage"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArray and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArray{ GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArray []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput {
-	return o
-}
-
-// Background color for the chatbot button
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput) ButtonBackgroundColor() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot) *string { return v.ButtonBackgroundColor }).(pulumi.StringPtrOutput)
-}
-
-// Logo for the chatbot
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput) Logo() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot) *string { return v.Logo }).(pulumi.StringPtrOutput)
-}
-
-// Name of the chatbot
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput) Name() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot) *string { return v.Name }).(pulumi.StringPtrOutput)
-}
-
-// Primary color for the chatbot
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput) PrimaryColor() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot) *string { return v.PrimaryColor }).(pulumi.StringPtrOutput)
-}
-
-// Secondary color for the chatbot
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput) SecondaryColor() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot) *string { return v.SecondaryColor }).(pulumi.StringPtrOutput)
-}
-
-// Starting message for the chatbot
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput) StartingMessage() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot) *string { return v.StartingMessage }).(pulumi.StringPtrOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbot)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifier struct {
-	ChatbotId string `pulumi:"chatbotId"`
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArgs and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArgs{...}
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArgs struct {
-	ChatbotId pulumi.StringInput `pulumi:"chatbotId"`
-}
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifier)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArgs) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput)
-}
-
-// GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayInput is an input type that accepts GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArray and GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput values.
-// You can construct a concrete instance of `GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayInput` via:
-//
-//	GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArray{ GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArgs{...} }
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayInput interface {
-	pulumi.Input
-
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput
-	ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutputWithContext(context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArray []GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierInput
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArray) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifier)(nil)).Elem()
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput {
-	return i.ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutputWithContext(context.Background())
-}
-
-func (i GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArray) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifier)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput) ChatbotId() pulumi.StringOutput {
-	return o.ApplyT(func(v GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifier) string { return v.ChatbotId }).(pulumi.StringOutput)
-}
-
-type GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput struct{ *pulumi.OutputState }
-
-func (GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*[]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifier)(nil)).Elem()
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput() GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput) ToGetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutputWithContext(ctx context.Context) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput {
-	return o
-}
-
-func (o GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput) Index(i pulumi.IntInput) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput {
-	return pulumi.All(o, i).ApplyT(func(vs []interface{}) GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifier {
-		return vs[0].([]GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifier)[vs[1].(int)]
-	}).(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput)
-}
-
 func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*AppDedicatedIpInput)(nil)).Elem(), AppDedicatedIpArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppDedicatedIpArrayInput)(nil)).Elem(), AppDedicatedIpArray{})
@@ -78292,6 +79288,8 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecServiceImagePtrInput)(nil)).Elem(), AppSpecServiceImageArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecServiceImageDeployOnPushInput)(nil)).Elem(), AppSpecServiceImageDeployOnPushArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecServiceImageDeployOnPushArrayInput)(nil)).Elem(), AppSpecServiceImageDeployOnPushArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecServiceLivenessHealthCheckInput)(nil)).Elem(), AppSpecServiceLivenessHealthCheckArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecServiceLivenessHealthCheckPtrInput)(nil)).Elem(), AppSpecServiceLivenessHealthCheckArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecServiceLogDestinationInput)(nil)).Elem(), AppSpecServiceLogDestinationArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecServiceLogDestinationArrayInput)(nil)).Elem(), AppSpecServiceLogDestinationArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecServiceLogDestinationDatadogInput)(nil)).Elem(), AppSpecServiceLogDestinationDatadogArgs{})
@@ -78356,6 +79354,8 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecWorkerImagePtrInput)(nil)).Elem(), AppSpecWorkerImageArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecWorkerImageDeployOnPushInput)(nil)).Elem(), AppSpecWorkerImageDeployOnPushArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecWorkerImageDeployOnPushArrayInput)(nil)).Elem(), AppSpecWorkerImageDeployOnPushArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecWorkerLivenessHealthCheckInput)(nil)).Elem(), AppSpecWorkerLivenessHealthCheckArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecWorkerLivenessHealthCheckPtrInput)(nil)).Elem(), AppSpecWorkerLivenessHealthCheckArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecWorkerLogDestinationInput)(nil)).Elem(), AppSpecWorkerLogDestinationArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecWorkerLogDestinationArrayInput)(nil)).Elem(), AppSpecWorkerLogDestinationArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AppSpecWorkerLogDestinationDatadogInput)(nil)).Elem(), AppSpecWorkerLogDestinationDatadogArgs{})
@@ -78374,6 +79374,8 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*DatabaseClusterBackupRestorePtrInput)(nil)).Elem(), DatabaseClusterBackupRestoreArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*DatabaseClusterMaintenanceWindowInput)(nil)).Elem(), DatabaseClusterMaintenanceWindowArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*DatabaseClusterMaintenanceWindowArrayInput)(nil)).Elem(), DatabaseClusterMaintenanceWindowArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*DatabaseClusterStorageAutoscaleInput)(nil)).Elem(), DatabaseClusterStorageAutoscaleArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*DatabaseClusterStorageAutoscalePtrInput)(nil)).Elem(), DatabaseClusterStorageAutoscaleArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*DatabaseFirewallRuleInput)(nil)).Elem(), DatabaseFirewallRuleArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*DatabaseFirewallRuleArrayInput)(nil)).Elem(), DatabaseFirewallRuleArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*DatabaseKafkaTopicConfigInput)(nil)).Elem(), DatabaseKafkaTopicConfigArgs{})
@@ -78556,6 +79558,12 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiAgentTemplateModelAgreementArrayInput)(nil)).Elem(), GradientaiAgentTemplateModelAgreementArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiAgentTemplateModelVersionInput)(nil)).Elem(), GradientaiAgentTemplateModelVersionArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiAgentTemplateModelVersionArrayInput)(nil)).Elem(), GradientaiAgentTemplateModelVersionArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiCustomModelActiveDeploymentInput)(nil)).Elem(), GradientaiCustomModelActiveDeploymentArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiCustomModelActiveDeploymentArrayInput)(nil)).Elem(), GradientaiCustomModelActiveDeploymentArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiCustomModelActiveDeploymentEndpointInput)(nil)).Elem(), GradientaiCustomModelActiveDeploymentEndpointArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiCustomModelActiveDeploymentEndpointArrayInput)(nil)).Elem(), GradientaiCustomModelActiveDeploymentEndpointArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiCustomModelSourceRefInput)(nil)).Elem(), GradientaiCustomModelSourceRefArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiCustomModelSourceRefPtrInput)(nil)).Elem(), GradientaiCustomModelSourceRefArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiKnowledgeBaseDataSourceTypeInput)(nil)).Elem(), GradientaiKnowledgeBaseDataSourceTypeArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiKnowledgeBaseDataSourceTypeArrayInput)(nil)).Elem(), GradientaiKnowledgeBaseDataSourceTypeArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GradientaiKnowledgeBaseDataSourceFileUploadDataSourceInput)(nil)).Elem(), GradientaiKnowledgeBaseDataSourceFileUploadDataSourceArgs{})
@@ -78584,6 +79592,8 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*KubernetesClusterClusterAutoscalerConfigurationArrayInput)(nil)).Elem(), KubernetesClusterClusterAutoscalerConfigurationArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*KubernetesClusterControlPlaneFirewallInput)(nil)).Elem(), KubernetesClusterControlPlaneFirewallArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*KubernetesClusterControlPlaneFirewallPtrInput)(nil)).Elem(), KubernetesClusterControlPlaneFirewallArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*KubernetesClusterCorednsAutoscalerInput)(nil)).Elem(), KubernetesClusterCorednsAutoscalerArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*KubernetesClusterCorednsAutoscalerPtrInput)(nil)).Elem(), KubernetesClusterCorednsAutoscalerArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*KubernetesClusterKubeConfigInput)(nil)).Elem(), KubernetesClusterKubeConfigArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*KubernetesClusterKubeConfigArrayInput)(nil)).Elem(), KubernetesClusterKubeConfigArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*KubernetesClusterMaintenancePolicyInput)(nil)).Elem(), KubernetesClusterMaintenancePolicyArgs{})
@@ -78624,6 +79634,8 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*MonitorAlertAlertsPtrInput)(nil)).Elem(), MonitorAlertAlertsArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*MonitorAlertAlertsSlackInput)(nil)).Elem(), MonitorAlertAlertsSlackArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*MonitorAlertAlertsSlackArrayInput)(nil)).Elem(), MonitorAlertAlertsSlackArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*NfsAccessPointAccessPolicyInput)(nil)).Elem(), NfsAccessPointAccessPolicyArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*NfsAccessPointAccessPolicyPtrInput)(nil)).Elem(), NfsAccessPointAccessPolicyArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*PartnerAttachmentBgpInput)(nil)).Elem(), PartnerAttachmentBgpArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*PartnerAttachmentBgpPtrInput)(nil)).Elem(), PartnerAttachmentBgpArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*SpacesBucketCorsConfigurationCorsRuleInput)(nil)).Elem(), SpacesBucketCorsConfigurationCorsRuleArgs{})
@@ -78644,6 +79656,10 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*UptimeAlertNotificationArrayInput)(nil)).Elem(), UptimeAlertNotificationArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*UptimeAlertNotificationSlackInput)(nil)).Elem(), UptimeAlertNotificationSlackArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*UptimeAlertNotificationSlackArrayInput)(nil)).Elem(), UptimeAlertNotificationSlackArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*VectorDatabaseConfigInput)(nil)).Elem(), VectorDatabaseConfigArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*VectorDatabaseConfigPtrInput)(nil)).Elem(), VectorDatabaseConfigArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*VectorDatabaseEndpointInput)(nil)).Elem(), VectorDatabaseEndpointArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*VectorDatabaseEndpointArrayInput)(nil)).Elem(), VectorDatabaseEndpointArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*VpcNatGatewayEgressInput)(nil)).Elem(), VpcNatGatewayEgressArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*VpcNatGatewayEgressArrayInput)(nil)).Elem(), VpcNatGatewayEgressArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*VpcNatGatewayEgressPublicGatewayInput)(nil)).Elem(), VpcNatGatewayEgressPublicGatewayArgs{})
@@ -78708,15 +79724,21 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleInput)(nil)).Elem(), GetAppSpecIngressRuleArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleArrayInput)(nil)).Elem(), GetAppSpecIngressRuleArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleComponentInput)(nil)).Elem(), GetAppSpecIngressRuleComponentArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleComponentPtrInput)(nil)).Elem(), GetAppSpecIngressRuleComponentArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleCorsInput)(nil)).Elem(), GetAppSpecIngressRuleCorsArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleCorsPtrInput)(nil)).Elem(), GetAppSpecIngressRuleCorsArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleCorsAllowOriginsInput)(nil)).Elem(), GetAppSpecIngressRuleCorsAllowOriginsArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleCorsAllowOriginsPtrInput)(nil)).Elem(), GetAppSpecIngressRuleCorsAllowOriginsArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleMatchInput)(nil)).Elem(), GetAppSpecIngressRuleMatchArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleMatchPtrInput)(nil)).Elem(), GetAppSpecIngressRuleMatchArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleMatchAuthorityInput)(nil)).Elem(), GetAppSpecIngressRuleMatchAuthorityArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleMatchAuthorityPtrInput)(nil)).Elem(), GetAppSpecIngressRuleMatchAuthorityArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleMatchPathInput)(nil)).Elem(), GetAppSpecIngressRuleMatchPathArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleMatchPathPtrInput)(nil)).Elem(), GetAppSpecIngressRuleMatchPathArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleRedirectInput)(nil)).Elem(), GetAppSpecIngressRuleRedirectArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressRuleRedirectPtrInput)(nil)).Elem(), GetAppSpecIngressRuleRedirectArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressSecureHeaderInput)(nil)).Elem(), GetAppSpecIngressSecureHeaderArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecIngressSecureHeaderPtrInput)(nil)).Elem(), GetAppSpecIngressSecureHeaderArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecJobInput)(nil)).Elem(), GetAppSpecJobArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecJobArrayInput)(nil)).Elem(), GetAppSpecJobArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecJobAlertInput)(nil)).Elem(), GetAppSpecJobAlertArgs{})
@@ -78789,6 +79811,8 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecServiceImagePtrInput)(nil)).Elem(), GetAppSpecServiceImageArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecServiceImageDeployOnPushInput)(nil)).Elem(), GetAppSpecServiceImageDeployOnPushArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecServiceImageDeployOnPushArrayInput)(nil)).Elem(), GetAppSpecServiceImageDeployOnPushArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecServiceLivenessHealthCheckInput)(nil)).Elem(), GetAppSpecServiceLivenessHealthCheckArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecServiceLivenessHealthCheckPtrInput)(nil)).Elem(), GetAppSpecServiceLivenessHealthCheckArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecServiceLogDestinationInput)(nil)).Elem(), GetAppSpecServiceLogDestinationArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecServiceLogDestinationArrayInput)(nil)).Elem(), GetAppSpecServiceLogDestinationArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecServiceLogDestinationDatadogInput)(nil)).Elem(), GetAppSpecServiceLogDestinationDatadogArgs{})
@@ -78853,6 +79877,8 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecWorkerImagePtrInput)(nil)).Elem(), GetAppSpecWorkerImageArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecWorkerImageDeployOnPushInput)(nil)).Elem(), GetAppSpecWorkerImageDeployOnPushArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecWorkerImageDeployOnPushArrayInput)(nil)).Elem(), GetAppSpecWorkerImageDeployOnPushArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecWorkerLivenessHealthCheckInput)(nil)).Elem(), GetAppSpecWorkerLivenessHealthCheckArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecWorkerLivenessHealthCheckPtrInput)(nil)).Elem(), GetAppSpecWorkerLivenessHealthCheckArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecWorkerLogDestinationInput)(nil)).Elem(), GetAppSpecWorkerLogDestinationArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecWorkerLogDestinationArrayInput)(nil)).Elem(), GetAppSpecWorkerLogDestinationArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetAppSpecWorkerLogDestinationDatadogInput)(nil)).Elem(), GetAppSpecWorkerLogDestinationDatadogArgs{})
@@ -78871,6 +79897,8 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*GetByoipPrefixResourcesAddressArrayInput)(nil)).Elem(), GetByoipPrefixResourcesAddressArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetDatabaseClusterMaintenanceWindowInput)(nil)).Elem(), GetDatabaseClusterMaintenanceWindowArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetDatabaseClusterMaintenanceWindowArrayInput)(nil)).Elem(), GetDatabaseClusterMaintenanceWindowArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetDatabaseClusterStorageAutoscaleInput)(nil)).Elem(), GetDatabaseClusterStorageAutoscaleArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*GetDatabaseClusterStorageAutoscaleArrayInput)(nil)).Elem(), GetDatabaseClusterStorageAutoscaleArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetDatabaseUserSettingInput)(nil)).Elem(), GetDatabaseUserSettingArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetDatabaseUserSettingArrayInput)(nil)).Elem(), GetDatabaseUserSettingArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetDatabaseUserSettingAclInput)(nil)).Elem(), GetDatabaseUserSettingAclArgs{})
@@ -79115,32 +80143,6 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentChildAgentDeploymentArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentChildAgentDeploymentArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentDeploymentInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentDeploymentArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentDeploymentArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentDeploymentArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentFunctionInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentFunctionArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentFunctionArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModelInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentModelArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModelArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentModelArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModelVersionInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArray{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayInput)(nil)).Elem(), GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArray{})
 	pulumi.RegisterOutputType(AppDedicatedIpOutput{})
 	pulumi.RegisterOutputType(AppDedicatedIpArrayOutput{})
 	pulumi.RegisterOutputType(AppSpecOutput{})
@@ -79287,6 +80289,8 @@ func init() {
 	pulumi.RegisterOutputType(AppSpecServiceImagePtrOutput{})
 	pulumi.RegisterOutputType(AppSpecServiceImageDeployOnPushOutput{})
 	pulumi.RegisterOutputType(AppSpecServiceImageDeployOnPushArrayOutput{})
+	pulumi.RegisterOutputType(AppSpecServiceLivenessHealthCheckOutput{})
+	pulumi.RegisterOutputType(AppSpecServiceLivenessHealthCheckPtrOutput{})
 	pulumi.RegisterOutputType(AppSpecServiceLogDestinationOutput{})
 	pulumi.RegisterOutputType(AppSpecServiceLogDestinationArrayOutput{})
 	pulumi.RegisterOutputType(AppSpecServiceLogDestinationDatadogOutput{})
@@ -79351,6 +80355,8 @@ func init() {
 	pulumi.RegisterOutputType(AppSpecWorkerImagePtrOutput{})
 	pulumi.RegisterOutputType(AppSpecWorkerImageDeployOnPushOutput{})
 	pulumi.RegisterOutputType(AppSpecWorkerImageDeployOnPushArrayOutput{})
+	pulumi.RegisterOutputType(AppSpecWorkerLivenessHealthCheckOutput{})
+	pulumi.RegisterOutputType(AppSpecWorkerLivenessHealthCheckPtrOutput{})
 	pulumi.RegisterOutputType(AppSpecWorkerLogDestinationOutput{})
 	pulumi.RegisterOutputType(AppSpecWorkerLogDestinationArrayOutput{})
 	pulumi.RegisterOutputType(AppSpecWorkerLogDestinationDatadogOutput{})
@@ -79369,6 +80375,8 @@ func init() {
 	pulumi.RegisterOutputType(DatabaseClusterBackupRestorePtrOutput{})
 	pulumi.RegisterOutputType(DatabaseClusterMaintenanceWindowOutput{})
 	pulumi.RegisterOutputType(DatabaseClusterMaintenanceWindowArrayOutput{})
+	pulumi.RegisterOutputType(DatabaseClusterStorageAutoscaleOutput{})
+	pulumi.RegisterOutputType(DatabaseClusterStorageAutoscalePtrOutput{})
 	pulumi.RegisterOutputType(DatabaseFirewallRuleOutput{})
 	pulumi.RegisterOutputType(DatabaseFirewallRuleArrayOutput{})
 	pulumi.RegisterOutputType(DatabaseKafkaTopicConfigOutput{})
@@ -79551,6 +80559,12 @@ func init() {
 	pulumi.RegisterOutputType(GradientaiAgentTemplateModelAgreementArrayOutput{})
 	pulumi.RegisterOutputType(GradientaiAgentTemplateModelVersionOutput{})
 	pulumi.RegisterOutputType(GradientaiAgentTemplateModelVersionArrayOutput{})
+	pulumi.RegisterOutputType(GradientaiCustomModelActiveDeploymentOutput{})
+	pulumi.RegisterOutputType(GradientaiCustomModelActiveDeploymentArrayOutput{})
+	pulumi.RegisterOutputType(GradientaiCustomModelActiveDeploymentEndpointOutput{})
+	pulumi.RegisterOutputType(GradientaiCustomModelActiveDeploymentEndpointArrayOutput{})
+	pulumi.RegisterOutputType(GradientaiCustomModelSourceRefOutput{})
+	pulumi.RegisterOutputType(GradientaiCustomModelSourceRefPtrOutput{})
 	pulumi.RegisterOutputType(GradientaiKnowledgeBaseDataSourceTypeOutput{})
 	pulumi.RegisterOutputType(GradientaiKnowledgeBaseDataSourceTypeArrayOutput{})
 	pulumi.RegisterOutputType(GradientaiKnowledgeBaseDataSourceFileUploadDataSourceOutput{})
@@ -79579,6 +80593,8 @@ func init() {
 	pulumi.RegisterOutputType(KubernetesClusterClusterAutoscalerConfigurationArrayOutput{})
 	pulumi.RegisterOutputType(KubernetesClusterControlPlaneFirewallOutput{})
 	pulumi.RegisterOutputType(KubernetesClusterControlPlaneFirewallPtrOutput{})
+	pulumi.RegisterOutputType(KubernetesClusterCorednsAutoscalerOutput{})
+	pulumi.RegisterOutputType(KubernetesClusterCorednsAutoscalerPtrOutput{})
 	pulumi.RegisterOutputType(KubernetesClusterKubeConfigOutput{})
 	pulumi.RegisterOutputType(KubernetesClusterKubeConfigArrayOutput{})
 	pulumi.RegisterOutputType(KubernetesClusterMaintenancePolicyOutput{})
@@ -79619,6 +80635,8 @@ func init() {
 	pulumi.RegisterOutputType(MonitorAlertAlertsPtrOutput{})
 	pulumi.RegisterOutputType(MonitorAlertAlertsSlackOutput{})
 	pulumi.RegisterOutputType(MonitorAlertAlertsSlackArrayOutput{})
+	pulumi.RegisterOutputType(NfsAccessPointAccessPolicyOutput{})
+	pulumi.RegisterOutputType(NfsAccessPointAccessPolicyPtrOutput{})
 	pulumi.RegisterOutputType(PartnerAttachmentBgpOutput{})
 	pulumi.RegisterOutputType(PartnerAttachmentBgpPtrOutput{})
 	pulumi.RegisterOutputType(SpacesBucketCorsConfigurationCorsRuleOutput{})
@@ -79639,6 +80657,10 @@ func init() {
 	pulumi.RegisterOutputType(UptimeAlertNotificationArrayOutput{})
 	pulumi.RegisterOutputType(UptimeAlertNotificationSlackOutput{})
 	pulumi.RegisterOutputType(UptimeAlertNotificationSlackArrayOutput{})
+	pulumi.RegisterOutputType(VectorDatabaseConfigOutput{})
+	pulumi.RegisterOutputType(VectorDatabaseConfigPtrOutput{})
+	pulumi.RegisterOutputType(VectorDatabaseEndpointOutput{})
+	pulumi.RegisterOutputType(VectorDatabaseEndpointArrayOutput{})
 	pulumi.RegisterOutputType(VpcNatGatewayEgressOutput{})
 	pulumi.RegisterOutputType(VpcNatGatewayEgressArrayOutput{})
 	pulumi.RegisterOutputType(VpcNatGatewayEgressPublicGatewayOutput{})
@@ -79703,15 +80725,21 @@ func init() {
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleArrayOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleComponentOutput{})
+	pulumi.RegisterOutputType(GetAppSpecIngressRuleComponentPtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleCorsOutput{})
+	pulumi.RegisterOutputType(GetAppSpecIngressRuleCorsPtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleCorsAllowOriginsOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleCorsAllowOriginsPtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleMatchOutput{})
+	pulumi.RegisterOutputType(GetAppSpecIngressRuleMatchPtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleMatchAuthorityOutput{})
+	pulumi.RegisterOutputType(GetAppSpecIngressRuleMatchAuthorityPtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleMatchPathOutput{})
+	pulumi.RegisterOutputType(GetAppSpecIngressRuleMatchPathPtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleRedirectOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressRuleRedirectPtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecIngressSecureHeaderOutput{})
+	pulumi.RegisterOutputType(GetAppSpecIngressSecureHeaderPtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecJobOutput{})
 	pulumi.RegisterOutputType(GetAppSpecJobArrayOutput{})
 	pulumi.RegisterOutputType(GetAppSpecJobAlertOutput{})
@@ -79784,6 +80812,8 @@ func init() {
 	pulumi.RegisterOutputType(GetAppSpecServiceImagePtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecServiceImageDeployOnPushOutput{})
 	pulumi.RegisterOutputType(GetAppSpecServiceImageDeployOnPushArrayOutput{})
+	pulumi.RegisterOutputType(GetAppSpecServiceLivenessHealthCheckOutput{})
+	pulumi.RegisterOutputType(GetAppSpecServiceLivenessHealthCheckPtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecServiceLogDestinationOutput{})
 	pulumi.RegisterOutputType(GetAppSpecServiceLogDestinationArrayOutput{})
 	pulumi.RegisterOutputType(GetAppSpecServiceLogDestinationDatadogOutput{})
@@ -79848,6 +80878,8 @@ func init() {
 	pulumi.RegisterOutputType(GetAppSpecWorkerImagePtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecWorkerImageDeployOnPushOutput{})
 	pulumi.RegisterOutputType(GetAppSpecWorkerImageDeployOnPushArrayOutput{})
+	pulumi.RegisterOutputType(GetAppSpecWorkerLivenessHealthCheckOutput{})
+	pulumi.RegisterOutputType(GetAppSpecWorkerLivenessHealthCheckPtrOutput{})
 	pulumi.RegisterOutputType(GetAppSpecWorkerLogDestinationOutput{})
 	pulumi.RegisterOutputType(GetAppSpecWorkerLogDestinationArrayOutput{})
 	pulumi.RegisterOutputType(GetAppSpecWorkerLogDestinationDatadogOutput{})
@@ -79866,6 +80898,8 @@ func init() {
 	pulumi.RegisterOutputType(GetByoipPrefixResourcesAddressArrayOutput{})
 	pulumi.RegisterOutputType(GetDatabaseClusterMaintenanceWindowOutput{})
 	pulumi.RegisterOutputType(GetDatabaseClusterMaintenanceWindowArrayOutput{})
+	pulumi.RegisterOutputType(GetDatabaseClusterStorageAutoscaleOutput{})
+	pulumi.RegisterOutputType(GetDatabaseClusterStorageAutoscaleArrayOutput{})
 	pulumi.RegisterOutputType(GetDatabaseUserSettingOutput{})
 	pulumi.RegisterOutputType(GetDatabaseUserSettingArrayOutput{})
 	pulumi.RegisterOutputType(GetDatabaseUserSettingAclOutput{})
@@ -80110,30 +81144,4 @@ func init() {
 	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentChildAgentDeploymentArrayOutput{})
 	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentDeploymentOutput{})
 	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentDeploymentArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentFunctionOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentFunctionArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentKnowledgeBaseLastIndexingJobPtrOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentModelOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentModelArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentModelAgreementArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentModelVersionOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentModelVersionArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentOpenAiApiKeyArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentAnthropicApiKeyArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentApiKeyInfoArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotArrayOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierOutput{})
-	pulumi.RegisterOutputType(GetGenaiAgentsByOpenaiApiKeyAgentParentAgentChatbotIdentifierArrayOutput{})
 }

@@ -37,6 +37,8 @@ func (m *module) Construct(ctx *pulumi.Context, name, typ, urn string) (r pulumi
 		r = &ContainerRegistryDockerCredentials{}
 	case "digitalocean:index/customImage:CustomImage":
 		r = &CustomImage{}
+	case "digitalocean:index/databaseAdvancedPostgresqlConfig:DatabaseAdvancedPostgresqlConfig":
+		r = &DatabaseAdvancedPostgresqlConfig{}
 	case "digitalocean:index/databaseCluster:DatabaseCluster":
 		r = &DatabaseCluster{}
 	case "digitalocean:index/databaseConnectionPool:DatabaseConnectionPool":
@@ -115,6 +117,8 @@ func (m *module) Construct(ctx *pulumi.Context, name, typ, urn string) (r pulumi
 		r = &GradientaiAgentKnowledgeBaseAttachment{}
 	case "digitalocean:index/gradientaiAgentRoute:GradientaiAgentRoute":
 		r = &GradientaiAgentRoute{}
+	case "digitalocean:index/gradientaiCustomModel:GradientaiCustomModel":
+		r = &GradientaiCustomModel{}
 	case "digitalocean:index/gradientaiFunction:GradientaiFunction":
 		r = &GradientaiFunction{}
 	case "digitalocean:index/gradientaiIndexingJobCancel:GradientaiIndexingJobCancel":
@@ -135,6 +139,8 @@ func (m *module) Construct(ctx *pulumi.Context, name, typ, urn string) (r pulumi
 		r = &MonitorAlert{}
 	case "digitalocean:index/nfs:Nfs":
 		r = &Nfs{}
+	case "digitalocean:index/nfsAccessPoint:NfsAccessPoint":
+		r = &NfsAccessPoint{}
 	case "digitalocean:index/nfsAttachment:NfsAttachment":
 		r = &NfsAttachment{}
 	case "digitalocean:index/nfsSnapshot:NfsSnapshot":
@@ -173,6 +179,8 @@ func (m *module) Construct(ctx *pulumi.Context, name, typ, urn string) (r pulumi
 		r = &UptimeAlert{}
 	case "digitalocean:index/uptimeCheck:UptimeCheck":
 		r = &UptimeCheck{}
+	case "digitalocean:index/vectorDatabase:VectorDatabase":
+		r = &VectorDatabase{}
 	case "digitalocean:index/volume:Volume":
 		r = &Volume{}
 	case "digitalocean:index/volumeAttachment:VolumeAttachment":
@@ -254,6 +262,11 @@ func init() {
 	pulumi.RegisterResourceModule(
 		"digitalocean",
 		"index/customImage",
+		&module{version},
+	)
+	pulumi.RegisterResourceModule(
+		"digitalocean",
+		"index/databaseAdvancedPostgresqlConfig",
 		&module{version},
 	)
 	pulumi.RegisterResourceModule(
@@ -453,6 +466,11 @@ func init() {
 	)
 	pulumi.RegisterResourceModule(
 		"digitalocean",
+		"index/gradientaiCustomModel",
+		&module{version},
+	)
+	pulumi.RegisterResourceModule(
+		"digitalocean",
 		"index/gradientaiFunction",
 		&module{version},
 	)
@@ -499,6 +517,11 @@ func init() {
 	pulumi.RegisterResourceModule(
 		"digitalocean",
 		"index/nfs",
+		&module{version},
+	)
+	pulumi.RegisterResourceModule(
+		"digitalocean",
+		"index/nfsAccessPoint",
 		&module{version},
 	)
 	pulumi.RegisterResourceModule(
@@ -594,6 +617,11 @@ func init() {
 	pulumi.RegisterResourceModule(
 		"digitalocean",
 		"index/uptimeCheck",
+		&module{version},
+	)
+	pulumi.RegisterResourceModule(
+		"digitalocean",
+		"index/vectorDatabase",
 		&module{version},
 	)
 	pulumi.RegisterResourceModule(

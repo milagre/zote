@@ -27206,6 +27206,286 @@ func (o ImageVolumeSourcePatchPtrOutput) Reference() pulumi.StringPtrOutput {
 	}).(pulumi.StringPtrOutput)
 }
 
+// ImageVolumeStatus represents the image-based volume status.
+type ImageVolumeStatus struct {
+	// ImageRef is the digest of the image used for this volume. It should have a value that's similar to the pod's status.containerStatuses[i].imageID. The ImageRef length should not exceed 256 characters.
+	ImageRef string `pulumi:"imageRef"`
+}
+
+// ImageVolumeStatusInput is an input type that accepts ImageVolumeStatusArgs and ImageVolumeStatusOutput values.
+// You can construct a concrete instance of `ImageVolumeStatusInput` via:
+//
+//	ImageVolumeStatusArgs{...}
+type ImageVolumeStatusInput interface {
+	pulumi.Input
+
+	ToImageVolumeStatusOutput() ImageVolumeStatusOutput
+	ToImageVolumeStatusOutputWithContext(context.Context) ImageVolumeStatusOutput
+}
+
+// ImageVolumeStatus represents the image-based volume status.
+type ImageVolumeStatusArgs struct {
+	// ImageRef is the digest of the image used for this volume. It should have a value that's similar to the pod's status.containerStatuses[i].imageID. The ImageRef length should not exceed 256 characters.
+	ImageRef pulumi.StringInput `pulumi:"imageRef"`
+}
+
+func (ImageVolumeStatusArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*ImageVolumeStatus)(nil)).Elem()
+}
+
+func (i ImageVolumeStatusArgs) ToImageVolumeStatusOutput() ImageVolumeStatusOutput {
+	return i.ToImageVolumeStatusOutputWithContext(context.Background())
+}
+
+func (i ImageVolumeStatusArgs) ToImageVolumeStatusOutputWithContext(ctx context.Context) ImageVolumeStatusOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(ImageVolumeStatusOutput)
+}
+
+func (i ImageVolumeStatusArgs) ToImageVolumeStatusPtrOutput() ImageVolumeStatusPtrOutput {
+	return i.ToImageVolumeStatusPtrOutputWithContext(context.Background())
+}
+
+func (i ImageVolumeStatusArgs) ToImageVolumeStatusPtrOutputWithContext(ctx context.Context) ImageVolumeStatusPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(ImageVolumeStatusOutput).ToImageVolumeStatusPtrOutputWithContext(ctx)
+}
+
+// ImageVolumeStatusPtrInput is an input type that accepts ImageVolumeStatusArgs, ImageVolumeStatusPtr and ImageVolumeStatusPtrOutput values.
+// You can construct a concrete instance of `ImageVolumeStatusPtrInput` via:
+//
+//	        ImageVolumeStatusArgs{...}
+//
+//	or:
+//
+//	        nil
+type ImageVolumeStatusPtrInput interface {
+	pulumi.Input
+
+	ToImageVolumeStatusPtrOutput() ImageVolumeStatusPtrOutput
+	ToImageVolumeStatusPtrOutputWithContext(context.Context) ImageVolumeStatusPtrOutput
+}
+
+type imageVolumeStatusPtrType ImageVolumeStatusArgs
+
+func ImageVolumeStatusPtr(v *ImageVolumeStatusArgs) ImageVolumeStatusPtrInput {
+	return (*imageVolumeStatusPtrType)(v)
+}
+
+func (*imageVolumeStatusPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**ImageVolumeStatus)(nil)).Elem()
+}
+
+func (i *imageVolumeStatusPtrType) ToImageVolumeStatusPtrOutput() ImageVolumeStatusPtrOutput {
+	return i.ToImageVolumeStatusPtrOutputWithContext(context.Background())
+}
+
+func (i *imageVolumeStatusPtrType) ToImageVolumeStatusPtrOutputWithContext(ctx context.Context) ImageVolumeStatusPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(ImageVolumeStatusPtrOutput)
+}
+
+// ImageVolumeStatus represents the image-based volume status.
+type ImageVolumeStatusOutput struct{ *pulumi.OutputState }
+
+func (ImageVolumeStatusOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*ImageVolumeStatus)(nil)).Elem()
+}
+
+func (o ImageVolumeStatusOutput) ToImageVolumeStatusOutput() ImageVolumeStatusOutput {
+	return o
+}
+
+func (o ImageVolumeStatusOutput) ToImageVolumeStatusOutputWithContext(ctx context.Context) ImageVolumeStatusOutput {
+	return o
+}
+
+func (o ImageVolumeStatusOutput) ToImageVolumeStatusPtrOutput() ImageVolumeStatusPtrOutput {
+	return o.ToImageVolumeStatusPtrOutputWithContext(context.Background())
+}
+
+func (o ImageVolumeStatusOutput) ToImageVolumeStatusPtrOutputWithContext(ctx context.Context) ImageVolumeStatusPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v ImageVolumeStatus) *ImageVolumeStatus {
+		return &v
+	}).(ImageVolumeStatusPtrOutput)
+}
+
+// ImageRef is the digest of the image used for this volume. It should have a value that's similar to the pod's status.containerStatuses[i].imageID. The ImageRef length should not exceed 256 characters.
+func (o ImageVolumeStatusOutput) ImageRef() pulumi.StringOutput {
+	return o.ApplyT(func(v ImageVolumeStatus) string { return v.ImageRef }).(pulumi.StringOutput)
+}
+
+type ImageVolumeStatusPtrOutput struct{ *pulumi.OutputState }
+
+func (ImageVolumeStatusPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**ImageVolumeStatus)(nil)).Elem()
+}
+
+func (o ImageVolumeStatusPtrOutput) ToImageVolumeStatusPtrOutput() ImageVolumeStatusPtrOutput {
+	return o
+}
+
+func (o ImageVolumeStatusPtrOutput) ToImageVolumeStatusPtrOutputWithContext(ctx context.Context) ImageVolumeStatusPtrOutput {
+	return o
+}
+
+func (o ImageVolumeStatusPtrOutput) Elem() ImageVolumeStatusOutput {
+	return o.ApplyT(func(v *ImageVolumeStatus) ImageVolumeStatus {
+		if v != nil {
+			return *v
+		}
+		var ret ImageVolumeStatus
+		return ret
+	}).(ImageVolumeStatusOutput)
+}
+
+// ImageRef is the digest of the image used for this volume. It should have a value that's similar to the pod's status.containerStatuses[i].imageID. The ImageRef length should not exceed 256 characters.
+func (o ImageVolumeStatusPtrOutput) ImageRef() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *ImageVolumeStatus) *string {
+		if v == nil {
+			return nil
+		}
+		return &v.ImageRef
+	}).(pulumi.StringPtrOutput)
+}
+
+// ImageVolumeStatus represents the image-based volume status.
+type ImageVolumeStatusPatch struct {
+	// ImageRef is the digest of the image used for this volume. It should have a value that's similar to the pod's status.containerStatuses[i].imageID. The ImageRef length should not exceed 256 characters.
+	ImageRef *string `pulumi:"imageRef"`
+}
+
+// ImageVolumeStatusPatchInput is an input type that accepts ImageVolumeStatusPatchArgs and ImageVolumeStatusPatchOutput values.
+// You can construct a concrete instance of `ImageVolumeStatusPatchInput` via:
+//
+//	ImageVolumeStatusPatchArgs{...}
+type ImageVolumeStatusPatchInput interface {
+	pulumi.Input
+
+	ToImageVolumeStatusPatchOutput() ImageVolumeStatusPatchOutput
+	ToImageVolumeStatusPatchOutputWithContext(context.Context) ImageVolumeStatusPatchOutput
+}
+
+// ImageVolumeStatus represents the image-based volume status.
+type ImageVolumeStatusPatchArgs struct {
+	// ImageRef is the digest of the image used for this volume. It should have a value that's similar to the pod's status.containerStatuses[i].imageID. The ImageRef length should not exceed 256 characters.
+	ImageRef pulumi.StringPtrInput `pulumi:"imageRef"`
+}
+
+func (ImageVolumeStatusPatchArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*ImageVolumeStatusPatch)(nil)).Elem()
+}
+
+func (i ImageVolumeStatusPatchArgs) ToImageVolumeStatusPatchOutput() ImageVolumeStatusPatchOutput {
+	return i.ToImageVolumeStatusPatchOutputWithContext(context.Background())
+}
+
+func (i ImageVolumeStatusPatchArgs) ToImageVolumeStatusPatchOutputWithContext(ctx context.Context) ImageVolumeStatusPatchOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(ImageVolumeStatusPatchOutput)
+}
+
+func (i ImageVolumeStatusPatchArgs) ToImageVolumeStatusPatchPtrOutput() ImageVolumeStatusPatchPtrOutput {
+	return i.ToImageVolumeStatusPatchPtrOutputWithContext(context.Background())
+}
+
+func (i ImageVolumeStatusPatchArgs) ToImageVolumeStatusPatchPtrOutputWithContext(ctx context.Context) ImageVolumeStatusPatchPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(ImageVolumeStatusPatchOutput).ToImageVolumeStatusPatchPtrOutputWithContext(ctx)
+}
+
+// ImageVolumeStatusPatchPtrInput is an input type that accepts ImageVolumeStatusPatchArgs, ImageVolumeStatusPatchPtr and ImageVolumeStatusPatchPtrOutput values.
+// You can construct a concrete instance of `ImageVolumeStatusPatchPtrInput` via:
+//
+//	        ImageVolumeStatusPatchArgs{...}
+//
+//	or:
+//
+//	        nil
+type ImageVolumeStatusPatchPtrInput interface {
+	pulumi.Input
+
+	ToImageVolumeStatusPatchPtrOutput() ImageVolumeStatusPatchPtrOutput
+	ToImageVolumeStatusPatchPtrOutputWithContext(context.Context) ImageVolumeStatusPatchPtrOutput
+}
+
+type imageVolumeStatusPatchPtrType ImageVolumeStatusPatchArgs
+
+func ImageVolumeStatusPatchPtr(v *ImageVolumeStatusPatchArgs) ImageVolumeStatusPatchPtrInput {
+	return (*imageVolumeStatusPatchPtrType)(v)
+}
+
+func (*imageVolumeStatusPatchPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**ImageVolumeStatusPatch)(nil)).Elem()
+}
+
+func (i *imageVolumeStatusPatchPtrType) ToImageVolumeStatusPatchPtrOutput() ImageVolumeStatusPatchPtrOutput {
+	return i.ToImageVolumeStatusPatchPtrOutputWithContext(context.Background())
+}
+
+func (i *imageVolumeStatusPatchPtrType) ToImageVolumeStatusPatchPtrOutputWithContext(ctx context.Context) ImageVolumeStatusPatchPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(ImageVolumeStatusPatchPtrOutput)
+}
+
+// ImageVolumeStatus represents the image-based volume status.
+type ImageVolumeStatusPatchOutput struct{ *pulumi.OutputState }
+
+func (ImageVolumeStatusPatchOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*ImageVolumeStatusPatch)(nil)).Elem()
+}
+
+func (o ImageVolumeStatusPatchOutput) ToImageVolumeStatusPatchOutput() ImageVolumeStatusPatchOutput {
+	return o
+}
+
+func (o ImageVolumeStatusPatchOutput) ToImageVolumeStatusPatchOutputWithContext(ctx context.Context) ImageVolumeStatusPatchOutput {
+	return o
+}
+
+func (o ImageVolumeStatusPatchOutput) ToImageVolumeStatusPatchPtrOutput() ImageVolumeStatusPatchPtrOutput {
+	return o.ToImageVolumeStatusPatchPtrOutputWithContext(context.Background())
+}
+
+func (o ImageVolumeStatusPatchOutput) ToImageVolumeStatusPatchPtrOutputWithContext(ctx context.Context) ImageVolumeStatusPatchPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v ImageVolumeStatusPatch) *ImageVolumeStatusPatch {
+		return &v
+	}).(ImageVolumeStatusPatchPtrOutput)
+}
+
+// ImageRef is the digest of the image used for this volume. It should have a value that's similar to the pod's status.containerStatuses[i].imageID. The ImageRef length should not exceed 256 characters.
+func (o ImageVolumeStatusPatchOutput) ImageRef() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v ImageVolumeStatusPatch) *string { return v.ImageRef }).(pulumi.StringPtrOutput)
+}
+
+type ImageVolumeStatusPatchPtrOutput struct{ *pulumi.OutputState }
+
+func (ImageVolumeStatusPatchPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**ImageVolumeStatusPatch)(nil)).Elem()
+}
+
+func (o ImageVolumeStatusPatchPtrOutput) ToImageVolumeStatusPatchPtrOutput() ImageVolumeStatusPatchPtrOutput {
+	return o
+}
+
+func (o ImageVolumeStatusPatchPtrOutput) ToImageVolumeStatusPatchPtrOutputWithContext(ctx context.Context) ImageVolumeStatusPatchPtrOutput {
+	return o
+}
+
+func (o ImageVolumeStatusPatchPtrOutput) Elem() ImageVolumeStatusPatchOutput {
+	return o.ApplyT(func(v *ImageVolumeStatusPatch) ImageVolumeStatusPatch {
+		if v != nil {
+			return *v
+		}
+		var ret ImageVolumeStatusPatch
+		return ret
+	}).(ImageVolumeStatusPatchOutput)
+}
+
+// ImageRef is the digest of the image used for this volume. It should have a value that's similar to the pod's status.containerStatuses[i].imageID. The ImageRef length should not exceed 256 characters.
+func (o ImageVolumeStatusPatchPtrOutput) ImageRef() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *ImageVolumeStatusPatch) *string {
+		if v == nil {
+			return nil
+		}
+		return v.ImageRef
+	}).(pulumi.StringPtrOutput)
+}
+
 // Maps a string key to a path within a volume.
 type KeyToPath struct {
 	// key is the key to project.
@@ -33230,6 +33510,242 @@ func (o NodeAffinityPatchPtrOutput) RequiredDuringSchedulingIgnoredDuringExecuti
 		}
 		return v.RequiredDuringSchedulingIgnoredDuringExecution
 	}).(NodeSelectorPatchPtrOutput)
+}
+
+// NodeAllocatableResourceClaimStatus describes the status of node allocatable resources allocated via DRA.
+type NodeAllocatableResourceClaimStatus struct {
+	// Containers lists the names of all containers in this pod that reference the claim.
+	Containers []string `pulumi:"containers"`
+	// ResourceClaimName is the resource claim referenced by the pod that resulted in this node allocatable resource allocation.
+	ResourceClaimName string `pulumi:"resourceClaimName"`
+	// Resources is a map of the node-allocatable resource name to the aggregate quantity allocated to the claim.
+	Resources map[string]string `pulumi:"resources"`
+}
+
+// NodeAllocatableResourceClaimStatusInput is an input type that accepts NodeAllocatableResourceClaimStatusArgs and NodeAllocatableResourceClaimStatusOutput values.
+// You can construct a concrete instance of `NodeAllocatableResourceClaimStatusInput` via:
+//
+//	NodeAllocatableResourceClaimStatusArgs{...}
+type NodeAllocatableResourceClaimStatusInput interface {
+	pulumi.Input
+
+	ToNodeAllocatableResourceClaimStatusOutput() NodeAllocatableResourceClaimStatusOutput
+	ToNodeAllocatableResourceClaimStatusOutputWithContext(context.Context) NodeAllocatableResourceClaimStatusOutput
+}
+
+// NodeAllocatableResourceClaimStatus describes the status of node allocatable resources allocated via DRA.
+type NodeAllocatableResourceClaimStatusArgs struct {
+	// Containers lists the names of all containers in this pod that reference the claim.
+	Containers pulumi.StringArrayInput `pulumi:"containers"`
+	// ResourceClaimName is the resource claim referenced by the pod that resulted in this node allocatable resource allocation.
+	ResourceClaimName pulumi.StringInput `pulumi:"resourceClaimName"`
+	// Resources is a map of the node-allocatable resource name to the aggregate quantity allocated to the claim.
+	Resources pulumi.StringMapInput `pulumi:"resources"`
+}
+
+func (NodeAllocatableResourceClaimStatusArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*NodeAllocatableResourceClaimStatus)(nil)).Elem()
+}
+
+func (i NodeAllocatableResourceClaimStatusArgs) ToNodeAllocatableResourceClaimStatusOutput() NodeAllocatableResourceClaimStatusOutput {
+	return i.ToNodeAllocatableResourceClaimStatusOutputWithContext(context.Background())
+}
+
+func (i NodeAllocatableResourceClaimStatusArgs) ToNodeAllocatableResourceClaimStatusOutputWithContext(ctx context.Context) NodeAllocatableResourceClaimStatusOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(NodeAllocatableResourceClaimStatusOutput)
+}
+
+// NodeAllocatableResourceClaimStatusArrayInput is an input type that accepts NodeAllocatableResourceClaimStatusArray and NodeAllocatableResourceClaimStatusArrayOutput values.
+// You can construct a concrete instance of `NodeAllocatableResourceClaimStatusArrayInput` via:
+//
+//	NodeAllocatableResourceClaimStatusArray{ NodeAllocatableResourceClaimStatusArgs{...} }
+type NodeAllocatableResourceClaimStatusArrayInput interface {
+	pulumi.Input
+
+	ToNodeAllocatableResourceClaimStatusArrayOutput() NodeAllocatableResourceClaimStatusArrayOutput
+	ToNodeAllocatableResourceClaimStatusArrayOutputWithContext(context.Context) NodeAllocatableResourceClaimStatusArrayOutput
+}
+
+type NodeAllocatableResourceClaimStatusArray []NodeAllocatableResourceClaimStatusInput
+
+func (NodeAllocatableResourceClaimStatusArray) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]NodeAllocatableResourceClaimStatus)(nil)).Elem()
+}
+
+func (i NodeAllocatableResourceClaimStatusArray) ToNodeAllocatableResourceClaimStatusArrayOutput() NodeAllocatableResourceClaimStatusArrayOutput {
+	return i.ToNodeAllocatableResourceClaimStatusArrayOutputWithContext(context.Background())
+}
+
+func (i NodeAllocatableResourceClaimStatusArray) ToNodeAllocatableResourceClaimStatusArrayOutputWithContext(ctx context.Context) NodeAllocatableResourceClaimStatusArrayOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(NodeAllocatableResourceClaimStatusArrayOutput)
+}
+
+// NodeAllocatableResourceClaimStatus describes the status of node allocatable resources allocated via DRA.
+type NodeAllocatableResourceClaimStatusOutput struct{ *pulumi.OutputState }
+
+func (NodeAllocatableResourceClaimStatusOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*NodeAllocatableResourceClaimStatus)(nil)).Elem()
+}
+
+func (o NodeAllocatableResourceClaimStatusOutput) ToNodeAllocatableResourceClaimStatusOutput() NodeAllocatableResourceClaimStatusOutput {
+	return o
+}
+
+func (o NodeAllocatableResourceClaimStatusOutput) ToNodeAllocatableResourceClaimStatusOutputWithContext(ctx context.Context) NodeAllocatableResourceClaimStatusOutput {
+	return o
+}
+
+// Containers lists the names of all containers in this pod that reference the claim.
+func (o NodeAllocatableResourceClaimStatusOutput) Containers() pulumi.StringArrayOutput {
+	return o.ApplyT(func(v NodeAllocatableResourceClaimStatus) []string { return v.Containers }).(pulumi.StringArrayOutput)
+}
+
+// ResourceClaimName is the resource claim referenced by the pod that resulted in this node allocatable resource allocation.
+func (o NodeAllocatableResourceClaimStatusOutput) ResourceClaimName() pulumi.StringOutput {
+	return o.ApplyT(func(v NodeAllocatableResourceClaimStatus) string { return v.ResourceClaimName }).(pulumi.StringOutput)
+}
+
+// Resources is a map of the node-allocatable resource name to the aggregate quantity allocated to the claim.
+func (o NodeAllocatableResourceClaimStatusOutput) Resources() pulumi.StringMapOutput {
+	return o.ApplyT(func(v NodeAllocatableResourceClaimStatus) map[string]string { return v.Resources }).(pulumi.StringMapOutput)
+}
+
+type NodeAllocatableResourceClaimStatusArrayOutput struct{ *pulumi.OutputState }
+
+func (NodeAllocatableResourceClaimStatusArrayOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]NodeAllocatableResourceClaimStatus)(nil)).Elem()
+}
+
+func (o NodeAllocatableResourceClaimStatusArrayOutput) ToNodeAllocatableResourceClaimStatusArrayOutput() NodeAllocatableResourceClaimStatusArrayOutput {
+	return o
+}
+
+func (o NodeAllocatableResourceClaimStatusArrayOutput) ToNodeAllocatableResourceClaimStatusArrayOutputWithContext(ctx context.Context) NodeAllocatableResourceClaimStatusArrayOutput {
+	return o
+}
+
+func (o NodeAllocatableResourceClaimStatusArrayOutput) Index(i pulumi.IntInput) NodeAllocatableResourceClaimStatusOutput {
+	return pulumi.All(o, i).ApplyT(func(vs []interface{}) NodeAllocatableResourceClaimStatus {
+		return vs[0].([]NodeAllocatableResourceClaimStatus)[vs[1].(int)]
+	}).(NodeAllocatableResourceClaimStatusOutput)
+}
+
+// NodeAllocatableResourceClaimStatus describes the status of node allocatable resources allocated via DRA.
+type NodeAllocatableResourceClaimStatusPatch struct {
+	// Containers lists the names of all containers in this pod that reference the claim.
+	Containers []string `pulumi:"containers"`
+	// ResourceClaimName is the resource claim referenced by the pod that resulted in this node allocatable resource allocation.
+	ResourceClaimName *string `pulumi:"resourceClaimName"`
+	// Resources is a map of the node-allocatable resource name to the aggregate quantity allocated to the claim.
+	Resources map[string]string `pulumi:"resources"`
+}
+
+// NodeAllocatableResourceClaimStatusPatchInput is an input type that accepts NodeAllocatableResourceClaimStatusPatchArgs and NodeAllocatableResourceClaimStatusPatchOutput values.
+// You can construct a concrete instance of `NodeAllocatableResourceClaimStatusPatchInput` via:
+//
+//	NodeAllocatableResourceClaimStatusPatchArgs{...}
+type NodeAllocatableResourceClaimStatusPatchInput interface {
+	pulumi.Input
+
+	ToNodeAllocatableResourceClaimStatusPatchOutput() NodeAllocatableResourceClaimStatusPatchOutput
+	ToNodeAllocatableResourceClaimStatusPatchOutputWithContext(context.Context) NodeAllocatableResourceClaimStatusPatchOutput
+}
+
+// NodeAllocatableResourceClaimStatus describes the status of node allocatable resources allocated via DRA.
+type NodeAllocatableResourceClaimStatusPatchArgs struct {
+	// Containers lists the names of all containers in this pod that reference the claim.
+	Containers pulumi.StringArrayInput `pulumi:"containers"`
+	// ResourceClaimName is the resource claim referenced by the pod that resulted in this node allocatable resource allocation.
+	ResourceClaimName pulumi.StringPtrInput `pulumi:"resourceClaimName"`
+	// Resources is a map of the node-allocatable resource name to the aggregate quantity allocated to the claim.
+	Resources pulumi.StringMapInput `pulumi:"resources"`
+}
+
+func (NodeAllocatableResourceClaimStatusPatchArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*NodeAllocatableResourceClaimStatusPatch)(nil)).Elem()
+}
+
+func (i NodeAllocatableResourceClaimStatusPatchArgs) ToNodeAllocatableResourceClaimStatusPatchOutput() NodeAllocatableResourceClaimStatusPatchOutput {
+	return i.ToNodeAllocatableResourceClaimStatusPatchOutputWithContext(context.Background())
+}
+
+func (i NodeAllocatableResourceClaimStatusPatchArgs) ToNodeAllocatableResourceClaimStatusPatchOutputWithContext(ctx context.Context) NodeAllocatableResourceClaimStatusPatchOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(NodeAllocatableResourceClaimStatusPatchOutput)
+}
+
+// NodeAllocatableResourceClaimStatusPatchArrayInput is an input type that accepts NodeAllocatableResourceClaimStatusPatchArray and NodeAllocatableResourceClaimStatusPatchArrayOutput values.
+// You can construct a concrete instance of `NodeAllocatableResourceClaimStatusPatchArrayInput` via:
+//
+//	NodeAllocatableResourceClaimStatusPatchArray{ NodeAllocatableResourceClaimStatusPatchArgs{...} }
+type NodeAllocatableResourceClaimStatusPatchArrayInput interface {
+	pulumi.Input
+
+	ToNodeAllocatableResourceClaimStatusPatchArrayOutput() NodeAllocatableResourceClaimStatusPatchArrayOutput
+	ToNodeAllocatableResourceClaimStatusPatchArrayOutputWithContext(context.Context) NodeAllocatableResourceClaimStatusPatchArrayOutput
+}
+
+type NodeAllocatableResourceClaimStatusPatchArray []NodeAllocatableResourceClaimStatusPatchInput
+
+func (NodeAllocatableResourceClaimStatusPatchArray) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]NodeAllocatableResourceClaimStatusPatch)(nil)).Elem()
+}
+
+func (i NodeAllocatableResourceClaimStatusPatchArray) ToNodeAllocatableResourceClaimStatusPatchArrayOutput() NodeAllocatableResourceClaimStatusPatchArrayOutput {
+	return i.ToNodeAllocatableResourceClaimStatusPatchArrayOutputWithContext(context.Background())
+}
+
+func (i NodeAllocatableResourceClaimStatusPatchArray) ToNodeAllocatableResourceClaimStatusPatchArrayOutputWithContext(ctx context.Context) NodeAllocatableResourceClaimStatusPatchArrayOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(NodeAllocatableResourceClaimStatusPatchArrayOutput)
+}
+
+// NodeAllocatableResourceClaimStatus describes the status of node allocatable resources allocated via DRA.
+type NodeAllocatableResourceClaimStatusPatchOutput struct{ *pulumi.OutputState }
+
+func (NodeAllocatableResourceClaimStatusPatchOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*NodeAllocatableResourceClaimStatusPatch)(nil)).Elem()
+}
+
+func (o NodeAllocatableResourceClaimStatusPatchOutput) ToNodeAllocatableResourceClaimStatusPatchOutput() NodeAllocatableResourceClaimStatusPatchOutput {
+	return o
+}
+
+func (o NodeAllocatableResourceClaimStatusPatchOutput) ToNodeAllocatableResourceClaimStatusPatchOutputWithContext(ctx context.Context) NodeAllocatableResourceClaimStatusPatchOutput {
+	return o
+}
+
+// Containers lists the names of all containers in this pod that reference the claim.
+func (o NodeAllocatableResourceClaimStatusPatchOutput) Containers() pulumi.StringArrayOutput {
+	return o.ApplyT(func(v NodeAllocatableResourceClaimStatusPatch) []string { return v.Containers }).(pulumi.StringArrayOutput)
+}
+
+// ResourceClaimName is the resource claim referenced by the pod that resulted in this node allocatable resource allocation.
+func (o NodeAllocatableResourceClaimStatusPatchOutput) ResourceClaimName() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v NodeAllocatableResourceClaimStatusPatch) *string { return v.ResourceClaimName }).(pulumi.StringPtrOutput)
+}
+
+// Resources is a map of the node-allocatable resource name to the aggregate quantity allocated to the claim.
+func (o NodeAllocatableResourceClaimStatusPatchOutput) Resources() pulumi.StringMapOutput {
+	return o.ApplyT(func(v NodeAllocatableResourceClaimStatusPatch) map[string]string { return v.Resources }).(pulumi.StringMapOutput)
+}
+
+type NodeAllocatableResourceClaimStatusPatchArrayOutput struct{ *pulumi.OutputState }
+
+func (NodeAllocatableResourceClaimStatusPatchArrayOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*[]NodeAllocatableResourceClaimStatusPatch)(nil)).Elem()
+}
+
+func (o NodeAllocatableResourceClaimStatusPatchArrayOutput) ToNodeAllocatableResourceClaimStatusPatchArrayOutput() NodeAllocatableResourceClaimStatusPatchArrayOutput {
+	return o
+}
+
+func (o NodeAllocatableResourceClaimStatusPatchArrayOutput) ToNodeAllocatableResourceClaimStatusPatchArrayOutputWithContext(ctx context.Context) NodeAllocatableResourceClaimStatusPatchArrayOutput {
+	return o
+}
+
+func (o NodeAllocatableResourceClaimStatusPatchArrayOutput) Index(i pulumi.IntInput) NodeAllocatableResourceClaimStatusPatchOutput {
+	return pulumi.All(o, i).ApplyT(func(vs []interface{}) NodeAllocatableResourceClaimStatusPatch {
+		return vs[0].([]NodeAllocatableResourceClaimStatusPatch)[vs[1].(int)]
+	}).(NodeAllocatableResourceClaimStatusPatchOutput)
 }
 
 // NodeCondition contains condition information for a node.
@@ -42591,7 +43107,7 @@ type PersistentVolumeSpec struct {
 	PersistentVolumeReclaimPolicy *string `pulumi:"persistentVolumeReclaimPolicy"`
 	// photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
 	PhotonPersistentDisk *PhotonPersistentDiskVolumeSource `pulumi:"photonPersistentDisk"`
-	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 	PortworxVolume *PortworxVolumeSource `pulumi:"portworxVolume"`
 	// quobyte represents a Quobyte mount on the host that shares a pod's lifetime. Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.
 	Quobyte *QuobyteVolumeSource `pulumi:"quobyte"`
@@ -42668,7 +43184,7 @@ type PersistentVolumeSpecArgs struct {
 	PersistentVolumeReclaimPolicy pulumi.StringPtrInput `pulumi:"persistentVolumeReclaimPolicy"`
 	// photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
 	PhotonPersistentDisk PhotonPersistentDiskVolumeSourcePtrInput `pulumi:"photonPersistentDisk"`
-	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 	PortworxVolume PortworxVolumeSourcePtrInput `pulumi:"portworxVolume"`
 	// quobyte represents a Quobyte mount on the host that shares a pod's lifetime. Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.
 	Quobyte QuobyteVolumeSourcePtrInput `pulumi:"quobyte"`
@@ -42876,7 +43392,7 @@ func (o PersistentVolumeSpecOutput) PhotonPersistentDisk() PhotonPersistentDiskV
 	return o.ApplyT(func(v PersistentVolumeSpec) *PhotonPersistentDiskVolumeSource { return v.PhotonPersistentDisk }).(PhotonPersistentDiskVolumeSourcePtrOutput)
 }
 
-// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 func (o PersistentVolumeSpecOutput) PortworxVolume() PortworxVolumeSourcePtrOutput {
 	return o.ApplyT(func(v PersistentVolumeSpec) *PortworxVolumeSource { return v.PortworxVolume }).(PortworxVolumeSourcePtrOutput)
 }
@@ -43165,7 +43681,7 @@ func (o PersistentVolumeSpecPtrOutput) PhotonPersistentDisk() PhotonPersistentDi
 	}).(PhotonPersistentDiskVolumeSourcePtrOutput)
 }
 
-// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 func (o PersistentVolumeSpecPtrOutput) PortworxVolume() PortworxVolumeSourcePtrOutput {
 	return o.ApplyT(func(v *PersistentVolumeSpec) *PortworxVolumeSource {
 		if v == nil {
@@ -43301,7 +43817,7 @@ type PersistentVolumeSpecPatch struct {
 	PersistentVolumeReclaimPolicy *string `pulumi:"persistentVolumeReclaimPolicy"`
 	// photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
 	PhotonPersistentDisk *PhotonPersistentDiskVolumeSourcePatch `pulumi:"photonPersistentDisk"`
-	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 	PortworxVolume *PortworxVolumeSourcePatch `pulumi:"portworxVolume"`
 	// quobyte represents a Quobyte mount on the host that shares a pod's lifetime. Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.
 	Quobyte *QuobyteVolumeSourcePatch `pulumi:"quobyte"`
@@ -43378,7 +43894,7 @@ type PersistentVolumeSpecPatchArgs struct {
 	PersistentVolumeReclaimPolicy pulumi.StringPtrInput `pulumi:"persistentVolumeReclaimPolicy"`
 	// photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
 	PhotonPersistentDisk PhotonPersistentDiskVolumeSourcePatchPtrInput `pulumi:"photonPersistentDisk"`
-	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 	PortworxVolume PortworxVolumeSourcePatchPtrInput `pulumi:"portworxVolume"`
 	// quobyte represents a Quobyte mount on the host that shares a pod's lifetime. Deprecated: Quobyte is deprecated and the in-tree quobyte type is no longer supported.
 	Quobyte QuobyteVolumeSourcePatchPtrInput `pulumi:"quobyte"`
@@ -43590,7 +44106,7 @@ func (o PersistentVolumeSpecPatchOutput) PhotonPersistentDisk() PhotonPersistent
 	}).(PhotonPersistentDiskVolumeSourcePatchPtrOutput)
 }
 
-// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 func (o PersistentVolumeSpecPatchOutput) PortworxVolume() PortworxVolumeSourcePatchPtrOutput {
 	return o.ApplyT(func(v PersistentVolumeSpecPatch) *PortworxVolumeSourcePatch { return v.PortworxVolume }).(PortworxVolumeSourcePatchPtrOutput)
 }
@@ -43879,7 +44395,7 @@ func (o PersistentVolumeSpecPatchPtrOutput) PhotonPersistentDisk() PhotonPersist
 	}).(PhotonPersistentDiskVolumeSourcePatchPtrOutput)
 }
 
-// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 func (o PersistentVolumeSpecPatchPtrOutput) PortworxVolume() PortworxVolumeSourcePatchPtrOutput {
 	return o.ApplyT(func(v *PersistentVolumeSpecPatch) *PortworxVolumeSourcePatch {
 		if v == nil {
@@ -46643,7 +47159,7 @@ type PodCondition struct {
 	LastTransitionTime *string `pulumi:"lastTransitionTime"`
 	// Human-readable message indicating details about last transition.
 	Message *string `pulumi:"message"`
-	// If set, this represents the .metadata.generation that the pod condition was set based upon. The PodObservedGenerationTracking feature gate must be enabled to use this field.
+	// If set, this represents the .metadata.generation that the pod condition was set based upon.
 	ObservedGeneration *int `pulumi:"observedGeneration"`
 	// Unique, one-word, CamelCase reason for the condition's last transition.
 	Reason *string `pulumi:"reason"`
@@ -46672,7 +47188,7 @@ type PodConditionArgs struct {
 	LastTransitionTime pulumi.StringPtrInput `pulumi:"lastTransitionTime"`
 	// Human-readable message indicating details about last transition.
 	Message pulumi.StringPtrInput `pulumi:"message"`
-	// If set, this represents the .metadata.generation that the pod condition was set based upon. The PodObservedGenerationTracking feature gate must be enabled to use this field.
+	// If set, this represents the .metadata.generation that the pod condition was set based upon.
 	ObservedGeneration pulumi.IntPtrInput `pulumi:"observedGeneration"`
 	// Unique, one-word, CamelCase reason for the condition's last transition.
 	Reason pulumi.StringPtrInput `pulumi:"reason"`
@@ -46749,7 +47265,7 @@ func (o PodConditionOutput) Message() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v PodCondition) *string { return v.Message }).(pulumi.StringPtrOutput)
 }
 
-// If set, this represents the .metadata.generation that the pod condition was set based upon. The PodObservedGenerationTracking feature gate must be enabled to use this field.
+// If set, this represents the .metadata.generation that the pod condition was set based upon.
 func (o PodConditionOutput) ObservedGeneration() pulumi.IntPtrOutput {
 	return o.ApplyT(func(v PodCondition) *int { return v.ObservedGeneration }).(pulumi.IntPtrOutput)
 }
@@ -46797,7 +47313,7 @@ type PodConditionPatch struct {
 	LastTransitionTime *string `pulumi:"lastTransitionTime"`
 	// Human-readable message indicating details about last transition.
 	Message *string `pulumi:"message"`
-	// If set, this represents the .metadata.generation that the pod condition was set based upon. The PodObservedGenerationTracking feature gate must be enabled to use this field.
+	// If set, this represents the .metadata.generation that the pod condition was set based upon.
 	ObservedGeneration *int `pulumi:"observedGeneration"`
 	// Unique, one-word, CamelCase reason for the condition's last transition.
 	Reason *string `pulumi:"reason"`
@@ -46826,7 +47342,7 @@ type PodConditionPatchArgs struct {
 	LastTransitionTime pulumi.StringPtrInput `pulumi:"lastTransitionTime"`
 	// Human-readable message indicating details about last transition.
 	Message pulumi.StringPtrInput `pulumi:"message"`
-	// If set, this represents the .metadata.generation that the pod condition was set based upon. The PodObservedGenerationTracking feature gate must be enabled to use this field.
+	// If set, this represents the .metadata.generation that the pod condition was set based upon.
 	ObservedGeneration pulumi.IntPtrInput `pulumi:"observedGeneration"`
 	// Unique, one-word, CamelCase reason for the condition's last transition.
 	Reason pulumi.StringPtrInput `pulumi:"reason"`
@@ -46903,7 +47419,7 @@ func (o PodConditionPatchOutput) Message() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v PodConditionPatch) *string { return v.Message }).(pulumi.StringPtrOutput)
 }
 
-// If set, this represents the .metadata.generation that the pod condition was set based upon. The PodObservedGenerationTracking feature gate must be enabled to use this field.
+// If set, this represents the .metadata.generation that the pod condition was set based upon.
 func (o PodConditionPatchOutput) ObservedGeneration() pulumi.IntPtrOutput {
 	return o.ApplyT(func(v PodConditionPatch) *int { return v.ObservedGeneration }).(pulumi.IntPtrOutput)
 }
@@ -48738,6 +49254,8 @@ func (o PodReadinessGatePatchArrayOutput) Index(i pulumi.IntInput) PodReadinessG
 // PodResourceClaim references exactly one ResourceClaim, either directly or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim for the pod.
 //
 // It adds a name to it that uniquely identifies the ResourceClaim inside the Pod. Containers that need access to the ResourceClaim reference it with this name.
+//
+// When the DRAWorkloadResourceClaims feature gate is enabled and this Pod belongs to a PodGroup, a PodResourceClaim is matched to a PodGroupResourceClaim if all of their fields are equal (Name, ResourceClaimName, and ResourceClaimTemplateName). A matched claim references a single ResourceClaim shared across all Pods in the PodGroup, reserved for the PodGroup in ResourceClaimStatus.ReservedFor rather than for individual Pods.
 type PodResourceClaim struct {
 	// Name uniquely identifies this resource claim inside the pod. This must be a DNS_LABEL.
 	Name string `pulumi:"name"`
@@ -48748,6 +49266,8 @@ type PodResourceClaim struct {
 	// ResourceClaimTemplateName is the name of a ResourceClaimTemplate object in the same namespace as this pod.
 	//
 	// The template will be used to create a new ResourceClaim, which will be bound to this pod. When this pod is deleted, the ResourceClaim will also be deleted. The pod name and resource name, along with a generated component, will be used to form a unique name for the ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+	//
+	// When the DRAWorkloadResourceClaims feature gate is enabled and the pod belongs to a PodGroup that defines a PodGroupResourceClaim with the same Name and ResourceClaimTemplateName, this PodResourceClaim resolves to the ResourceClaim generated for the PodGroup. All pods in the group that define an equivalent PodResourceClaim matching the PodGroupResourceClaim's Name and ResourceClaimTemplateName share the same generated ResourceClaim. ResourceClaims generated for a PodGroup are owned by the PodGroup and their lifecycles are tied to the PodGroup instead of any individual pod.
 	//
 	// This field is immutable and no changes will be made to the corresponding ResourceClaim by the control plane after creating the ResourceClaim.
 	//
@@ -48771,6 +49291,8 @@ type PodResourceClaimInput interface {
 // PodResourceClaim references exactly one ResourceClaim, either directly or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim for the pod.
 //
 // It adds a name to it that uniquely identifies the ResourceClaim inside the Pod. Containers that need access to the ResourceClaim reference it with this name.
+//
+// When the DRAWorkloadResourceClaims feature gate is enabled and this Pod belongs to a PodGroup, a PodResourceClaim is matched to a PodGroupResourceClaim if all of their fields are equal (Name, ResourceClaimName, and ResourceClaimTemplateName). A matched claim references a single ResourceClaim shared across all Pods in the PodGroup, reserved for the PodGroup in ResourceClaimStatus.ReservedFor rather than for individual Pods.
 type PodResourceClaimArgs struct {
 	// Name uniquely identifies this resource claim inside the pod. This must be a DNS_LABEL.
 	Name pulumi.StringInput `pulumi:"name"`
@@ -48781,6 +49303,8 @@ type PodResourceClaimArgs struct {
 	// ResourceClaimTemplateName is the name of a ResourceClaimTemplate object in the same namespace as this pod.
 	//
 	// The template will be used to create a new ResourceClaim, which will be bound to this pod. When this pod is deleted, the ResourceClaim will also be deleted. The pod name and resource name, along with a generated component, will be used to form a unique name for the ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+	//
+	// When the DRAWorkloadResourceClaims feature gate is enabled and the pod belongs to a PodGroup that defines a PodGroupResourceClaim with the same Name and ResourceClaimTemplateName, this PodResourceClaim resolves to the ResourceClaim generated for the PodGroup. All pods in the group that define an equivalent PodResourceClaim matching the PodGroupResourceClaim's Name and ResourceClaimTemplateName share the same generated ResourceClaim. ResourceClaims generated for a PodGroup are owned by the PodGroup and their lifecycles are tied to the PodGroup instead of any individual pod.
 	//
 	// This field is immutable and no changes will be made to the corresponding ResourceClaim by the control plane after creating the ResourceClaim.
 	//
@@ -48830,6 +49354,8 @@ func (i PodResourceClaimArray) ToPodResourceClaimArrayOutputWithContext(ctx cont
 // PodResourceClaim references exactly one ResourceClaim, either directly or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim for the pod.
 //
 // It adds a name to it that uniquely identifies the ResourceClaim inside the Pod. Containers that need access to the ResourceClaim reference it with this name.
+//
+// When the DRAWorkloadResourceClaims feature gate is enabled and this Pod belongs to a PodGroup, a PodResourceClaim is matched to a PodGroupResourceClaim if all of their fields are equal (Name, ResourceClaimName, and ResourceClaimTemplateName). A matched claim references a single ResourceClaim shared across all Pods in the PodGroup, reserved for the PodGroup in ResourceClaimStatus.ReservedFor rather than for individual Pods.
 type PodResourceClaimOutput struct{ *pulumi.OutputState }
 
 func (PodResourceClaimOutput) ElementType() reflect.Type {
@@ -48859,6 +49385,8 @@ func (o PodResourceClaimOutput) ResourceClaimName() pulumi.StringPtrOutput {
 // ResourceClaimTemplateName is the name of a ResourceClaimTemplate object in the same namespace as this pod.
 //
 // The template will be used to create a new ResourceClaim, which will be bound to this pod. When this pod is deleted, the ResourceClaim will also be deleted. The pod name and resource name, along with a generated component, will be used to form a unique name for the ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+//
+// When the DRAWorkloadResourceClaims feature gate is enabled and the pod belongs to a PodGroup that defines a PodGroupResourceClaim with the same Name and ResourceClaimTemplateName, this PodResourceClaim resolves to the ResourceClaim generated for the PodGroup. All pods in the group that define an equivalent PodResourceClaim matching the PodGroupResourceClaim's Name and ResourceClaimTemplateName share the same generated ResourceClaim. ResourceClaims generated for a PodGroup are owned by the PodGroup and their lifecycles are tied to the PodGroup instead of any individual pod.
 //
 // This field is immutable and no changes will be made to the corresponding ResourceClaim by the control plane after creating the ResourceClaim.
 //
@@ -48895,6 +49423,8 @@ func (o PodResourceClaimArrayOutput) Index(i pulumi.IntInput) PodResourceClaimOu
 // PodResourceClaim references exactly one ResourceClaim, either directly or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim for the pod.
 //
 // It adds a name to it that uniquely identifies the ResourceClaim inside the Pod. Containers that need access to the ResourceClaim reference it with this name.
+//
+// When the DRAWorkloadResourceClaims feature gate is enabled and this Pod belongs to a PodGroup, a PodResourceClaim is matched to a PodGroupResourceClaim if all of their fields are equal (Name, ResourceClaimName, and ResourceClaimTemplateName). A matched claim references a single ResourceClaim shared across all Pods in the PodGroup, reserved for the PodGroup in ResourceClaimStatus.ReservedFor rather than for individual Pods.
 type PodResourceClaimPatch struct {
 	// Name uniquely identifies this resource claim inside the pod. This must be a DNS_LABEL.
 	Name *string `pulumi:"name"`
@@ -48905,6 +49435,8 @@ type PodResourceClaimPatch struct {
 	// ResourceClaimTemplateName is the name of a ResourceClaimTemplate object in the same namespace as this pod.
 	//
 	// The template will be used to create a new ResourceClaim, which will be bound to this pod. When this pod is deleted, the ResourceClaim will also be deleted. The pod name and resource name, along with a generated component, will be used to form a unique name for the ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+	//
+	// When the DRAWorkloadResourceClaims feature gate is enabled and the pod belongs to a PodGroup that defines a PodGroupResourceClaim with the same Name and ResourceClaimTemplateName, this PodResourceClaim resolves to the ResourceClaim generated for the PodGroup. All pods in the group that define an equivalent PodResourceClaim matching the PodGroupResourceClaim's Name and ResourceClaimTemplateName share the same generated ResourceClaim. ResourceClaims generated for a PodGroup are owned by the PodGroup and their lifecycles are tied to the PodGroup instead of any individual pod.
 	//
 	// This field is immutable and no changes will be made to the corresponding ResourceClaim by the control plane after creating the ResourceClaim.
 	//
@@ -48928,6 +49460,8 @@ type PodResourceClaimPatchInput interface {
 // PodResourceClaim references exactly one ResourceClaim, either directly or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim for the pod.
 //
 // It adds a name to it that uniquely identifies the ResourceClaim inside the Pod. Containers that need access to the ResourceClaim reference it with this name.
+//
+// When the DRAWorkloadResourceClaims feature gate is enabled and this Pod belongs to a PodGroup, a PodResourceClaim is matched to a PodGroupResourceClaim if all of their fields are equal (Name, ResourceClaimName, and ResourceClaimTemplateName). A matched claim references a single ResourceClaim shared across all Pods in the PodGroup, reserved for the PodGroup in ResourceClaimStatus.ReservedFor rather than for individual Pods.
 type PodResourceClaimPatchArgs struct {
 	// Name uniquely identifies this resource claim inside the pod. This must be a DNS_LABEL.
 	Name pulumi.StringPtrInput `pulumi:"name"`
@@ -48938,6 +49472,8 @@ type PodResourceClaimPatchArgs struct {
 	// ResourceClaimTemplateName is the name of a ResourceClaimTemplate object in the same namespace as this pod.
 	//
 	// The template will be used to create a new ResourceClaim, which will be bound to this pod. When this pod is deleted, the ResourceClaim will also be deleted. The pod name and resource name, along with a generated component, will be used to form a unique name for the ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+	//
+	// When the DRAWorkloadResourceClaims feature gate is enabled and the pod belongs to a PodGroup that defines a PodGroupResourceClaim with the same Name and ResourceClaimTemplateName, this PodResourceClaim resolves to the ResourceClaim generated for the PodGroup. All pods in the group that define an equivalent PodResourceClaim matching the PodGroupResourceClaim's Name and ResourceClaimTemplateName share the same generated ResourceClaim. ResourceClaims generated for a PodGroup are owned by the PodGroup and their lifecycles are tied to the PodGroup instead of any individual pod.
 	//
 	// This field is immutable and no changes will be made to the corresponding ResourceClaim by the control plane after creating the ResourceClaim.
 	//
@@ -48987,6 +49523,8 @@ func (i PodResourceClaimPatchArray) ToPodResourceClaimPatchArrayOutputWithContex
 // PodResourceClaim references exactly one ResourceClaim, either directly or by naming a ResourceClaimTemplate which is then turned into a ResourceClaim for the pod.
 //
 // It adds a name to it that uniquely identifies the ResourceClaim inside the Pod. Containers that need access to the ResourceClaim reference it with this name.
+//
+// When the DRAWorkloadResourceClaims feature gate is enabled and this Pod belongs to a PodGroup, a PodResourceClaim is matched to a PodGroupResourceClaim if all of their fields are equal (Name, ResourceClaimName, and ResourceClaimTemplateName). A matched claim references a single ResourceClaim shared across all Pods in the PodGroup, reserved for the PodGroup in ResourceClaimStatus.ReservedFor rather than for individual Pods.
 type PodResourceClaimPatchOutput struct{ *pulumi.OutputState }
 
 func (PodResourceClaimPatchOutput) ElementType() reflect.Type {
@@ -49016,6 +49554,8 @@ func (o PodResourceClaimPatchOutput) ResourceClaimName() pulumi.StringPtrOutput 
 // ResourceClaimTemplateName is the name of a ResourceClaimTemplate object in the same namespace as this pod.
 //
 // The template will be used to create a new ResourceClaim, which will be bound to this pod. When this pod is deleted, the ResourceClaim will also be deleted. The pod name and resource name, along with a generated component, will be used to form a unique name for the ResourceClaim, which will be recorded in pod.status.resourceClaimStatuses.
+//
+// When the DRAWorkloadResourceClaims feature gate is enabled and the pod belongs to a PodGroup that defines a PodGroupResourceClaim with the same Name and ResourceClaimTemplateName, this PodResourceClaim resolves to the ResourceClaim generated for the PodGroup. All pods in the group that define an equivalent PodResourceClaim matching the PodGroupResourceClaim's Name and ResourceClaimTemplateName share the same generated ResourceClaim. ResourceClaims generated for a PodGroup are owned by the PodGroup and their lifecycles are tied to the PodGroup instead of any individual pod.
 //
 // This field is immutable and no changes will be made to the corresponding ResourceClaim by the control plane after creating the ResourceClaim.
 //
@@ -49053,7 +49593,11 @@ func (o PodResourceClaimPatchArrayOutput) Index(i pulumi.IntInput) PodResourceCl
 type PodResourceClaimStatus struct {
 	// Name uniquely identifies this resource claim inside the pod. This must match the name of an entry in pod.spec.resourceClaims, which implies that the string must be a DNS_LABEL.
 	Name string `pulumi:"name"`
-	// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod. If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
+	// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod.
+	//
+	// When the DRAWorkloadResourceClaims feature is enabled and the corresponding PodResourceClaim matches a PodGroupResourceClaim made by the Pod's PodGroup, then this is the name of the ResourceClaim generated and reserved for the PodGroup.
+	//
+	// If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
 	ResourceClaimName *string `pulumi:"resourceClaimName"`
 }
 
@@ -49072,7 +49616,11 @@ type PodResourceClaimStatusInput interface {
 type PodResourceClaimStatusArgs struct {
 	// Name uniquely identifies this resource claim inside the pod. This must match the name of an entry in pod.spec.resourceClaims, which implies that the string must be a DNS_LABEL.
 	Name pulumi.StringInput `pulumi:"name"`
-	// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod. If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
+	// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod.
+	//
+	// When the DRAWorkloadResourceClaims feature is enabled and the corresponding PodResourceClaim matches a PodGroupResourceClaim made by the Pod's PodGroup, then this is the name of the ResourceClaim generated and reserved for the PodGroup.
+	//
+	// If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
 	ResourceClaimName pulumi.StringPtrInput `pulumi:"resourceClaimName"`
 }
 
@@ -49133,7 +49681,11 @@ func (o PodResourceClaimStatusOutput) Name() pulumi.StringOutput {
 	return o.ApplyT(func(v PodResourceClaimStatus) string { return v.Name }).(pulumi.StringOutput)
 }
 
-// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod. If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
+// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod.
+//
+// When the DRAWorkloadResourceClaims feature is enabled and the corresponding PodResourceClaim matches a PodGroupResourceClaim made by the Pod's PodGroup, then this is the name of the ResourceClaim generated and reserved for the PodGroup.
+//
+// If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
 func (o PodResourceClaimStatusOutput) ResourceClaimName() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v PodResourceClaimStatus) *string { return v.ResourceClaimName }).(pulumi.StringPtrOutput)
 }
@@ -49162,7 +49714,11 @@ func (o PodResourceClaimStatusArrayOutput) Index(i pulumi.IntInput) PodResourceC
 type PodResourceClaimStatusPatch struct {
 	// Name uniquely identifies this resource claim inside the pod. This must match the name of an entry in pod.spec.resourceClaims, which implies that the string must be a DNS_LABEL.
 	Name *string `pulumi:"name"`
-	// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod. If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
+	// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod.
+	//
+	// When the DRAWorkloadResourceClaims feature is enabled and the corresponding PodResourceClaim matches a PodGroupResourceClaim made by the Pod's PodGroup, then this is the name of the ResourceClaim generated and reserved for the PodGroup.
+	//
+	// If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
 	ResourceClaimName *string `pulumi:"resourceClaimName"`
 }
 
@@ -49181,7 +49737,11 @@ type PodResourceClaimStatusPatchInput interface {
 type PodResourceClaimStatusPatchArgs struct {
 	// Name uniquely identifies this resource claim inside the pod. This must match the name of an entry in pod.spec.resourceClaims, which implies that the string must be a DNS_LABEL.
 	Name pulumi.StringPtrInput `pulumi:"name"`
-	// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod. If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
+	// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod.
+	//
+	// When the DRAWorkloadResourceClaims feature is enabled and the corresponding PodResourceClaim matches a PodGroupResourceClaim made by the Pod's PodGroup, then this is the name of the ResourceClaim generated and reserved for the PodGroup.
+	//
+	// If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
 	ResourceClaimName pulumi.StringPtrInput `pulumi:"resourceClaimName"`
 }
 
@@ -49242,7 +49802,11 @@ func (o PodResourceClaimStatusPatchOutput) Name() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v PodResourceClaimStatusPatch) *string { return v.Name }).(pulumi.StringPtrOutput)
 }
 
-// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod. If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
+// ResourceClaimName is the name of the ResourceClaim that was generated for the Pod in the namespace of the Pod.
+//
+// When the DRAWorkloadResourceClaims feature is enabled and the corresponding PodResourceClaim matches a PodGroupResourceClaim made by the Pod's PodGroup, then this is the name of the ResourceClaim generated and reserved for the PodGroup.
+//
+// If this is unset, then generating a ResourceClaim was not necessary. The pod.spec.resourceClaims entry can be ignored in this case.
 func (o PodResourceClaimStatusPatchOutput) ResourceClaimName() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v PodResourceClaimStatusPatch) *string { return v.ResourceClaimName }).(pulumi.StringPtrOutput)
 }
@@ -49465,6 +50029,286 @@ func (o PodSchedulingGatePatchArrayOutput) Index(i pulumi.IntInput) PodSchedulin
 	return pulumi.All(o, i).ApplyT(func(vs []interface{}) PodSchedulingGatePatch {
 		return vs[0].([]PodSchedulingGatePatch)[vs[1].(int)]
 	}).(PodSchedulingGatePatchOutput)
+}
+
+// PodSchedulingGroup identifies the runtime scheduling group instance that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics. Exactly one field must be specified.
+type PodSchedulingGroup struct {
+	// PodGroupName specifies the name of the standalone PodGroup object that represents the runtime instance of this group. Must be a DNS subdomain.
+	PodGroupName *string `pulumi:"podGroupName"`
+}
+
+// PodSchedulingGroupInput is an input type that accepts PodSchedulingGroupArgs and PodSchedulingGroupOutput values.
+// You can construct a concrete instance of `PodSchedulingGroupInput` via:
+//
+//	PodSchedulingGroupArgs{...}
+type PodSchedulingGroupInput interface {
+	pulumi.Input
+
+	ToPodSchedulingGroupOutput() PodSchedulingGroupOutput
+	ToPodSchedulingGroupOutputWithContext(context.Context) PodSchedulingGroupOutput
+}
+
+// PodSchedulingGroup identifies the runtime scheduling group instance that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics. Exactly one field must be specified.
+type PodSchedulingGroupArgs struct {
+	// PodGroupName specifies the name of the standalone PodGroup object that represents the runtime instance of this group. Must be a DNS subdomain.
+	PodGroupName pulumi.StringPtrInput `pulumi:"podGroupName"`
+}
+
+func (PodSchedulingGroupArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*PodSchedulingGroup)(nil)).Elem()
+}
+
+func (i PodSchedulingGroupArgs) ToPodSchedulingGroupOutput() PodSchedulingGroupOutput {
+	return i.ToPodSchedulingGroupOutputWithContext(context.Background())
+}
+
+func (i PodSchedulingGroupArgs) ToPodSchedulingGroupOutputWithContext(ctx context.Context) PodSchedulingGroupOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(PodSchedulingGroupOutput)
+}
+
+func (i PodSchedulingGroupArgs) ToPodSchedulingGroupPtrOutput() PodSchedulingGroupPtrOutput {
+	return i.ToPodSchedulingGroupPtrOutputWithContext(context.Background())
+}
+
+func (i PodSchedulingGroupArgs) ToPodSchedulingGroupPtrOutputWithContext(ctx context.Context) PodSchedulingGroupPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(PodSchedulingGroupOutput).ToPodSchedulingGroupPtrOutputWithContext(ctx)
+}
+
+// PodSchedulingGroupPtrInput is an input type that accepts PodSchedulingGroupArgs, PodSchedulingGroupPtr and PodSchedulingGroupPtrOutput values.
+// You can construct a concrete instance of `PodSchedulingGroupPtrInput` via:
+//
+//	        PodSchedulingGroupArgs{...}
+//
+//	or:
+//
+//	        nil
+type PodSchedulingGroupPtrInput interface {
+	pulumi.Input
+
+	ToPodSchedulingGroupPtrOutput() PodSchedulingGroupPtrOutput
+	ToPodSchedulingGroupPtrOutputWithContext(context.Context) PodSchedulingGroupPtrOutput
+}
+
+type podSchedulingGroupPtrType PodSchedulingGroupArgs
+
+func PodSchedulingGroupPtr(v *PodSchedulingGroupArgs) PodSchedulingGroupPtrInput {
+	return (*podSchedulingGroupPtrType)(v)
+}
+
+func (*podSchedulingGroupPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**PodSchedulingGroup)(nil)).Elem()
+}
+
+func (i *podSchedulingGroupPtrType) ToPodSchedulingGroupPtrOutput() PodSchedulingGroupPtrOutput {
+	return i.ToPodSchedulingGroupPtrOutputWithContext(context.Background())
+}
+
+func (i *podSchedulingGroupPtrType) ToPodSchedulingGroupPtrOutputWithContext(ctx context.Context) PodSchedulingGroupPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(PodSchedulingGroupPtrOutput)
+}
+
+// PodSchedulingGroup identifies the runtime scheduling group instance that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics. Exactly one field must be specified.
+type PodSchedulingGroupOutput struct{ *pulumi.OutputState }
+
+func (PodSchedulingGroupOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*PodSchedulingGroup)(nil)).Elem()
+}
+
+func (o PodSchedulingGroupOutput) ToPodSchedulingGroupOutput() PodSchedulingGroupOutput {
+	return o
+}
+
+func (o PodSchedulingGroupOutput) ToPodSchedulingGroupOutputWithContext(ctx context.Context) PodSchedulingGroupOutput {
+	return o
+}
+
+func (o PodSchedulingGroupOutput) ToPodSchedulingGroupPtrOutput() PodSchedulingGroupPtrOutput {
+	return o.ToPodSchedulingGroupPtrOutputWithContext(context.Background())
+}
+
+func (o PodSchedulingGroupOutput) ToPodSchedulingGroupPtrOutputWithContext(ctx context.Context) PodSchedulingGroupPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v PodSchedulingGroup) *PodSchedulingGroup {
+		return &v
+	}).(PodSchedulingGroupPtrOutput)
+}
+
+// PodGroupName specifies the name of the standalone PodGroup object that represents the runtime instance of this group. Must be a DNS subdomain.
+func (o PodSchedulingGroupOutput) PodGroupName() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v PodSchedulingGroup) *string { return v.PodGroupName }).(pulumi.StringPtrOutput)
+}
+
+type PodSchedulingGroupPtrOutput struct{ *pulumi.OutputState }
+
+func (PodSchedulingGroupPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**PodSchedulingGroup)(nil)).Elem()
+}
+
+func (o PodSchedulingGroupPtrOutput) ToPodSchedulingGroupPtrOutput() PodSchedulingGroupPtrOutput {
+	return o
+}
+
+func (o PodSchedulingGroupPtrOutput) ToPodSchedulingGroupPtrOutputWithContext(ctx context.Context) PodSchedulingGroupPtrOutput {
+	return o
+}
+
+func (o PodSchedulingGroupPtrOutput) Elem() PodSchedulingGroupOutput {
+	return o.ApplyT(func(v *PodSchedulingGroup) PodSchedulingGroup {
+		if v != nil {
+			return *v
+		}
+		var ret PodSchedulingGroup
+		return ret
+	}).(PodSchedulingGroupOutput)
+}
+
+// PodGroupName specifies the name of the standalone PodGroup object that represents the runtime instance of this group. Must be a DNS subdomain.
+func (o PodSchedulingGroupPtrOutput) PodGroupName() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *PodSchedulingGroup) *string {
+		if v == nil {
+			return nil
+		}
+		return v.PodGroupName
+	}).(pulumi.StringPtrOutput)
+}
+
+// PodSchedulingGroup identifies the runtime scheduling group instance that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics. Exactly one field must be specified.
+type PodSchedulingGroupPatch struct {
+	// PodGroupName specifies the name of the standalone PodGroup object that represents the runtime instance of this group. Must be a DNS subdomain.
+	PodGroupName *string `pulumi:"podGroupName"`
+}
+
+// PodSchedulingGroupPatchInput is an input type that accepts PodSchedulingGroupPatchArgs and PodSchedulingGroupPatchOutput values.
+// You can construct a concrete instance of `PodSchedulingGroupPatchInput` via:
+//
+//	PodSchedulingGroupPatchArgs{...}
+type PodSchedulingGroupPatchInput interface {
+	pulumi.Input
+
+	ToPodSchedulingGroupPatchOutput() PodSchedulingGroupPatchOutput
+	ToPodSchedulingGroupPatchOutputWithContext(context.Context) PodSchedulingGroupPatchOutput
+}
+
+// PodSchedulingGroup identifies the runtime scheduling group instance that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics. Exactly one field must be specified.
+type PodSchedulingGroupPatchArgs struct {
+	// PodGroupName specifies the name of the standalone PodGroup object that represents the runtime instance of this group. Must be a DNS subdomain.
+	PodGroupName pulumi.StringPtrInput `pulumi:"podGroupName"`
+}
+
+func (PodSchedulingGroupPatchArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*PodSchedulingGroupPatch)(nil)).Elem()
+}
+
+func (i PodSchedulingGroupPatchArgs) ToPodSchedulingGroupPatchOutput() PodSchedulingGroupPatchOutput {
+	return i.ToPodSchedulingGroupPatchOutputWithContext(context.Background())
+}
+
+func (i PodSchedulingGroupPatchArgs) ToPodSchedulingGroupPatchOutputWithContext(ctx context.Context) PodSchedulingGroupPatchOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(PodSchedulingGroupPatchOutput)
+}
+
+func (i PodSchedulingGroupPatchArgs) ToPodSchedulingGroupPatchPtrOutput() PodSchedulingGroupPatchPtrOutput {
+	return i.ToPodSchedulingGroupPatchPtrOutputWithContext(context.Background())
+}
+
+func (i PodSchedulingGroupPatchArgs) ToPodSchedulingGroupPatchPtrOutputWithContext(ctx context.Context) PodSchedulingGroupPatchPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(PodSchedulingGroupPatchOutput).ToPodSchedulingGroupPatchPtrOutputWithContext(ctx)
+}
+
+// PodSchedulingGroupPatchPtrInput is an input type that accepts PodSchedulingGroupPatchArgs, PodSchedulingGroupPatchPtr and PodSchedulingGroupPatchPtrOutput values.
+// You can construct a concrete instance of `PodSchedulingGroupPatchPtrInput` via:
+//
+//	        PodSchedulingGroupPatchArgs{...}
+//
+//	or:
+//
+//	        nil
+type PodSchedulingGroupPatchPtrInput interface {
+	pulumi.Input
+
+	ToPodSchedulingGroupPatchPtrOutput() PodSchedulingGroupPatchPtrOutput
+	ToPodSchedulingGroupPatchPtrOutputWithContext(context.Context) PodSchedulingGroupPatchPtrOutput
+}
+
+type podSchedulingGroupPatchPtrType PodSchedulingGroupPatchArgs
+
+func PodSchedulingGroupPatchPtr(v *PodSchedulingGroupPatchArgs) PodSchedulingGroupPatchPtrInput {
+	return (*podSchedulingGroupPatchPtrType)(v)
+}
+
+func (*podSchedulingGroupPatchPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**PodSchedulingGroupPatch)(nil)).Elem()
+}
+
+func (i *podSchedulingGroupPatchPtrType) ToPodSchedulingGroupPatchPtrOutput() PodSchedulingGroupPatchPtrOutput {
+	return i.ToPodSchedulingGroupPatchPtrOutputWithContext(context.Background())
+}
+
+func (i *podSchedulingGroupPatchPtrType) ToPodSchedulingGroupPatchPtrOutputWithContext(ctx context.Context) PodSchedulingGroupPatchPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(PodSchedulingGroupPatchPtrOutput)
+}
+
+// PodSchedulingGroup identifies the runtime scheduling group instance that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics. Exactly one field must be specified.
+type PodSchedulingGroupPatchOutput struct{ *pulumi.OutputState }
+
+func (PodSchedulingGroupPatchOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*PodSchedulingGroupPatch)(nil)).Elem()
+}
+
+func (o PodSchedulingGroupPatchOutput) ToPodSchedulingGroupPatchOutput() PodSchedulingGroupPatchOutput {
+	return o
+}
+
+func (o PodSchedulingGroupPatchOutput) ToPodSchedulingGroupPatchOutputWithContext(ctx context.Context) PodSchedulingGroupPatchOutput {
+	return o
+}
+
+func (o PodSchedulingGroupPatchOutput) ToPodSchedulingGroupPatchPtrOutput() PodSchedulingGroupPatchPtrOutput {
+	return o.ToPodSchedulingGroupPatchPtrOutputWithContext(context.Background())
+}
+
+func (o PodSchedulingGroupPatchOutput) ToPodSchedulingGroupPatchPtrOutputWithContext(ctx context.Context) PodSchedulingGroupPatchPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v PodSchedulingGroupPatch) *PodSchedulingGroupPatch {
+		return &v
+	}).(PodSchedulingGroupPatchPtrOutput)
+}
+
+// PodGroupName specifies the name of the standalone PodGroup object that represents the runtime instance of this group. Must be a DNS subdomain.
+func (o PodSchedulingGroupPatchOutput) PodGroupName() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v PodSchedulingGroupPatch) *string { return v.PodGroupName }).(pulumi.StringPtrOutput)
+}
+
+type PodSchedulingGroupPatchPtrOutput struct{ *pulumi.OutputState }
+
+func (PodSchedulingGroupPatchPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**PodSchedulingGroupPatch)(nil)).Elem()
+}
+
+func (o PodSchedulingGroupPatchPtrOutput) ToPodSchedulingGroupPatchPtrOutput() PodSchedulingGroupPatchPtrOutput {
+	return o
+}
+
+func (o PodSchedulingGroupPatchPtrOutput) ToPodSchedulingGroupPatchPtrOutputWithContext(ctx context.Context) PodSchedulingGroupPatchPtrOutput {
+	return o
+}
+
+func (o PodSchedulingGroupPatchPtrOutput) Elem() PodSchedulingGroupPatchOutput {
+	return o.ApplyT(func(v *PodSchedulingGroupPatch) PodSchedulingGroupPatch {
+		if v != nil {
+			return *v
+		}
+		var ret PodSchedulingGroupPatch
+		return ret
+	}).(PodSchedulingGroupPatchOutput)
+}
+
+// PodGroupName specifies the name of the standalone PodGroup object that represents the runtime instance of this group. Must be a DNS subdomain.
+func (o PodSchedulingGroupPatchPtrOutput) PodGroupName() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *PodSchedulingGroupPatch) *string {
+		if v == nil {
+			return nil
+		}
+		return v.PodGroupName
+	}).(pulumi.StringPtrOutput)
 }
 
 // PodSecurityContext holds pod-level security attributes and common container settings. Some fields are also present in container.securityContext.  Field values of container.securityContext take precedence over field values of PodSecurityContext.
@@ -50341,7 +51185,7 @@ type PodSpec struct {
 	HostNetwork *bool `pulumi:"hostNetwork"`
 	// Use the host's pid namespace. Optional: Default to false.
 	HostPID *bool `pulumi:"hostPID"`
-	// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host. This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.
+	// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host.
 	HostUsers *bool `pulumi:"hostUsers"`
 	// Specifies the hostname of the Pod If not specified, the pod's hostname will be set to a system-defined value.
 	Hostname *string `pulumi:"hostname"`
@@ -50395,6 +51239,8 @@ type PodSpec struct {
 	//
 	// SchedulingGates can only be set at pod creation time, and be removed only afterwards.
 	SchedulingGates []PodSchedulingGate `pulumi:"schedulingGates"`
+	// SchedulingGroup provides a reference to the immediate scheduling runtime grouping object that this Pod belongs to. This field is used by the scheduler to identify the group and apply the correct group scheduling policies. The association with a group also impacts other lifecycle aspects of a Pod that are relevant in a wider context of scheduling like preemption, resource attachment, etc. If not specified, the Pod is treated as a single unit in all of these aspects. The group object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a group object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
+	SchedulingGroup *PodSchedulingGroup `pulumi:"schedulingGroup"`
 	// SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.
 	SecurityContext *PodSecurityContext `pulumi:"securityContext"`
 	// DeprecatedServiceAccount is a deprecated alias for ServiceAccountName. Deprecated: Use serviceAccountName instead.
@@ -50415,8 +51261,6 @@ type PodSpec struct {
 	TopologySpreadConstraints []TopologySpreadConstraint `pulumi:"topologySpreadConstraints"`
 	// List of volumes that can be mounted by containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes
 	Volumes []Volume `pulumi:"volumes"`
-	// WorkloadRef provides a reference to the Workload object that this Pod belongs to. This field is used by the scheduler to identify the PodGroup and apply the correct group scheduling policies. The Workload object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a Workload object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
-	WorkloadRef *WorkloadReference `pulumi:"workloadRef"`
 }
 
 // PodSpecInput is an input type that accepts PodSpecArgs and PodSpecOutput values.
@@ -50456,7 +51300,7 @@ type PodSpecArgs struct {
 	HostNetwork pulumi.BoolPtrInput `pulumi:"hostNetwork"`
 	// Use the host's pid namespace. Optional: Default to false.
 	HostPID pulumi.BoolPtrInput `pulumi:"hostPID"`
-	// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host. This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.
+	// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host.
 	HostUsers pulumi.BoolPtrInput `pulumi:"hostUsers"`
 	// Specifies the hostname of the Pod If not specified, the pod's hostname will be set to a system-defined value.
 	Hostname pulumi.StringPtrInput `pulumi:"hostname"`
@@ -50510,6 +51354,8 @@ type PodSpecArgs struct {
 	//
 	// SchedulingGates can only be set at pod creation time, and be removed only afterwards.
 	SchedulingGates PodSchedulingGateArrayInput `pulumi:"schedulingGates"`
+	// SchedulingGroup provides a reference to the immediate scheduling runtime grouping object that this Pod belongs to. This field is used by the scheduler to identify the group and apply the correct group scheduling policies. The association with a group also impacts other lifecycle aspects of a Pod that are relevant in a wider context of scheduling like preemption, resource attachment, etc. If not specified, the Pod is treated as a single unit in all of these aspects. The group object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a group object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
+	SchedulingGroup PodSchedulingGroupPtrInput `pulumi:"schedulingGroup"`
 	// SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.
 	SecurityContext PodSecurityContextPtrInput `pulumi:"securityContext"`
 	// DeprecatedServiceAccount is a deprecated alias for ServiceAccountName. Deprecated: Use serviceAccountName instead.
@@ -50530,8 +51376,6 @@ type PodSpecArgs struct {
 	TopologySpreadConstraints TopologySpreadConstraintArrayInput `pulumi:"topologySpreadConstraints"`
 	// List of volumes that can be mounted by containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes
 	Volumes VolumeArrayInput `pulumi:"volumes"`
-	// WorkloadRef provides a reference to the Workload object that this Pod belongs to. This field is used by the scheduler to identify the PodGroup and apply the correct group scheduling policies. The Workload object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a Workload object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
-	WorkloadRef WorkloadReferencePtrInput `pulumi:"workloadRef"`
 }
 
 func (PodSpecArgs) ElementType() reflect.Type {
@@ -50672,7 +51516,7 @@ func (o PodSpecOutput) HostPID() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v PodSpec) *bool { return v.HostPID }).(pulumi.BoolPtrOutput)
 }
 
-// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host. This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.
+// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host.
 func (o PodSpecOutput) HostUsers() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v PodSpec) *bool { return v.HostUsers }).(pulumi.BoolPtrOutput)
 }
@@ -50783,6 +51627,11 @@ func (o PodSpecOutput) SchedulingGates() PodSchedulingGateArrayOutput {
 	return o.ApplyT(func(v PodSpec) []PodSchedulingGate { return v.SchedulingGates }).(PodSchedulingGateArrayOutput)
 }
 
+// SchedulingGroup provides a reference to the immediate scheduling runtime grouping object that this Pod belongs to. This field is used by the scheduler to identify the group and apply the correct group scheduling policies. The association with a group also impacts other lifecycle aspects of a Pod that are relevant in a wider context of scheduling like preemption, resource attachment, etc. If not specified, the Pod is treated as a single unit in all of these aspects. The group object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a group object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
+func (o PodSpecOutput) SchedulingGroup() PodSchedulingGroupPtrOutput {
+	return o.ApplyT(func(v PodSpec) *PodSchedulingGroup { return v.SchedulingGroup }).(PodSchedulingGroupPtrOutput)
+}
+
 // SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.
 func (o PodSpecOutput) SecurityContext() PodSecurityContextPtrOutput {
 	return o.ApplyT(func(v PodSpec) *PodSecurityContext { return v.SecurityContext }).(PodSecurityContextPtrOutput)
@@ -50831,11 +51680,6 @@ func (o PodSpecOutput) TopologySpreadConstraints() TopologySpreadConstraintArray
 // List of volumes that can be mounted by containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes
 func (o PodSpecOutput) Volumes() VolumeArrayOutput {
 	return o.ApplyT(func(v PodSpec) []Volume { return v.Volumes }).(VolumeArrayOutput)
-}
-
-// WorkloadRef provides a reference to the Workload object that this Pod belongs to. This field is used by the scheduler to identify the PodGroup and apply the correct group scheduling policies. The Workload object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a Workload object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
-func (o PodSpecOutput) WorkloadRef() WorkloadReferencePtrOutput {
-	return o.ApplyT(func(v PodSpec) *WorkloadReference { return v.WorkloadRef }).(WorkloadReferencePtrOutput)
 }
 
 type PodSpecPtrOutput struct{ *pulumi.OutputState }
@@ -50982,7 +51826,7 @@ func (o PodSpecPtrOutput) HostPID() pulumi.BoolPtrOutput {
 	}).(pulumi.BoolPtrOutput)
 }
 
-// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host. This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.
+// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host.
 func (o PodSpecPtrOutput) HostUsers() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v *PodSpec) *bool {
 		if v == nil {
@@ -51188,6 +52032,16 @@ func (o PodSpecPtrOutput) SchedulingGates() PodSchedulingGateArrayOutput {
 	}).(PodSchedulingGateArrayOutput)
 }
 
+// SchedulingGroup provides a reference to the immediate scheduling runtime grouping object that this Pod belongs to. This field is used by the scheduler to identify the group and apply the correct group scheduling policies. The association with a group also impacts other lifecycle aspects of a Pod that are relevant in a wider context of scheduling like preemption, resource attachment, etc. If not specified, the Pod is treated as a single unit in all of these aspects. The group object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a group object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
+func (o PodSpecPtrOutput) SchedulingGroup() PodSchedulingGroupPtrOutput {
+	return o.ApplyT(func(v *PodSpec) *PodSchedulingGroup {
+		if v == nil {
+			return nil
+		}
+		return v.SchedulingGroup
+	}).(PodSchedulingGroupPtrOutput)
+}
+
 // SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.
 func (o PodSpecPtrOutput) SecurityContext() PodSecurityContextPtrOutput {
 	return o.ApplyT(func(v *PodSpec) *PodSecurityContext {
@@ -51288,16 +52142,6 @@ func (o PodSpecPtrOutput) Volumes() VolumeArrayOutput {
 	}).(VolumeArrayOutput)
 }
 
-// WorkloadRef provides a reference to the Workload object that this Pod belongs to. This field is used by the scheduler to identify the PodGroup and apply the correct group scheduling policies. The Workload object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a Workload object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
-func (o PodSpecPtrOutput) WorkloadRef() WorkloadReferencePtrOutput {
-	return o.ApplyT(func(v *PodSpec) *WorkloadReference {
-		if v == nil {
-			return nil
-		}
-		return v.WorkloadRef
-	}).(WorkloadReferencePtrOutput)
-}
-
 // PodSpec is a description of a pod.
 type PodSpecPatch struct {
 	// Optional duration in seconds the pod may be active on the node relative to StartTime before the system will actively try to mark it failed and kill associated containers. Value must be a positive integer.
@@ -51324,7 +52168,7 @@ type PodSpecPatch struct {
 	HostNetwork *bool `pulumi:"hostNetwork"`
 	// Use the host's pid namespace. Optional: Default to false.
 	HostPID *bool `pulumi:"hostPID"`
-	// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host. This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.
+	// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host.
 	HostUsers *bool `pulumi:"hostUsers"`
 	// Specifies the hostname of the Pod If not specified, the pod's hostname will be set to a system-defined value.
 	Hostname *string `pulumi:"hostname"`
@@ -51378,6 +52222,8 @@ type PodSpecPatch struct {
 	//
 	// SchedulingGates can only be set at pod creation time, and be removed only afterwards.
 	SchedulingGates []PodSchedulingGatePatch `pulumi:"schedulingGates"`
+	// SchedulingGroup provides a reference to the immediate scheduling runtime grouping object that this Pod belongs to. This field is used by the scheduler to identify the group and apply the correct group scheduling policies. The association with a group also impacts other lifecycle aspects of a Pod that are relevant in a wider context of scheduling like preemption, resource attachment, etc. If not specified, the Pod is treated as a single unit in all of these aspects. The group object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a group object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
+	SchedulingGroup *PodSchedulingGroupPatch `pulumi:"schedulingGroup"`
 	// SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.
 	SecurityContext *PodSecurityContextPatch `pulumi:"securityContext"`
 	// DeprecatedServiceAccount is a deprecated alias for ServiceAccountName. Deprecated: Use serviceAccountName instead.
@@ -51398,8 +52244,6 @@ type PodSpecPatch struct {
 	TopologySpreadConstraints []TopologySpreadConstraintPatch `pulumi:"topologySpreadConstraints"`
 	// List of volumes that can be mounted by containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes
 	Volumes []VolumePatch `pulumi:"volumes"`
-	// WorkloadRef provides a reference to the Workload object that this Pod belongs to. This field is used by the scheduler to identify the PodGroup and apply the correct group scheduling policies. The Workload object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a Workload object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
-	WorkloadRef *WorkloadReferencePatch `pulumi:"workloadRef"`
 }
 
 // PodSpecPatchInput is an input type that accepts PodSpecPatchArgs and PodSpecPatchOutput values.
@@ -51439,7 +52283,7 @@ type PodSpecPatchArgs struct {
 	HostNetwork pulumi.BoolPtrInput `pulumi:"hostNetwork"`
 	// Use the host's pid namespace. Optional: Default to false.
 	HostPID pulumi.BoolPtrInput `pulumi:"hostPID"`
-	// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host. This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.
+	// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host.
 	HostUsers pulumi.BoolPtrInput `pulumi:"hostUsers"`
 	// Specifies the hostname of the Pod If not specified, the pod's hostname will be set to a system-defined value.
 	Hostname pulumi.StringPtrInput `pulumi:"hostname"`
@@ -51493,6 +52337,8 @@ type PodSpecPatchArgs struct {
 	//
 	// SchedulingGates can only be set at pod creation time, and be removed only afterwards.
 	SchedulingGates PodSchedulingGatePatchArrayInput `pulumi:"schedulingGates"`
+	// SchedulingGroup provides a reference to the immediate scheduling runtime grouping object that this Pod belongs to. This field is used by the scheduler to identify the group and apply the correct group scheduling policies. The association with a group also impacts other lifecycle aspects of a Pod that are relevant in a wider context of scheduling like preemption, resource attachment, etc. If not specified, the Pod is treated as a single unit in all of these aspects. The group object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a group object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
+	SchedulingGroup PodSchedulingGroupPatchPtrInput `pulumi:"schedulingGroup"`
 	// SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.
 	SecurityContext PodSecurityContextPatchPtrInput `pulumi:"securityContext"`
 	// DeprecatedServiceAccount is a deprecated alias for ServiceAccountName. Deprecated: Use serviceAccountName instead.
@@ -51513,8 +52359,6 @@ type PodSpecPatchArgs struct {
 	TopologySpreadConstraints TopologySpreadConstraintPatchArrayInput `pulumi:"topologySpreadConstraints"`
 	// List of volumes that can be mounted by containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes
 	Volumes VolumePatchArrayInput `pulumi:"volumes"`
-	// WorkloadRef provides a reference to the Workload object that this Pod belongs to. This field is used by the scheduler to identify the PodGroup and apply the correct group scheduling policies. The Workload object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a Workload object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
-	WorkloadRef WorkloadReferencePatchPtrInput `pulumi:"workloadRef"`
 }
 
 func (PodSpecPatchArgs) ElementType() reflect.Type {
@@ -51655,7 +52499,7 @@ func (o PodSpecPatchOutput) HostPID() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v PodSpecPatch) *bool { return v.HostPID }).(pulumi.BoolPtrOutput)
 }
 
-// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host. This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.
+// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host.
 func (o PodSpecPatchOutput) HostUsers() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v PodSpecPatch) *bool { return v.HostUsers }).(pulumi.BoolPtrOutput)
 }
@@ -51766,6 +52610,11 @@ func (o PodSpecPatchOutput) SchedulingGates() PodSchedulingGatePatchArrayOutput 
 	return o.ApplyT(func(v PodSpecPatch) []PodSchedulingGatePatch { return v.SchedulingGates }).(PodSchedulingGatePatchArrayOutput)
 }
 
+// SchedulingGroup provides a reference to the immediate scheduling runtime grouping object that this Pod belongs to. This field is used by the scheduler to identify the group and apply the correct group scheduling policies. The association with a group also impacts other lifecycle aspects of a Pod that are relevant in a wider context of scheduling like preemption, resource attachment, etc. If not specified, the Pod is treated as a single unit in all of these aspects. The group object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a group object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
+func (o PodSpecPatchOutput) SchedulingGroup() PodSchedulingGroupPatchPtrOutput {
+	return o.ApplyT(func(v PodSpecPatch) *PodSchedulingGroupPatch { return v.SchedulingGroup }).(PodSchedulingGroupPatchPtrOutput)
+}
+
 // SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.
 func (o PodSpecPatchOutput) SecurityContext() PodSecurityContextPatchPtrOutput {
 	return o.ApplyT(func(v PodSpecPatch) *PodSecurityContextPatch { return v.SecurityContext }).(PodSecurityContextPatchPtrOutput)
@@ -51814,11 +52663,6 @@ func (o PodSpecPatchOutput) TopologySpreadConstraints() TopologySpreadConstraint
 // List of volumes that can be mounted by containers belonging to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes
 func (o PodSpecPatchOutput) Volumes() VolumePatchArrayOutput {
 	return o.ApplyT(func(v PodSpecPatch) []VolumePatch { return v.Volumes }).(VolumePatchArrayOutput)
-}
-
-// WorkloadRef provides a reference to the Workload object that this Pod belongs to. This field is used by the scheduler to identify the PodGroup and apply the correct group scheduling policies. The Workload object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a Workload object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
-func (o PodSpecPatchOutput) WorkloadRef() WorkloadReferencePatchPtrOutput {
-	return o.ApplyT(func(v PodSpecPatch) *WorkloadReferencePatch { return v.WorkloadRef }).(WorkloadReferencePatchPtrOutput)
 }
 
 type PodSpecPatchPtrOutput struct{ *pulumi.OutputState }
@@ -51965,7 +52809,7 @@ func (o PodSpecPatchPtrOutput) HostPID() pulumi.BoolPtrOutput {
 	}).(pulumi.BoolPtrOutput)
 }
 
-// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host. This field is alpha-level and is only honored by servers that enable the UserNamespacesSupport feature.
+// Use the host's user namespace. Optional: Default to true. If set to true or not present, the pod will be run in the host user namespace, useful for when the pod needs a feature only available to the host user namespace, such as loading a kernel module with CAP_SYS_MODULE. When set to false, a new userns is created for the pod. Setting false is useful for mitigating container breakout vulnerabilities even allowing users to run their containers as root without actually having root privileges on the host.
 func (o PodSpecPatchPtrOutput) HostUsers() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v *PodSpecPatch) *bool {
 		if v == nil {
@@ -52171,6 +53015,16 @@ func (o PodSpecPatchPtrOutput) SchedulingGates() PodSchedulingGatePatchArrayOutp
 	}).(PodSchedulingGatePatchArrayOutput)
 }
 
+// SchedulingGroup provides a reference to the immediate scheduling runtime grouping object that this Pod belongs to. This field is used by the scheduler to identify the group and apply the correct group scheduling policies. The association with a group also impacts other lifecycle aspects of a Pod that are relevant in a wider context of scheduling like preemption, resource attachment, etc. If not specified, the Pod is treated as a single unit in all of these aspects. The group object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a group object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
+func (o PodSpecPatchPtrOutput) SchedulingGroup() PodSchedulingGroupPatchPtrOutput {
+	return o.ApplyT(func(v *PodSpecPatch) *PodSchedulingGroupPatch {
+		if v == nil {
+			return nil
+		}
+		return v.SchedulingGroup
+	}).(PodSchedulingGroupPatchPtrOutput)
+}
+
 // SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.
 func (o PodSpecPatchPtrOutput) SecurityContext() PodSecurityContextPatchPtrOutput {
 	return o.ApplyT(func(v *PodSpecPatch) *PodSecurityContextPatch {
@@ -52271,16 +53125,6 @@ func (o PodSpecPatchPtrOutput) Volumes() VolumePatchArrayOutput {
 	}).(VolumePatchArrayOutput)
 }
 
-// WorkloadRef provides a reference to the Workload object that this Pod belongs to. This field is used by the scheduler to identify the PodGroup and apply the correct group scheduling policies. The Workload object referenced by this field may not exist at the time the Pod is created. This field is immutable, but a Workload object with the same name may be recreated with different policies. Doing this during pod scheduling may result in the placement not conforming to the expected policies.
-func (o PodSpecPatchPtrOutput) WorkloadRef() WorkloadReferencePatchPtrOutput {
-	return o.ApplyT(func(v *PodSpecPatch) *WorkloadReferencePatch {
-		if v == nil {
-			return nil
-		}
-		return v.WorkloadRef
-	}).(WorkloadReferencePatchPtrOutput)
-}
-
 // PodStatus represents information about the status of a pod. Status may trail the actual state of a system, especially if the node that hosts the pod cannot contact the control plane.
 type PodStatus struct {
 	// AllocatedResources is the total requests allocated for this pod by the node. If pod-level requests are not set, this will be the total requests aggregated across containers in the pod.
@@ -52301,6 +53145,8 @@ type PodStatus struct {
 	InitContainerStatuses []ContainerStatus `pulumi:"initContainerStatuses"`
 	// A human readable message indicating details about why the pod is in this condition.
 	Message *string `pulumi:"message"`
+	// NodeAllocatableResourceClaimStatuses contains the status of node-allocatable resources that were allocated for this pod through DRA claims. This includes resources currently reported in v1.Node `status.allocatable` that are not extended resources (see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#extended-resources). Examples include "cpu", "memory", "ephemeral-storage", and hugepages.
+	NodeAllocatableResourceClaimStatuses []NodeAllocatableResourceClaimStatus `pulumi:"nodeAllocatableResourceClaimStatuses"`
 	// nominatedNodeName is set only when this pod preempts other pods on the node, but it cannot be scheduled right away as preemption victims receive their graceful termination periods. This field does not guarantee that the pod will be scheduled on this node. Scheduler may decide to place the pod elsewhere if other nodes become available sooner. Scheduler may also decide to give the resources on this node to a higher priority pod that is created after preemption. As a result, this field may be different than PodSpec.nodeName when the pod is scheduled.
 	NominatedNodeName *string `pulumi:"nominatedNodeName"`
 	// If set, this represents the .metadata.generation that the pod status was set based upon. The PodObservedGenerationTracking feature gate must be enabled to use this field.
@@ -52360,6 +53206,8 @@ type PodStatusArgs struct {
 	InitContainerStatuses ContainerStatusArrayInput `pulumi:"initContainerStatuses"`
 	// A human readable message indicating details about why the pod is in this condition.
 	Message pulumi.StringPtrInput `pulumi:"message"`
+	// NodeAllocatableResourceClaimStatuses contains the status of node-allocatable resources that were allocated for this pod through DRA claims. This includes resources currently reported in v1.Node `status.allocatable` that are not extended resources (see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#extended-resources). Examples include "cpu", "memory", "ephemeral-storage", and hugepages.
+	NodeAllocatableResourceClaimStatuses NodeAllocatableResourceClaimStatusArrayInput `pulumi:"nodeAllocatableResourceClaimStatuses"`
 	// nominatedNodeName is set only when this pod preempts other pods on the node, but it cannot be scheduled right away as preemption victims receive their graceful termination periods. This field does not guarantee that the pod will be scheduled on this node. Scheduler may decide to place the pod elsewhere if other nodes become available sooner. Scheduler may also decide to give the resources on this node to a higher priority pod that is created after preemption. As a result, this field may be different than PodSpec.nodeName when the pod is scheduled.
 	NominatedNodeName pulumi.StringPtrInput `pulumi:"nominatedNodeName"`
 	// If set, this represents the .metadata.generation that the pod status was set based upon. The PodObservedGenerationTracking feature gate must be enabled to use this field.
@@ -52509,6 +53357,11 @@ func (o PodStatusOutput) InitContainerStatuses() ContainerStatusArrayOutput {
 // A human readable message indicating details about why the pod is in this condition.
 func (o PodStatusOutput) Message() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v PodStatus) *string { return v.Message }).(pulumi.StringPtrOutput)
+}
+
+// NodeAllocatableResourceClaimStatuses contains the status of node-allocatable resources that were allocated for this pod through DRA claims. This includes resources currently reported in v1.Node `status.allocatable` that are not extended resources (see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#extended-resources). Examples include "cpu", "memory", "ephemeral-storage", and hugepages.
+func (o PodStatusOutput) NodeAllocatableResourceClaimStatuses() NodeAllocatableResourceClaimStatusArrayOutput {
+	return o.ApplyT(func(v PodStatus) []NodeAllocatableResourceClaimStatus { return v.NodeAllocatableResourceClaimStatuses }).(NodeAllocatableResourceClaimStatusArrayOutput)
 }
 
 // nominatedNodeName is set only when this pod preempts other pods on the node, but it cannot be scheduled right away as preemption victims receive their graceful termination periods. This field does not guarantee that the pod will be scheduled on this node. Scheduler may decide to place the pod elsewhere if other nodes become available sooner. Scheduler may also decide to give the resources on this node to a higher priority pod that is created after preemption. As a result, this field may be different than PodSpec.nodeName when the pod is scheduled.
@@ -52684,6 +53537,16 @@ func (o PodStatusPtrOutput) Message() pulumi.StringPtrOutput {
 	}).(pulumi.StringPtrOutput)
 }
 
+// NodeAllocatableResourceClaimStatuses contains the status of node-allocatable resources that were allocated for this pod through DRA claims. This includes resources currently reported in v1.Node `status.allocatable` that are not extended resources (see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#extended-resources). Examples include "cpu", "memory", "ephemeral-storage", and hugepages.
+func (o PodStatusPtrOutput) NodeAllocatableResourceClaimStatuses() NodeAllocatableResourceClaimStatusArrayOutput {
+	return o.ApplyT(func(v *PodStatus) []NodeAllocatableResourceClaimStatus {
+		if v == nil {
+			return nil
+		}
+		return v.NodeAllocatableResourceClaimStatuses
+	}).(NodeAllocatableResourceClaimStatusArrayOutput)
+}
+
 // nominatedNodeName is set only when this pod preempts other pods on the node, but it cannot be scheduled right away as preemption victims receive their graceful termination periods. This field does not guarantee that the pod will be scheduled on this node. Scheduler may decide to place the pod elsewhere if other nodes become available sooner. Scheduler may also decide to give the resources on this node to a higher priority pod that is created after preemption. As a result, this field may be different than PodSpec.nodeName when the pod is scheduled.
 func (o PodStatusPtrOutput) NominatedNodeName() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v *PodStatus) *string {
@@ -52818,6 +53681,8 @@ type PodStatusPatch struct {
 	InitContainerStatuses []ContainerStatusPatch `pulumi:"initContainerStatuses"`
 	// A human readable message indicating details about why the pod is in this condition.
 	Message *string `pulumi:"message"`
+	// NodeAllocatableResourceClaimStatuses contains the status of node-allocatable resources that were allocated for this pod through DRA claims. This includes resources currently reported in v1.Node `status.allocatable` that are not extended resources (see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#extended-resources). Examples include "cpu", "memory", "ephemeral-storage", and hugepages.
+	NodeAllocatableResourceClaimStatuses []NodeAllocatableResourceClaimStatusPatch `pulumi:"nodeAllocatableResourceClaimStatuses"`
 	// nominatedNodeName is set only when this pod preempts other pods on the node, but it cannot be scheduled right away as preemption victims receive their graceful termination periods. This field does not guarantee that the pod will be scheduled on this node. Scheduler may decide to place the pod elsewhere if other nodes become available sooner. Scheduler may also decide to give the resources on this node to a higher priority pod that is created after preemption. As a result, this field may be different than PodSpec.nodeName when the pod is scheduled.
 	NominatedNodeName *string `pulumi:"nominatedNodeName"`
 	// If set, this represents the .metadata.generation that the pod status was set based upon. The PodObservedGenerationTracking feature gate must be enabled to use this field.
@@ -52877,6 +53742,8 @@ type PodStatusPatchArgs struct {
 	InitContainerStatuses ContainerStatusPatchArrayInput `pulumi:"initContainerStatuses"`
 	// A human readable message indicating details about why the pod is in this condition.
 	Message pulumi.StringPtrInput `pulumi:"message"`
+	// NodeAllocatableResourceClaimStatuses contains the status of node-allocatable resources that were allocated for this pod through DRA claims. This includes resources currently reported in v1.Node `status.allocatable` that are not extended resources (see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#extended-resources). Examples include "cpu", "memory", "ephemeral-storage", and hugepages.
+	NodeAllocatableResourceClaimStatuses NodeAllocatableResourceClaimStatusPatchArrayInput `pulumi:"nodeAllocatableResourceClaimStatuses"`
 	// nominatedNodeName is set only when this pod preempts other pods on the node, but it cannot be scheduled right away as preemption victims receive their graceful termination periods. This field does not guarantee that the pod will be scheduled on this node. Scheduler may decide to place the pod elsewhere if other nodes become available sooner. Scheduler may also decide to give the resources on this node to a higher priority pod that is created after preemption. As a result, this field may be different than PodSpec.nodeName when the pod is scheduled.
 	NominatedNodeName pulumi.StringPtrInput `pulumi:"nominatedNodeName"`
 	// If set, this represents the .metadata.generation that the pod status was set based upon. The PodObservedGenerationTracking feature gate must be enabled to use this field.
@@ -53026,6 +53893,13 @@ func (o PodStatusPatchOutput) InitContainerStatuses() ContainerStatusPatchArrayO
 // A human readable message indicating details about why the pod is in this condition.
 func (o PodStatusPatchOutput) Message() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v PodStatusPatch) *string { return v.Message }).(pulumi.StringPtrOutput)
+}
+
+// NodeAllocatableResourceClaimStatuses contains the status of node-allocatable resources that were allocated for this pod through DRA claims. This includes resources currently reported in v1.Node `status.allocatable` that are not extended resources (see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#extended-resources). Examples include "cpu", "memory", "ephemeral-storage", and hugepages.
+func (o PodStatusPatchOutput) NodeAllocatableResourceClaimStatuses() NodeAllocatableResourceClaimStatusPatchArrayOutput {
+	return o.ApplyT(func(v PodStatusPatch) []NodeAllocatableResourceClaimStatusPatch {
+		return v.NodeAllocatableResourceClaimStatuses
+	}).(NodeAllocatableResourceClaimStatusPatchArrayOutput)
 }
 
 // nominatedNodeName is set only when this pod preempts other pods on the node, but it cannot be scheduled right away as preemption victims receive their graceful termination periods. This field does not guarantee that the pod will be scheduled on this node. Scheduler may decide to place the pod elsewhere if other nodes become available sooner. Scheduler may also decide to give the resources on this node to a higher priority pod that is created after preemption. As a result, this field may be different than PodSpec.nodeName when the pod is scheduled.
@@ -53199,6 +54073,16 @@ func (o PodStatusPatchPtrOutput) Message() pulumi.StringPtrOutput {
 		}
 		return v.Message
 	}).(pulumi.StringPtrOutput)
+}
+
+// NodeAllocatableResourceClaimStatuses contains the status of node-allocatable resources that were allocated for this pod through DRA claims. This includes resources currently reported in v1.Node `status.allocatable` that are not extended resources (see https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#extended-resources). Examples include "cpu", "memory", "ephemeral-storage", and hugepages.
+func (o PodStatusPatchPtrOutput) NodeAllocatableResourceClaimStatuses() NodeAllocatableResourceClaimStatusPatchArrayOutput {
+	return o.ApplyT(func(v *PodStatusPatch) []NodeAllocatableResourceClaimStatusPatch {
+		if v == nil {
+			return nil
+		}
+		return v.NodeAllocatableResourceClaimStatuses
+	}).(NodeAllocatableResourceClaimStatusPatchArrayOutput)
 }
 
 // nominatedNodeName is set only when this pod preempts other pods on the node, but it cannot be scheduled right away as preemption victims receive their graceful termination periods. This field does not guarantee that the pod will be scheduled on this node. Scheduler may decide to place the pod elsewhere if other nodes become available sooner. Scheduler may also decide to give the resources on this node to a higher priority pod that is created after preemption. As a result, this field may be different than PodSpec.nodeName when the pod is scheduled.
@@ -59287,6 +60171,8 @@ type ResourceHealth struct {
 	//
 	// In future we may want to introduce the PermanentlyUnhealthy Status.
 	Health *string `pulumi:"health"`
+	// Message provides human-readable context for Health (e.g. "ECC error count exceeded threshold"). This field is populated by the kubelet when ResourceHealthStatusMessage is enabled if the DRA plugin returns a message, and is null otherwise.
+	Message *string `pulumi:"message"`
 	// ResourceID is the unique identifier of the resource. See the ResourceID type for more information.
 	ResourceID string `pulumi:"resourceID"`
 }
@@ -59314,6 +60200,8 @@ type ResourceHealthArgs struct {
 	//
 	// In future we may want to introduce the PermanentlyUnhealthy Status.
 	Health pulumi.StringPtrInput `pulumi:"health"`
+	// Message provides human-readable context for Health (e.g. "ECC error count exceeded threshold"). This field is populated by the kubelet when ResourceHealthStatusMessage is enabled if the DRA plugin returns a message, and is null otherwise.
+	Message pulumi.StringPtrInput `pulumi:"message"`
 	// ResourceID is the unique identifier of the resource. See the ResourceID type for more information.
 	ResourceID pulumi.StringInput `pulumi:"resourceID"`
 }
@@ -59383,6 +60271,11 @@ func (o ResourceHealthOutput) Health() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v ResourceHealth) *string { return v.Health }).(pulumi.StringPtrOutput)
 }
 
+// Message provides human-readable context for Health (e.g. "ECC error count exceeded threshold"). This field is populated by the kubelet when ResourceHealthStatusMessage is enabled if the DRA plugin returns a message, and is null otherwise.
+func (o ResourceHealthOutput) Message() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v ResourceHealth) *string { return v.Message }).(pulumi.StringPtrOutput)
+}
+
 // ResourceID is the unique identifier of the resource. See the ResourceID type for more information.
 func (o ResourceHealthOutput) ResourceID() pulumi.StringOutput {
 	return o.ApplyT(func(v ResourceHealth) string { return v.ResourceID }).(pulumi.StringOutput)
@@ -59420,6 +60313,8 @@ type ResourceHealthPatch struct {
 	//
 	// In future we may want to introduce the PermanentlyUnhealthy Status.
 	Health *string `pulumi:"health"`
+	// Message provides human-readable context for Health (e.g. "ECC error count exceeded threshold"). This field is populated by the kubelet when ResourceHealthStatusMessage is enabled if the DRA plugin returns a message, and is null otherwise.
+	Message *string `pulumi:"message"`
 	// ResourceID is the unique identifier of the resource. See the ResourceID type for more information.
 	ResourceID *string `pulumi:"resourceID"`
 }
@@ -59447,6 +60342,8 @@ type ResourceHealthPatchArgs struct {
 	//
 	// In future we may want to introduce the PermanentlyUnhealthy Status.
 	Health pulumi.StringPtrInput `pulumi:"health"`
+	// Message provides human-readable context for Health (e.g. "ECC error count exceeded threshold"). This field is populated by the kubelet when ResourceHealthStatusMessage is enabled if the DRA plugin returns a message, and is null otherwise.
+	Message pulumi.StringPtrInput `pulumi:"message"`
 	// ResourceID is the unique identifier of the resource. See the ResourceID type for more information.
 	ResourceID pulumi.StringPtrInput `pulumi:"resourceID"`
 }
@@ -59514,6 +60411,11 @@ func (o ResourceHealthPatchOutput) ToResourceHealthPatchOutputWithContext(ctx co
 // In future we may want to introduce the PermanentlyUnhealthy Status.
 func (o ResourceHealthPatchOutput) Health() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v ResourceHealthPatch) *string { return v.Health }).(pulumi.StringPtrOutput)
+}
+
+// Message provides human-readable context for Health (e.g. "ECC error count exceeded threshold"). This field is populated by the kubelet when ResourceHealthStatusMessage is enabled if the DRA plugin returns a message, and is null otherwise.
+func (o ResourceHealthPatchOutput) Message() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v ResourceHealthPatch) *string { return v.Message }).(pulumi.StringPtrOutput)
 }
 
 // ResourceID is the unique identifier of the resource. See the ResourceID type for more information.
@@ -65811,7 +66713,7 @@ type SecurityContext struct {
 	Capabilities *Capabilities `pulumi:"capabilities"`
 	// Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false. Note that this field cannot be set when spec.os.name is windows.
 	Privileged *bool `pulumi:"privileged"`
-	// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
+	// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. Note that this field cannot be set when spec.os.name is windows.
 	ProcMount *string `pulumi:"procMount"`
 	// Whether this container has a read-only root filesystem. Default is false. Note that this field cannot be set when spec.os.name is windows.
 	ReadOnlyRootFilesystem *bool `pulumi:"readOnlyRootFilesystem"`
@@ -65850,7 +66752,7 @@ type SecurityContextArgs struct {
 	Capabilities CapabilitiesPtrInput `pulumi:"capabilities"`
 	// Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false. Note that this field cannot be set when spec.os.name is windows.
 	Privileged pulumi.BoolPtrInput `pulumi:"privileged"`
-	// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
+	// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. Note that this field cannot be set when spec.os.name is windows.
 	ProcMount pulumi.StringPtrInput `pulumi:"procMount"`
 	// Whether this container has a read-only root filesystem. Default is false. Note that this field cannot be set when spec.os.name is windows.
 	ReadOnlyRootFilesystem pulumi.BoolPtrInput `pulumi:"readOnlyRootFilesystem"`
@@ -65966,7 +66868,7 @@ func (o SecurityContextOutput) Privileged() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v SecurityContext) *bool { return v.Privileged }).(pulumi.BoolPtrOutput)
 }
 
-// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
+// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. Note that this field cannot be set when spec.os.name is windows.
 func (o SecurityContextOutput) ProcMount() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v SecurityContext) *string { return v.ProcMount }).(pulumi.StringPtrOutput)
 }
@@ -66070,7 +66972,7 @@ func (o SecurityContextPtrOutput) Privileged() pulumi.BoolPtrOutput {
 	}).(pulumi.BoolPtrOutput)
 }
 
-// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
+// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. Note that this field cannot be set when spec.os.name is windows.
 func (o SecurityContextPtrOutput) ProcMount() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v *SecurityContext) *string {
 		if v == nil {
@@ -66160,7 +67062,7 @@ type SecurityContextPatch struct {
 	Capabilities *CapabilitiesPatch `pulumi:"capabilities"`
 	// Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false. Note that this field cannot be set when spec.os.name is windows.
 	Privileged *bool `pulumi:"privileged"`
-	// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
+	// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. Note that this field cannot be set when spec.os.name is windows.
 	ProcMount *string `pulumi:"procMount"`
 	// Whether this container has a read-only root filesystem. Default is false. Note that this field cannot be set when spec.os.name is windows.
 	ReadOnlyRootFilesystem *bool `pulumi:"readOnlyRootFilesystem"`
@@ -66199,7 +67101,7 @@ type SecurityContextPatchArgs struct {
 	Capabilities CapabilitiesPatchPtrInput `pulumi:"capabilities"`
 	// Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false. Note that this field cannot be set when spec.os.name is windows.
 	Privileged pulumi.BoolPtrInput `pulumi:"privileged"`
-	// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
+	// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. Note that this field cannot be set when spec.os.name is windows.
 	ProcMount pulumi.StringPtrInput `pulumi:"procMount"`
 	// Whether this container has a read-only root filesystem. Default is false. Note that this field cannot be set when spec.os.name is windows.
 	ReadOnlyRootFilesystem pulumi.BoolPtrInput `pulumi:"readOnlyRootFilesystem"`
@@ -66315,7 +67217,7 @@ func (o SecurityContextPatchOutput) Privileged() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v SecurityContextPatch) *bool { return v.Privileged }).(pulumi.BoolPtrOutput)
 }
 
-// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
+// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. Note that this field cannot be set when spec.os.name is windows.
 func (o SecurityContextPatchOutput) ProcMount() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v SecurityContextPatch) *string { return v.ProcMount }).(pulumi.StringPtrOutput)
 }
@@ -66419,7 +67321,7 @@ func (o SecurityContextPatchPtrOutput) Privileged() pulumi.BoolPtrOutput {
 	}).(pulumi.BoolPtrOutput)
 }
 
-// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
+// procMount denotes the type of proc mount to use for the containers. The default value is Default which uses the container runtime defaults for readonly paths and masked paths. Note that this field cannot be set when spec.os.name is windows.
 func (o SecurityContextPatchPtrOutput) ProcMount() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v *SecurityContextPatch) *string {
 		if v == nil {
@@ -73470,7 +74372,7 @@ type Volume struct {
 	//
 	// - Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails. - Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present. - IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
 	//
-	// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro) and non-executable files (noexec). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+	// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 	Image *ImageVolumeSource `pulumi:"image"`
 	// iscsi represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes/#iscsi
 	Iscsi *ISCSIVolumeSource `pulumi:"iscsi"`
@@ -73482,7 +74384,7 @@ type Volume struct {
 	PersistentVolumeClaim *PersistentVolumeClaimVolumeSource `pulumi:"persistentVolumeClaim"`
 	// photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
 	PhotonPersistentDisk *PhotonPersistentDiskVolumeSource `pulumi:"photonPersistentDisk"`
-	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 	PortworxVolume *PortworxVolumeSource `pulumi:"portworxVolume"`
 	// projected items for all in one resources secrets, configmaps, and downward API
 	Projected *ProjectedVolumeSource `pulumi:"projected"`
@@ -73564,7 +74466,7 @@ type VolumeArgs struct {
 	//
 	// - Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails. - Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present. - IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
 	//
-	// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro) and non-executable files (noexec). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+	// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 	Image ImageVolumeSourcePtrInput `pulumi:"image"`
 	// iscsi represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes/#iscsi
 	Iscsi ISCSIVolumeSourcePtrInput `pulumi:"iscsi"`
@@ -73576,7 +74478,7 @@ type VolumeArgs struct {
 	PersistentVolumeClaim PersistentVolumeClaimVolumeSourcePtrInput `pulumi:"persistentVolumeClaim"`
 	// photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
 	PhotonPersistentDisk PhotonPersistentDiskVolumeSourcePtrInput `pulumi:"photonPersistentDisk"`
-	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 	PortworxVolume PortworxVolumeSourcePtrInput `pulumi:"portworxVolume"`
 	// projected items for all in one resources secrets, configmaps, and downward API
 	Projected ProjectedVolumeSourcePtrInput `pulumi:"projected"`
@@ -73751,7 +74653,7 @@ func (o VolumeOutput) HostPath() HostPathVolumeSourcePtrOutput {
 //
 // - Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails. - Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present. - IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
 //
-// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro) and non-executable files (noexec). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 func (o VolumeOutput) Image() ImageVolumeSourcePtrOutput {
 	return o.ApplyT(func(v Volume) *ImageVolumeSource { return v.Image }).(ImageVolumeSourcePtrOutput)
 }
@@ -73781,7 +74683,7 @@ func (o VolumeOutput) PhotonPersistentDisk() PhotonPersistentDiskVolumeSourcePtr
 	return o.ApplyT(func(v Volume) *PhotonPersistentDiskVolumeSource { return v.PhotonPersistentDisk }).(PhotonPersistentDiskVolumeSourcePtrOutput)
 }
 
-// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 func (o VolumeOutput) PortworxVolume() PortworxVolumeSourcePtrOutput {
 	return o.ApplyT(func(v Volume) *PortworxVolumeSource { return v.PortworxVolume }).(PortworxVolumeSourcePtrOutput)
 }
@@ -74425,6 +75327,8 @@ type VolumeMountStatus struct {
 	ReadOnly *bool `pulumi:"readOnly"`
 	// RecursiveReadOnly must be set to Disabled, Enabled, or unspecified (for non-readonly mounts). An IfPossible value in the original VolumeMount must be translated to Disabled or Enabled, depending on the mount result.
 	RecursiveReadOnly *string `pulumi:"recursiveReadOnly"`
+	// volumeStatus represents volume-type-specific status about the mounted volume.
+	VolumeStatus *VolumeStatus `pulumi:"volumeStatus"`
 }
 
 // VolumeMountStatusInput is an input type that accepts VolumeMountStatusArgs and VolumeMountStatusOutput values.
@@ -74448,6 +75352,8 @@ type VolumeMountStatusArgs struct {
 	ReadOnly pulumi.BoolPtrInput `pulumi:"readOnly"`
 	// RecursiveReadOnly must be set to Disabled, Enabled, or unspecified (for non-readonly mounts). An IfPossible value in the original VolumeMount must be translated to Disabled or Enabled, depending on the mount result.
 	RecursiveReadOnly pulumi.StringPtrInput `pulumi:"recursiveReadOnly"`
+	// volumeStatus represents volume-type-specific status about the mounted volume.
+	VolumeStatus VolumeStatusPtrInput `pulumi:"volumeStatus"`
 }
 
 func (VolumeMountStatusArgs) ElementType() reflect.Type {
@@ -74522,6 +75428,11 @@ func (o VolumeMountStatusOutput) RecursiveReadOnly() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v VolumeMountStatus) *string { return v.RecursiveReadOnly }).(pulumi.StringPtrOutput)
 }
 
+// volumeStatus represents volume-type-specific status about the mounted volume.
+func (o VolumeMountStatusOutput) VolumeStatus() VolumeStatusPtrOutput {
+	return o.ApplyT(func(v VolumeMountStatus) *VolumeStatus { return v.VolumeStatus }).(VolumeStatusPtrOutput)
+}
+
 type VolumeMountStatusArrayOutput struct{ *pulumi.OutputState }
 
 func (VolumeMountStatusArrayOutput) ElementType() reflect.Type {
@@ -74552,6 +75463,8 @@ type VolumeMountStatusPatch struct {
 	ReadOnly *bool `pulumi:"readOnly"`
 	// RecursiveReadOnly must be set to Disabled, Enabled, or unspecified (for non-readonly mounts). An IfPossible value in the original VolumeMount must be translated to Disabled or Enabled, depending on the mount result.
 	RecursiveReadOnly *string `pulumi:"recursiveReadOnly"`
+	// volumeStatus represents volume-type-specific status about the mounted volume.
+	VolumeStatus *VolumeStatusPatch `pulumi:"volumeStatus"`
 }
 
 // VolumeMountStatusPatchInput is an input type that accepts VolumeMountStatusPatchArgs and VolumeMountStatusPatchOutput values.
@@ -74575,6 +75488,8 @@ type VolumeMountStatusPatchArgs struct {
 	ReadOnly pulumi.BoolPtrInput `pulumi:"readOnly"`
 	// RecursiveReadOnly must be set to Disabled, Enabled, or unspecified (for non-readonly mounts). An IfPossible value in the original VolumeMount must be translated to Disabled or Enabled, depending on the mount result.
 	RecursiveReadOnly pulumi.StringPtrInput `pulumi:"recursiveReadOnly"`
+	// volumeStatus represents volume-type-specific status about the mounted volume.
+	VolumeStatus VolumeStatusPatchPtrInput `pulumi:"volumeStatus"`
 }
 
 func (VolumeMountStatusPatchArgs) ElementType() reflect.Type {
@@ -74647,6 +75562,11 @@ func (o VolumeMountStatusPatchOutput) ReadOnly() pulumi.BoolPtrOutput {
 // RecursiveReadOnly must be set to Disabled, Enabled, or unspecified (for non-readonly mounts). An IfPossible value in the original VolumeMount must be translated to Disabled or Enabled, depending on the mount result.
 func (o VolumeMountStatusPatchOutput) RecursiveReadOnly() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v VolumeMountStatusPatch) *string { return v.RecursiveReadOnly }).(pulumi.StringPtrOutput)
+}
+
+// volumeStatus represents volume-type-specific status about the mounted volume.
+func (o VolumeMountStatusPatchOutput) VolumeStatus() VolumeStatusPatchPtrOutput {
+	return o.ApplyT(func(v VolumeMountStatusPatch) *VolumeStatusPatch { return v.VolumeStatus }).(VolumeStatusPatchPtrOutput)
 }
 
 type VolumeMountStatusPatchArrayOutput struct{ *pulumi.OutputState }
@@ -75002,7 +75922,7 @@ type VolumePatch struct {
 	//
 	// - Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails. - Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present. - IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
 	//
-	// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro) and non-executable files (noexec). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+	// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 	Image *ImageVolumeSourcePatch `pulumi:"image"`
 	// iscsi represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes/#iscsi
 	Iscsi *ISCSIVolumeSourcePatch `pulumi:"iscsi"`
@@ -75014,7 +75934,7 @@ type VolumePatch struct {
 	PersistentVolumeClaim *PersistentVolumeClaimVolumeSourcePatch `pulumi:"persistentVolumeClaim"`
 	// photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
 	PhotonPersistentDisk *PhotonPersistentDiskVolumeSourcePatch `pulumi:"photonPersistentDisk"`
-	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 	PortworxVolume *PortworxVolumeSourcePatch `pulumi:"portworxVolume"`
 	// projected items for all in one resources secrets, configmaps, and downward API
 	Projected *ProjectedVolumeSourcePatch `pulumi:"projected"`
@@ -75096,7 +76016,7 @@ type VolumePatchArgs struct {
 	//
 	// - Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails. - Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present. - IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
 	//
-	// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro) and non-executable files (noexec). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+	// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 	Image ImageVolumeSourcePatchPtrInput `pulumi:"image"`
 	// iscsi represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: https://kubernetes.io/docs/concepts/storage/volumes/#iscsi
 	Iscsi ISCSIVolumeSourcePatchPtrInput `pulumi:"iscsi"`
@@ -75108,7 +76028,7 @@ type VolumePatchArgs struct {
 	PersistentVolumeClaim PersistentVolumeClaimVolumeSourcePatchPtrInput `pulumi:"persistentVolumeClaim"`
 	// photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine. Deprecated: PhotonPersistentDisk is deprecated and the in-tree photonPersistentDisk type is no longer supported.
 	PhotonPersistentDisk PhotonPersistentDiskVolumeSourcePatchPtrInput `pulumi:"photonPersistentDisk"`
-	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+	// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 	PortworxVolume PortworxVolumeSourcePatchPtrInput `pulumi:"portworxVolume"`
 	// projected items for all in one resources secrets, configmaps, and downward API
 	Projected ProjectedVolumeSourcePatchPtrInput `pulumi:"projected"`
@@ -75283,7 +76203,7 @@ func (o VolumePatchOutput) HostPath() HostPathVolumeSourcePatchPtrOutput {
 //
 // - Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails. - Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present. - IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
 //
-// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro) and non-executable files (noexec). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+// The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation. A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message. The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field. The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images. The volume will be mounted read-only (ro). Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath) before 1.33. The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
 func (o VolumePatchOutput) Image() ImageVolumeSourcePatchPtrOutput {
 	return o.ApplyT(func(v VolumePatch) *ImageVolumeSourcePatch { return v.Image }).(ImageVolumeSourcePatchPtrOutput)
 }
@@ -75313,7 +76233,7 @@ func (o VolumePatchOutput) PhotonPersistentDisk() PhotonPersistentDiskVolumeSour
 	return o.ApplyT(func(v VolumePatch) *PhotonPersistentDiskVolumeSourcePatch { return v.PhotonPersistentDisk }).(PhotonPersistentDiskVolumeSourcePatchPtrOutput)
 }
 
-// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver when the CSIMigrationPortworx feature-gate is on.
+// portworxVolume represents a portworx volume attached and mounted on kubelets host machine. Deprecated: PortworxVolume is deprecated. All operations for the in-tree portworxVolume type are redirected to the pxd.portworx.com CSI driver.
 func (o VolumePatchOutput) PortworxVolume() PortworxVolumeSourcePatchPtrOutput {
 	return o.ApplyT(func(v VolumePatch) *PortworxVolumeSourcePatch { return v.PortworxVolume }).(PortworxVolumeSourcePatchPtrOutput)
 }
@@ -76087,6 +77007,286 @@ func (o VolumeResourceRequirementsPatchPtrOutput) Requests() pulumi.StringMapOut
 		}
 		return v.Requests
 	}).(pulumi.StringMapOutput)
+}
+
+// VolumeStatus represents the status of a mounted volume. At most one of its members must be specified.
+type VolumeStatus struct {
+	// image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+	Image *ImageVolumeStatus `pulumi:"image"`
+}
+
+// VolumeStatusInput is an input type that accepts VolumeStatusArgs and VolumeStatusOutput values.
+// You can construct a concrete instance of `VolumeStatusInput` via:
+//
+//	VolumeStatusArgs{...}
+type VolumeStatusInput interface {
+	pulumi.Input
+
+	ToVolumeStatusOutput() VolumeStatusOutput
+	ToVolumeStatusOutputWithContext(context.Context) VolumeStatusOutput
+}
+
+// VolumeStatus represents the status of a mounted volume. At most one of its members must be specified.
+type VolumeStatusArgs struct {
+	// image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+	Image ImageVolumeStatusPtrInput `pulumi:"image"`
+}
+
+func (VolumeStatusArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*VolumeStatus)(nil)).Elem()
+}
+
+func (i VolumeStatusArgs) ToVolumeStatusOutput() VolumeStatusOutput {
+	return i.ToVolumeStatusOutputWithContext(context.Background())
+}
+
+func (i VolumeStatusArgs) ToVolumeStatusOutputWithContext(ctx context.Context) VolumeStatusOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VolumeStatusOutput)
+}
+
+func (i VolumeStatusArgs) ToVolumeStatusPtrOutput() VolumeStatusPtrOutput {
+	return i.ToVolumeStatusPtrOutputWithContext(context.Background())
+}
+
+func (i VolumeStatusArgs) ToVolumeStatusPtrOutputWithContext(ctx context.Context) VolumeStatusPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VolumeStatusOutput).ToVolumeStatusPtrOutputWithContext(ctx)
+}
+
+// VolumeStatusPtrInput is an input type that accepts VolumeStatusArgs, VolumeStatusPtr and VolumeStatusPtrOutput values.
+// You can construct a concrete instance of `VolumeStatusPtrInput` via:
+//
+//	        VolumeStatusArgs{...}
+//
+//	or:
+//
+//	        nil
+type VolumeStatusPtrInput interface {
+	pulumi.Input
+
+	ToVolumeStatusPtrOutput() VolumeStatusPtrOutput
+	ToVolumeStatusPtrOutputWithContext(context.Context) VolumeStatusPtrOutput
+}
+
+type volumeStatusPtrType VolumeStatusArgs
+
+func VolumeStatusPtr(v *VolumeStatusArgs) VolumeStatusPtrInput {
+	return (*volumeStatusPtrType)(v)
+}
+
+func (*volumeStatusPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**VolumeStatus)(nil)).Elem()
+}
+
+func (i *volumeStatusPtrType) ToVolumeStatusPtrOutput() VolumeStatusPtrOutput {
+	return i.ToVolumeStatusPtrOutputWithContext(context.Background())
+}
+
+func (i *volumeStatusPtrType) ToVolumeStatusPtrOutputWithContext(ctx context.Context) VolumeStatusPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VolumeStatusPtrOutput)
+}
+
+// VolumeStatus represents the status of a mounted volume. At most one of its members must be specified.
+type VolumeStatusOutput struct{ *pulumi.OutputState }
+
+func (VolumeStatusOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*VolumeStatus)(nil)).Elem()
+}
+
+func (o VolumeStatusOutput) ToVolumeStatusOutput() VolumeStatusOutput {
+	return o
+}
+
+func (o VolumeStatusOutput) ToVolumeStatusOutputWithContext(ctx context.Context) VolumeStatusOutput {
+	return o
+}
+
+func (o VolumeStatusOutput) ToVolumeStatusPtrOutput() VolumeStatusPtrOutput {
+	return o.ToVolumeStatusPtrOutputWithContext(context.Background())
+}
+
+func (o VolumeStatusOutput) ToVolumeStatusPtrOutputWithContext(ctx context.Context) VolumeStatusPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v VolumeStatus) *VolumeStatus {
+		return &v
+	}).(VolumeStatusPtrOutput)
+}
+
+// image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+func (o VolumeStatusOutput) Image() ImageVolumeStatusPtrOutput {
+	return o.ApplyT(func(v VolumeStatus) *ImageVolumeStatus { return v.Image }).(ImageVolumeStatusPtrOutput)
+}
+
+type VolumeStatusPtrOutput struct{ *pulumi.OutputState }
+
+func (VolumeStatusPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**VolumeStatus)(nil)).Elem()
+}
+
+func (o VolumeStatusPtrOutput) ToVolumeStatusPtrOutput() VolumeStatusPtrOutput {
+	return o
+}
+
+func (o VolumeStatusPtrOutput) ToVolumeStatusPtrOutputWithContext(ctx context.Context) VolumeStatusPtrOutput {
+	return o
+}
+
+func (o VolumeStatusPtrOutput) Elem() VolumeStatusOutput {
+	return o.ApplyT(func(v *VolumeStatus) VolumeStatus {
+		if v != nil {
+			return *v
+		}
+		var ret VolumeStatus
+		return ret
+	}).(VolumeStatusOutput)
+}
+
+// image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+func (o VolumeStatusPtrOutput) Image() ImageVolumeStatusPtrOutput {
+	return o.ApplyT(func(v *VolumeStatus) *ImageVolumeStatus {
+		if v == nil {
+			return nil
+		}
+		return v.Image
+	}).(ImageVolumeStatusPtrOutput)
+}
+
+// VolumeStatus represents the status of a mounted volume. At most one of its members must be specified.
+type VolumeStatusPatch struct {
+	// image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+	Image *ImageVolumeStatusPatch `pulumi:"image"`
+}
+
+// VolumeStatusPatchInput is an input type that accepts VolumeStatusPatchArgs and VolumeStatusPatchOutput values.
+// You can construct a concrete instance of `VolumeStatusPatchInput` via:
+//
+//	VolumeStatusPatchArgs{...}
+type VolumeStatusPatchInput interface {
+	pulumi.Input
+
+	ToVolumeStatusPatchOutput() VolumeStatusPatchOutput
+	ToVolumeStatusPatchOutputWithContext(context.Context) VolumeStatusPatchOutput
+}
+
+// VolumeStatus represents the status of a mounted volume. At most one of its members must be specified.
+type VolumeStatusPatchArgs struct {
+	// image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+	Image ImageVolumeStatusPatchPtrInput `pulumi:"image"`
+}
+
+func (VolumeStatusPatchArgs) ElementType() reflect.Type {
+	return reflect.TypeOf((*VolumeStatusPatch)(nil)).Elem()
+}
+
+func (i VolumeStatusPatchArgs) ToVolumeStatusPatchOutput() VolumeStatusPatchOutput {
+	return i.ToVolumeStatusPatchOutputWithContext(context.Background())
+}
+
+func (i VolumeStatusPatchArgs) ToVolumeStatusPatchOutputWithContext(ctx context.Context) VolumeStatusPatchOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VolumeStatusPatchOutput)
+}
+
+func (i VolumeStatusPatchArgs) ToVolumeStatusPatchPtrOutput() VolumeStatusPatchPtrOutput {
+	return i.ToVolumeStatusPatchPtrOutputWithContext(context.Background())
+}
+
+func (i VolumeStatusPatchArgs) ToVolumeStatusPatchPtrOutputWithContext(ctx context.Context) VolumeStatusPatchPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VolumeStatusPatchOutput).ToVolumeStatusPatchPtrOutputWithContext(ctx)
+}
+
+// VolumeStatusPatchPtrInput is an input type that accepts VolumeStatusPatchArgs, VolumeStatusPatchPtr and VolumeStatusPatchPtrOutput values.
+// You can construct a concrete instance of `VolumeStatusPatchPtrInput` via:
+//
+//	        VolumeStatusPatchArgs{...}
+//
+//	or:
+//
+//	        nil
+type VolumeStatusPatchPtrInput interface {
+	pulumi.Input
+
+	ToVolumeStatusPatchPtrOutput() VolumeStatusPatchPtrOutput
+	ToVolumeStatusPatchPtrOutputWithContext(context.Context) VolumeStatusPatchPtrOutput
+}
+
+type volumeStatusPatchPtrType VolumeStatusPatchArgs
+
+func VolumeStatusPatchPtr(v *VolumeStatusPatchArgs) VolumeStatusPatchPtrInput {
+	return (*volumeStatusPatchPtrType)(v)
+}
+
+func (*volumeStatusPatchPtrType) ElementType() reflect.Type {
+	return reflect.TypeOf((**VolumeStatusPatch)(nil)).Elem()
+}
+
+func (i *volumeStatusPatchPtrType) ToVolumeStatusPatchPtrOutput() VolumeStatusPatchPtrOutput {
+	return i.ToVolumeStatusPatchPtrOutputWithContext(context.Background())
+}
+
+func (i *volumeStatusPatchPtrType) ToVolumeStatusPatchPtrOutputWithContext(ctx context.Context) VolumeStatusPatchPtrOutput {
+	return pulumi.ToOutputWithContext(ctx, i).(VolumeStatusPatchPtrOutput)
+}
+
+// VolumeStatus represents the status of a mounted volume. At most one of its members must be specified.
+type VolumeStatusPatchOutput struct{ *pulumi.OutputState }
+
+func (VolumeStatusPatchOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((*VolumeStatusPatch)(nil)).Elem()
+}
+
+func (o VolumeStatusPatchOutput) ToVolumeStatusPatchOutput() VolumeStatusPatchOutput {
+	return o
+}
+
+func (o VolumeStatusPatchOutput) ToVolumeStatusPatchOutputWithContext(ctx context.Context) VolumeStatusPatchOutput {
+	return o
+}
+
+func (o VolumeStatusPatchOutput) ToVolumeStatusPatchPtrOutput() VolumeStatusPatchPtrOutput {
+	return o.ToVolumeStatusPatchPtrOutputWithContext(context.Background())
+}
+
+func (o VolumeStatusPatchOutput) ToVolumeStatusPatchPtrOutputWithContext(ctx context.Context) VolumeStatusPatchPtrOutput {
+	return o.ApplyTWithContext(ctx, func(_ context.Context, v VolumeStatusPatch) *VolumeStatusPatch {
+		return &v
+	}).(VolumeStatusPatchPtrOutput)
+}
+
+// image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+func (o VolumeStatusPatchOutput) Image() ImageVolumeStatusPatchPtrOutput {
+	return o.ApplyT(func(v VolumeStatusPatch) *ImageVolumeStatusPatch { return v.Image }).(ImageVolumeStatusPatchPtrOutput)
+}
+
+type VolumeStatusPatchPtrOutput struct{ *pulumi.OutputState }
+
+func (VolumeStatusPatchPtrOutput) ElementType() reflect.Type {
+	return reflect.TypeOf((**VolumeStatusPatch)(nil)).Elem()
+}
+
+func (o VolumeStatusPatchPtrOutput) ToVolumeStatusPatchPtrOutput() VolumeStatusPatchPtrOutput {
+	return o
+}
+
+func (o VolumeStatusPatchPtrOutput) ToVolumeStatusPatchPtrOutputWithContext(ctx context.Context) VolumeStatusPatchPtrOutput {
+	return o
+}
+
+func (o VolumeStatusPatchPtrOutput) Elem() VolumeStatusPatchOutput {
+	return o.ApplyT(func(v *VolumeStatusPatch) VolumeStatusPatch {
+		if v != nil {
+			return *v
+		}
+		var ret VolumeStatusPatch
+		return ret
+	}).(VolumeStatusPatchOutput)
+}
+
+// image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+func (o VolumeStatusPatchPtrOutput) Image() ImageVolumeStatusPatchPtrOutput {
+	return o.ApplyT(func(v *VolumeStatusPatch) *ImageVolumeStatusPatch {
+		if v == nil {
+			return nil
+		}
+		return v.Image
+	}).(ImageVolumeStatusPatchPtrOutput)
 }
 
 // Represents a vSphere volume resource.
@@ -77095,362 +78295,6 @@ func (o WindowsSecurityContextOptionsPatchPtrOutput) RunAsUserName() pulumi.Stri
 	}).(pulumi.StringPtrOutput)
 }
 
-// WorkloadReference identifies the Workload object and PodGroup membership that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics.
-type WorkloadReference struct {
-	// Name defines the name of the Workload object this Pod belongs to. Workload must be in the same namespace as the Pod. If it doesn't match any existing Workload, the Pod will remain unschedulable until a Workload object is created and observed by the kube-scheduler. It must be a DNS subdomain.
-	Name string `pulumi:"name"`
-	// PodGroup is the name of the PodGroup within the Workload that this Pod belongs to. If it doesn't match any existing PodGroup within the Workload, the Pod will remain unschedulable until the Workload object is recreated and observed by the kube-scheduler. It must be a DNS label.
-	PodGroup string `pulumi:"podGroup"`
-	// PodGroupReplicaKey specifies the replica key of the PodGroup to which this Pod belongs. It is used to distinguish pods belonging to different replicas of the same pod group. The pod group policy is applied separately to each replica. When set, it must be a DNS label.
-	PodGroupReplicaKey *string `pulumi:"podGroupReplicaKey"`
-}
-
-// WorkloadReferenceInput is an input type that accepts WorkloadReferenceArgs and WorkloadReferenceOutput values.
-// You can construct a concrete instance of `WorkloadReferenceInput` via:
-//
-//	WorkloadReferenceArgs{...}
-type WorkloadReferenceInput interface {
-	pulumi.Input
-
-	ToWorkloadReferenceOutput() WorkloadReferenceOutput
-	ToWorkloadReferenceOutputWithContext(context.Context) WorkloadReferenceOutput
-}
-
-// WorkloadReference identifies the Workload object and PodGroup membership that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics.
-type WorkloadReferenceArgs struct {
-	// Name defines the name of the Workload object this Pod belongs to. Workload must be in the same namespace as the Pod. If it doesn't match any existing Workload, the Pod will remain unschedulable until a Workload object is created and observed by the kube-scheduler. It must be a DNS subdomain.
-	Name pulumi.StringInput `pulumi:"name"`
-	// PodGroup is the name of the PodGroup within the Workload that this Pod belongs to. If it doesn't match any existing PodGroup within the Workload, the Pod will remain unschedulable until the Workload object is recreated and observed by the kube-scheduler. It must be a DNS label.
-	PodGroup pulumi.StringInput `pulumi:"podGroup"`
-	// PodGroupReplicaKey specifies the replica key of the PodGroup to which this Pod belongs. It is used to distinguish pods belonging to different replicas of the same pod group. The pod group policy is applied separately to each replica. When set, it must be a DNS label.
-	PodGroupReplicaKey pulumi.StringPtrInput `pulumi:"podGroupReplicaKey"`
-}
-
-func (WorkloadReferenceArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*WorkloadReference)(nil)).Elem()
-}
-
-func (i WorkloadReferenceArgs) ToWorkloadReferenceOutput() WorkloadReferenceOutput {
-	return i.ToWorkloadReferenceOutputWithContext(context.Background())
-}
-
-func (i WorkloadReferenceArgs) ToWorkloadReferenceOutputWithContext(ctx context.Context) WorkloadReferenceOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(WorkloadReferenceOutput)
-}
-
-func (i WorkloadReferenceArgs) ToWorkloadReferencePtrOutput() WorkloadReferencePtrOutput {
-	return i.ToWorkloadReferencePtrOutputWithContext(context.Background())
-}
-
-func (i WorkloadReferenceArgs) ToWorkloadReferencePtrOutputWithContext(ctx context.Context) WorkloadReferencePtrOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(WorkloadReferenceOutput).ToWorkloadReferencePtrOutputWithContext(ctx)
-}
-
-// WorkloadReferencePtrInput is an input type that accepts WorkloadReferenceArgs, WorkloadReferencePtr and WorkloadReferencePtrOutput values.
-// You can construct a concrete instance of `WorkloadReferencePtrInput` via:
-//
-//	        WorkloadReferenceArgs{...}
-//
-//	or:
-//
-//	        nil
-type WorkloadReferencePtrInput interface {
-	pulumi.Input
-
-	ToWorkloadReferencePtrOutput() WorkloadReferencePtrOutput
-	ToWorkloadReferencePtrOutputWithContext(context.Context) WorkloadReferencePtrOutput
-}
-
-type workloadReferencePtrType WorkloadReferenceArgs
-
-func WorkloadReferencePtr(v *WorkloadReferenceArgs) WorkloadReferencePtrInput {
-	return (*workloadReferencePtrType)(v)
-}
-
-func (*workloadReferencePtrType) ElementType() reflect.Type {
-	return reflect.TypeOf((**WorkloadReference)(nil)).Elem()
-}
-
-func (i *workloadReferencePtrType) ToWorkloadReferencePtrOutput() WorkloadReferencePtrOutput {
-	return i.ToWorkloadReferencePtrOutputWithContext(context.Background())
-}
-
-func (i *workloadReferencePtrType) ToWorkloadReferencePtrOutputWithContext(ctx context.Context) WorkloadReferencePtrOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(WorkloadReferencePtrOutput)
-}
-
-// WorkloadReference identifies the Workload object and PodGroup membership that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics.
-type WorkloadReferenceOutput struct{ *pulumi.OutputState }
-
-func (WorkloadReferenceOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*WorkloadReference)(nil)).Elem()
-}
-
-func (o WorkloadReferenceOutput) ToWorkloadReferenceOutput() WorkloadReferenceOutput {
-	return o
-}
-
-func (o WorkloadReferenceOutput) ToWorkloadReferenceOutputWithContext(ctx context.Context) WorkloadReferenceOutput {
-	return o
-}
-
-func (o WorkloadReferenceOutput) ToWorkloadReferencePtrOutput() WorkloadReferencePtrOutput {
-	return o.ToWorkloadReferencePtrOutputWithContext(context.Background())
-}
-
-func (o WorkloadReferenceOutput) ToWorkloadReferencePtrOutputWithContext(ctx context.Context) WorkloadReferencePtrOutput {
-	return o.ApplyTWithContext(ctx, func(_ context.Context, v WorkloadReference) *WorkloadReference {
-		return &v
-	}).(WorkloadReferencePtrOutput)
-}
-
-// Name defines the name of the Workload object this Pod belongs to. Workload must be in the same namespace as the Pod. If it doesn't match any existing Workload, the Pod will remain unschedulable until a Workload object is created and observed by the kube-scheduler. It must be a DNS subdomain.
-func (o WorkloadReferenceOutput) Name() pulumi.StringOutput {
-	return o.ApplyT(func(v WorkloadReference) string { return v.Name }).(pulumi.StringOutput)
-}
-
-// PodGroup is the name of the PodGroup within the Workload that this Pod belongs to. If it doesn't match any existing PodGroup within the Workload, the Pod will remain unschedulable until the Workload object is recreated and observed by the kube-scheduler. It must be a DNS label.
-func (o WorkloadReferenceOutput) PodGroup() pulumi.StringOutput {
-	return o.ApplyT(func(v WorkloadReference) string { return v.PodGroup }).(pulumi.StringOutput)
-}
-
-// PodGroupReplicaKey specifies the replica key of the PodGroup to which this Pod belongs. It is used to distinguish pods belonging to different replicas of the same pod group. The pod group policy is applied separately to each replica. When set, it must be a DNS label.
-func (o WorkloadReferenceOutput) PodGroupReplicaKey() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v WorkloadReference) *string { return v.PodGroupReplicaKey }).(pulumi.StringPtrOutput)
-}
-
-type WorkloadReferencePtrOutput struct{ *pulumi.OutputState }
-
-func (WorkloadReferencePtrOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((**WorkloadReference)(nil)).Elem()
-}
-
-func (o WorkloadReferencePtrOutput) ToWorkloadReferencePtrOutput() WorkloadReferencePtrOutput {
-	return o
-}
-
-func (o WorkloadReferencePtrOutput) ToWorkloadReferencePtrOutputWithContext(ctx context.Context) WorkloadReferencePtrOutput {
-	return o
-}
-
-func (o WorkloadReferencePtrOutput) Elem() WorkloadReferenceOutput {
-	return o.ApplyT(func(v *WorkloadReference) WorkloadReference {
-		if v != nil {
-			return *v
-		}
-		var ret WorkloadReference
-		return ret
-	}).(WorkloadReferenceOutput)
-}
-
-// Name defines the name of the Workload object this Pod belongs to. Workload must be in the same namespace as the Pod. If it doesn't match any existing Workload, the Pod will remain unschedulable until a Workload object is created and observed by the kube-scheduler. It must be a DNS subdomain.
-func (o WorkloadReferencePtrOutput) Name() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *WorkloadReference) *string {
-		if v == nil {
-			return nil
-		}
-		return &v.Name
-	}).(pulumi.StringPtrOutput)
-}
-
-// PodGroup is the name of the PodGroup within the Workload that this Pod belongs to. If it doesn't match any existing PodGroup within the Workload, the Pod will remain unschedulable until the Workload object is recreated and observed by the kube-scheduler. It must be a DNS label.
-func (o WorkloadReferencePtrOutput) PodGroup() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *WorkloadReference) *string {
-		if v == nil {
-			return nil
-		}
-		return &v.PodGroup
-	}).(pulumi.StringPtrOutput)
-}
-
-// PodGroupReplicaKey specifies the replica key of the PodGroup to which this Pod belongs. It is used to distinguish pods belonging to different replicas of the same pod group. The pod group policy is applied separately to each replica. When set, it must be a DNS label.
-func (o WorkloadReferencePtrOutput) PodGroupReplicaKey() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *WorkloadReference) *string {
-		if v == nil {
-			return nil
-		}
-		return v.PodGroupReplicaKey
-	}).(pulumi.StringPtrOutput)
-}
-
-// WorkloadReference identifies the Workload object and PodGroup membership that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics.
-type WorkloadReferencePatch struct {
-	// Name defines the name of the Workload object this Pod belongs to. Workload must be in the same namespace as the Pod. If it doesn't match any existing Workload, the Pod will remain unschedulable until a Workload object is created and observed by the kube-scheduler. It must be a DNS subdomain.
-	Name *string `pulumi:"name"`
-	// PodGroup is the name of the PodGroup within the Workload that this Pod belongs to. If it doesn't match any existing PodGroup within the Workload, the Pod will remain unschedulable until the Workload object is recreated and observed by the kube-scheduler. It must be a DNS label.
-	PodGroup *string `pulumi:"podGroup"`
-	// PodGroupReplicaKey specifies the replica key of the PodGroup to which this Pod belongs. It is used to distinguish pods belonging to different replicas of the same pod group. The pod group policy is applied separately to each replica. When set, it must be a DNS label.
-	PodGroupReplicaKey *string `pulumi:"podGroupReplicaKey"`
-}
-
-// WorkloadReferencePatchInput is an input type that accepts WorkloadReferencePatchArgs and WorkloadReferencePatchOutput values.
-// You can construct a concrete instance of `WorkloadReferencePatchInput` via:
-//
-//	WorkloadReferencePatchArgs{...}
-type WorkloadReferencePatchInput interface {
-	pulumi.Input
-
-	ToWorkloadReferencePatchOutput() WorkloadReferencePatchOutput
-	ToWorkloadReferencePatchOutputWithContext(context.Context) WorkloadReferencePatchOutput
-}
-
-// WorkloadReference identifies the Workload object and PodGroup membership that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics.
-type WorkloadReferencePatchArgs struct {
-	// Name defines the name of the Workload object this Pod belongs to. Workload must be in the same namespace as the Pod. If it doesn't match any existing Workload, the Pod will remain unschedulable until a Workload object is created and observed by the kube-scheduler. It must be a DNS subdomain.
-	Name pulumi.StringPtrInput `pulumi:"name"`
-	// PodGroup is the name of the PodGroup within the Workload that this Pod belongs to. If it doesn't match any existing PodGroup within the Workload, the Pod will remain unschedulable until the Workload object is recreated and observed by the kube-scheduler. It must be a DNS label.
-	PodGroup pulumi.StringPtrInput `pulumi:"podGroup"`
-	// PodGroupReplicaKey specifies the replica key of the PodGroup to which this Pod belongs. It is used to distinguish pods belonging to different replicas of the same pod group. The pod group policy is applied separately to each replica. When set, it must be a DNS label.
-	PodGroupReplicaKey pulumi.StringPtrInput `pulumi:"podGroupReplicaKey"`
-}
-
-func (WorkloadReferencePatchArgs) ElementType() reflect.Type {
-	return reflect.TypeOf((*WorkloadReferencePatch)(nil)).Elem()
-}
-
-func (i WorkloadReferencePatchArgs) ToWorkloadReferencePatchOutput() WorkloadReferencePatchOutput {
-	return i.ToWorkloadReferencePatchOutputWithContext(context.Background())
-}
-
-func (i WorkloadReferencePatchArgs) ToWorkloadReferencePatchOutputWithContext(ctx context.Context) WorkloadReferencePatchOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(WorkloadReferencePatchOutput)
-}
-
-func (i WorkloadReferencePatchArgs) ToWorkloadReferencePatchPtrOutput() WorkloadReferencePatchPtrOutput {
-	return i.ToWorkloadReferencePatchPtrOutputWithContext(context.Background())
-}
-
-func (i WorkloadReferencePatchArgs) ToWorkloadReferencePatchPtrOutputWithContext(ctx context.Context) WorkloadReferencePatchPtrOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(WorkloadReferencePatchOutput).ToWorkloadReferencePatchPtrOutputWithContext(ctx)
-}
-
-// WorkloadReferencePatchPtrInput is an input type that accepts WorkloadReferencePatchArgs, WorkloadReferencePatchPtr and WorkloadReferencePatchPtrOutput values.
-// You can construct a concrete instance of `WorkloadReferencePatchPtrInput` via:
-//
-//	        WorkloadReferencePatchArgs{...}
-//
-//	or:
-//
-//	        nil
-type WorkloadReferencePatchPtrInput interface {
-	pulumi.Input
-
-	ToWorkloadReferencePatchPtrOutput() WorkloadReferencePatchPtrOutput
-	ToWorkloadReferencePatchPtrOutputWithContext(context.Context) WorkloadReferencePatchPtrOutput
-}
-
-type workloadReferencePatchPtrType WorkloadReferencePatchArgs
-
-func WorkloadReferencePatchPtr(v *WorkloadReferencePatchArgs) WorkloadReferencePatchPtrInput {
-	return (*workloadReferencePatchPtrType)(v)
-}
-
-func (*workloadReferencePatchPtrType) ElementType() reflect.Type {
-	return reflect.TypeOf((**WorkloadReferencePatch)(nil)).Elem()
-}
-
-func (i *workloadReferencePatchPtrType) ToWorkloadReferencePatchPtrOutput() WorkloadReferencePatchPtrOutput {
-	return i.ToWorkloadReferencePatchPtrOutputWithContext(context.Background())
-}
-
-func (i *workloadReferencePatchPtrType) ToWorkloadReferencePatchPtrOutputWithContext(ctx context.Context) WorkloadReferencePatchPtrOutput {
-	return pulumi.ToOutputWithContext(ctx, i).(WorkloadReferencePatchPtrOutput)
-}
-
-// WorkloadReference identifies the Workload object and PodGroup membership that a Pod belongs to. The scheduler uses this information to apply workload-aware scheduling semantics.
-type WorkloadReferencePatchOutput struct{ *pulumi.OutputState }
-
-func (WorkloadReferencePatchOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((*WorkloadReferencePatch)(nil)).Elem()
-}
-
-func (o WorkloadReferencePatchOutput) ToWorkloadReferencePatchOutput() WorkloadReferencePatchOutput {
-	return o
-}
-
-func (o WorkloadReferencePatchOutput) ToWorkloadReferencePatchOutputWithContext(ctx context.Context) WorkloadReferencePatchOutput {
-	return o
-}
-
-func (o WorkloadReferencePatchOutput) ToWorkloadReferencePatchPtrOutput() WorkloadReferencePatchPtrOutput {
-	return o.ToWorkloadReferencePatchPtrOutputWithContext(context.Background())
-}
-
-func (o WorkloadReferencePatchOutput) ToWorkloadReferencePatchPtrOutputWithContext(ctx context.Context) WorkloadReferencePatchPtrOutput {
-	return o.ApplyTWithContext(ctx, func(_ context.Context, v WorkloadReferencePatch) *WorkloadReferencePatch {
-		return &v
-	}).(WorkloadReferencePatchPtrOutput)
-}
-
-// Name defines the name of the Workload object this Pod belongs to. Workload must be in the same namespace as the Pod. If it doesn't match any existing Workload, the Pod will remain unschedulable until a Workload object is created and observed by the kube-scheduler. It must be a DNS subdomain.
-func (o WorkloadReferencePatchOutput) Name() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v WorkloadReferencePatch) *string { return v.Name }).(pulumi.StringPtrOutput)
-}
-
-// PodGroup is the name of the PodGroup within the Workload that this Pod belongs to. If it doesn't match any existing PodGroup within the Workload, the Pod will remain unschedulable until the Workload object is recreated and observed by the kube-scheduler. It must be a DNS label.
-func (o WorkloadReferencePatchOutput) PodGroup() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v WorkloadReferencePatch) *string { return v.PodGroup }).(pulumi.StringPtrOutput)
-}
-
-// PodGroupReplicaKey specifies the replica key of the PodGroup to which this Pod belongs. It is used to distinguish pods belonging to different replicas of the same pod group. The pod group policy is applied separately to each replica. When set, it must be a DNS label.
-func (o WorkloadReferencePatchOutput) PodGroupReplicaKey() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v WorkloadReferencePatch) *string { return v.PodGroupReplicaKey }).(pulumi.StringPtrOutput)
-}
-
-type WorkloadReferencePatchPtrOutput struct{ *pulumi.OutputState }
-
-func (WorkloadReferencePatchPtrOutput) ElementType() reflect.Type {
-	return reflect.TypeOf((**WorkloadReferencePatch)(nil)).Elem()
-}
-
-func (o WorkloadReferencePatchPtrOutput) ToWorkloadReferencePatchPtrOutput() WorkloadReferencePatchPtrOutput {
-	return o
-}
-
-func (o WorkloadReferencePatchPtrOutput) ToWorkloadReferencePatchPtrOutputWithContext(ctx context.Context) WorkloadReferencePatchPtrOutput {
-	return o
-}
-
-func (o WorkloadReferencePatchPtrOutput) Elem() WorkloadReferencePatchOutput {
-	return o.ApplyT(func(v *WorkloadReferencePatch) WorkloadReferencePatch {
-		if v != nil {
-			return *v
-		}
-		var ret WorkloadReferencePatch
-		return ret
-	}).(WorkloadReferencePatchOutput)
-}
-
-// Name defines the name of the Workload object this Pod belongs to. Workload must be in the same namespace as the Pod. If it doesn't match any existing Workload, the Pod will remain unschedulable until a Workload object is created and observed by the kube-scheduler. It must be a DNS subdomain.
-func (o WorkloadReferencePatchPtrOutput) Name() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *WorkloadReferencePatch) *string {
-		if v == nil {
-			return nil
-		}
-		return v.Name
-	}).(pulumi.StringPtrOutput)
-}
-
-// PodGroup is the name of the PodGroup within the Workload that this Pod belongs to. If it doesn't match any existing PodGroup within the Workload, the Pod will remain unschedulable until the Workload object is recreated and observed by the kube-scheduler. It must be a DNS label.
-func (o WorkloadReferencePatchPtrOutput) PodGroup() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *WorkloadReferencePatch) *string {
-		if v == nil {
-			return nil
-		}
-		return v.PodGroup
-	}).(pulumi.StringPtrOutput)
-}
-
-// PodGroupReplicaKey specifies the replica key of the PodGroup to which this Pod belongs. It is used to distinguish pods belonging to different replicas of the same pod group. The pod group policy is applied separately to each replica. When set, it must be a DNS label.
-func (o WorkloadReferencePatchPtrOutput) PodGroupReplicaKey() pulumi.StringPtrOutput {
-	return o.ApplyT(func(v *WorkloadReferencePatch) *string {
-		if v == nil {
-			return nil
-		}
-		return v.PodGroupReplicaKey
-	}).(pulumi.StringPtrOutput)
-}
-
 func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*AWSElasticBlockStoreVolumeSourceInput)(nil)).Elem(), AWSElasticBlockStoreVolumeSourceArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*AWSElasticBlockStoreVolumeSourcePtrInput)(nil)).Elem(), AWSElasticBlockStoreVolumeSourceArgs{})
@@ -77752,6 +78596,10 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*ImageVolumeSourcePtrInput)(nil)).Elem(), ImageVolumeSourceArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*ImageVolumeSourcePatchInput)(nil)).Elem(), ImageVolumeSourcePatchArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*ImageVolumeSourcePatchPtrInput)(nil)).Elem(), ImageVolumeSourcePatchArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*ImageVolumeStatusInput)(nil)).Elem(), ImageVolumeStatusArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*ImageVolumeStatusPtrInput)(nil)).Elem(), ImageVolumeStatusArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*ImageVolumeStatusPatchInput)(nil)).Elem(), ImageVolumeStatusPatchArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*ImageVolumeStatusPatchPtrInput)(nil)).Elem(), ImageVolumeStatusPatchArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*KeyToPathInput)(nil)).Elem(), KeyToPathArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*KeyToPathArrayInput)(nil)).Elem(), KeyToPathArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*KeyToPathPatchInput)(nil)).Elem(), KeyToPathPatchArgs{})
@@ -77832,6 +78680,10 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*NodeAffinityPtrInput)(nil)).Elem(), NodeAffinityArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*NodeAffinityPatchInput)(nil)).Elem(), NodeAffinityPatchArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*NodeAffinityPatchPtrInput)(nil)).Elem(), NodeAffinityPatchArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*NodeAllocatableResourceClaimStatusInput)(nil)).Elem(), NodeAllocatableResourceClaimStatusArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*NodeAllocatableResourceClaimStatusArrayInput)(nil)).Elem(), NodeAllocatableResourceClaimStatusArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*NodeAllocatableResourceClaimStatusPatchInput)(nil)).Elem(), NodeAllocatableResourceClaimStatusPatchArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*NodeAllocatableResourceClaimStatusPatchArrayInput)(nil)).Elem(), NodeAllocatableResourceClaimStatusPatchArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*NodeConditionInput)(nil)).Elem(), NodeConditionArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*NodeConditionArrayInput)(nil)).Elem(), NodeConditionArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*NodeConditionPatchInput)(nil)).Elem(), NodeConditionPatchArgs{})
@@ -78003,6 +78855,10 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*PodSchedulingGateArrayInput)(nil)).Elem(), PodSchedulingGateArray{})
 	pulumi.RegisterInputType(reflect.TypeOf((*PodSchedulingGatePatchInput)(nil)).Elem(), PodSchedulingGatePatchArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*PodSchedulingGatePatchArrayInput)(nil)).Elem(), PodSchedulingGatePatchArray{})
+	pulumi.RegisterInputType(reflect.TypeOf((*PodSchedulingGroupInput)(nil)).Elem(), PodSchedulingGroupArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*PodSchedulingGroupPtrInput)(nil)).Elem(), PodSchedulingGroupArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*PodSchedulingGroupPatchInput)(nil)).Elem(), PodSchedulingGroupPatchArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*PodSchedulingGroupPatchPtrInput)(nil)).Elem(), PodSchedulingGroupPatchArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*PodSecurityContextInput)(nil)).Elem(), PodSecurityContextArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*PodSecurityContextPtrInput)(nil)).Elem(), PodSecurityContextArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*PodSecurityContextPatchInput)(nil)).Elem(), PodSecurityContextPatchArgs{})
@@ -78259,6 +79115,10 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*VolumeResourceRequirementsPtrInput)(nil)).Elem(), VolumeResourceRequirementsArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*VolumeResourceRequirementsPatchInput)(nil)).Elem(), VolumeResourceRequirementsPatchArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*VolumeResourceRequirementsPatchPtrInput)(nil)).Elem(), VolumeResourceRequirementsPatchArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*VolumeStatusInput)(nil)).Elem(), VolumeStatusArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*VolumeStatusPtrInput)(nil)).Elem(), VolumeStatusArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*VolumeStatusPatchInput)(nil)).Elem(), VolumeStatusPatchArgs{})
+	pulumi.RegisterInputType(reflect.TypeOf((*VolumeStatusPatchPtrInput)(nil)).Elem(), VolumeStatusPatchArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*VsphereVirtualDiskVolumeSourceInput)(nil)).Elem(), VsphereVirtualDiskVolumeSourceArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*VsphereVirtualDiskVolumeSourcePtrInput)(nil)).Elem(), VsphereVirtualDiskVolumeSourceArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*VsphereVirtualDiskVolumeSourcePatchInput)(nil)).Elem(), VsphereVirtualDiskVolumeSourcePatchArgs{})
@@ -78271,10 +79131,6 @@ func init() {
 	pulumi.RegisterInputType(reflect.TypeOf((*WindowsSecurityContextOptionsPtrInput)(nil)).Elem(), WindowsSecurityContextOptionsArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*WindowsSecurityContextOptionsPatchInput)(nil)).Elem(), WindowsSecurityContextOptionsPatchArgs{})
 	pulumi.RegisterInputType(reflect.TypeOf((*WindowsSecurityContextOptionsPatchPtrInput)(nil)).Elem(), WindowsSecurityContextOptionsPatchArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*WorkloadReferenceInput)(nil)).Elem(), WorkloadReferenceArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*WorkloadReferencePtrInput)(nil)).Elem(), WorkloadReferenceArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*WorkloadReferencePatchInput)(nil)).Elem(), WorkloadReferencePatchArgs{})
-	pulumi.RegisterInputType(reflect.TypeOf((*WorkloadReferencePatchPtrInput)(nil)).Elem(), WorkloadReferencePatchArgs{})
 	pulumi.RegisterOutputType(AWSElasticBlockStoreVolumeSourceOutput{})
 	pulumi.RegisterOutputType(AWSElasticBlockStoreVolumeSourcePtrOutput{})
 	pulumi.RegisterOutputType(AWSElasticBlockStoreVolumeSourcePatchOutput{})
@@ -78575,6 +79431,10 @@ func init() {
 	pulumi.RegisterOutputType(ImageVolumeSourcePtrOutput{})
 	pulumi.RegisterOutputType(ImageVolumeSourcePatchOutput{})
 	pulumi.RegisterOutputType(ImageVolumeSourcePatchPtrOutput{})
+	pulumi.RegisterOutputType(ImageVolumeStatusOutput{})
+	pulumi.RegisterOutputType(ImageVolumeStatusPtrOutput{})
+	pulumi.RegisterOutputType(ImageVolumeStatusPatchOutput{})
+	pulumi.RegisterOutputType(ImageVolumeStatusPatchPtrOutput{})
 	pulumi.RegisterOutputType(KeyToPathOutput{})
 	pulumi.RegisterOutputType(KeyToPathArrayOutput{})
 	pulumi.RegisterOutputType(KeyToPathPatchOutput{})
@@ -78655,6 +79515,10 @@ func init() {
 	pulumi.RegisterOutputType(NodeAffinityPtrOutput{})
 	pulumi.RegisterOutputType(NodeAffinityPatchOutput{})
 	pulumi.RegisterOutputType(NodeAffinityPatchPtrOutput{})
+	pulumi.RegisterOutputType(NodeAllocatableResourceClaimStatusOutput{})
+	pulumi.RegisterOutputType(NodeAllocatableResourceClaimStatusArrayOutput{})
+	pulumi.RegisterOutputType(NodeAllocatableResourceClaimStatusPatchOutput{})
+	pulumi.RegisterOutputType(NodeAllocatableResourceClaimStatusPatchArrayOutput{})
 	pulumi.RegisterOutputType(NodeConditionOutput{})
 	pulumi.RegisterOutputType(NodeConditionArrayOutput{})
 	pulumi.RegisterOutputType(NodeConditionPatchOutput{})
@@ -78826,6 +79690,10 @@ func init() {
 	pulumi.RegisterOutputType(PodSchedulingGateArrayOutput{})
 	pulumi.RegisterOutputType(PodSchedulingGatePatchOutput{})
 	pulumi.RegisterOutputType(PodSchedulingGatePatchArrayOutput{})
+	pulumi.RegisterOutputType(PodSchedulingGroupOutput{})
+	pulumi.RegisterOutputType(PodSchedulingGroupPtrOutput{})
+	pulumi.RegisterOutputType(PodSchedulingGroupPatchOutput{})
+	pulumi.RegisterOutputType(PodSchedulingGroupPatchPtrOutput{})
 	pulumi.RegisterOutputType(PodSecurityContextOutput{})
 	pulumi.RegisterOutputType(PodSecurityContextPtrOutput{})
 	pulumi.RegisterOutputType(PodSecurityContextPatchOutput{})
@@ -79082,6 +79950,10 @@ func init() {
 	pulumi.RegisterOutputType(VolumeResourceRequirementsPtrOutput{})
 	pulumi.RegisterOutputType(VolumeResourceRequirementsPatchOutput{})
 	pulumi.RegisterOutputType(VolumeResourceRequirementsPatchPtrOutput{})
+	pulumi.RegisterOutputType(VolumeStatusOutput{})
+	pulumi.RegisterOutputType(VolumeStatusPtrOutput{})
+	pulumi.RegisterOutputType(VolumeStatusPatchOutput{})
+	pulumi.RegisterOutputType(VolumeStatusPatchPtrOutput{})
 	pulumi.RegisterOutputType(VsphereVirtualDiskVolumeSourceOutput{})
 	pulumi.RegisterOutputType(VsphereVirtualDiskVolumeSourcePtrOutput{})
 	pulumi.RegisterOutputType(VsphereVirtualDiskVolumeSourcePatchOutput{})
@@ -79094,8 +79966,4 @@ func init() {
 	pulumi.RegisterOutputType(WindowsSecurityContextOptionsPtrOutput{})
 	pulumi.RegisterOutputType(WindowsSecurityContextOptionsPatchOutput{})
 	pulumi.RegisterOutputType(WindowsSecurityContextOptionsPatchPtrOutput{})
-	pulumi.RegisterOutputType(WorkloadReferenceOutput{})
-	pulumi.RegisterOutputType(WorkloadReferencePtrOutput{})
-	pulumi.RegisterOutputType(WorkloadReferencePatchOutput{})
-	pulumi.RegisterOutputType(WorkloadReferencePatchPtrOutput{})
 }

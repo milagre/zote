@@ -48,7 +48,7 @@ func NewConverter(ctx *Context, name string, version *semver.Version) (Converter
 	path, err := workspace.GetPluginPath(
 		ctx.baseContext, ctx.Diag,
 		workspace.PluginDescriptor{Name: name, Version: version, Kind: apitype.ConverterPlugin},
-		ctx.Host.GetProjectPlugins())
+		ctx.ProjectPlugins())
 	if err != nil {
 		return nil, err
 	}
@@ -178,5 +178,39 @@ func (c *converter) ConvertProgram(ctx context.Context, req *ConvertProgramReque
 	logging.V(7).Infof("%s success", label)
 	return &ConvertProgramResponse{
 		Diagnostics: diags,
+	}, nil
+}
+
+func (c *converter) ConvertSnippet(
+	ctx context.Context, req *ConvertSnippetRequest,
+) (*ConvertSnippetResponse, error) {
+	label := c.label() + ".ConvertSnippet"
+	logging.V(7).Infof("%s executing", label)
+
+	resp, err := c.clientRaw.ConvertSnippet(ctx, &pulumirpc.ConvertSnippetRequest{
+		Filename:     req.Filename,
+		Source:       req.Source,
+		TargetLoader: req.TargetLoader,
+		Package:      req.Package,
+		Token:        req.Token,
+		Attributes:   req.Attributes,
+	})
+	if err != nil {
+		rpcError := rpcerror.Convert(err)
+		logging.V(8).Infof("%s converter received rpc error `%s`: `%s`", label, rpcError.Code(), rpcError.Message())
+		return nil, err
+	}
+
+	var diags hcl.Diagnostics
+	for _, rpcDiag := range resp.Diagnostics {
+		diags = append(diags, RPCDiagnosticToHclDiagnostic(rpcDiag))
+	}
+
+	logging.V(7).Infof("%s success", label)
+	return &ConvertSnippetResponse{
+		Diagnostics: diags,
+		Filename:    resp.Filename,
+		Source:      resp.Source,
+		Attributes:  resp.Attributes,
 	}, nil
 }

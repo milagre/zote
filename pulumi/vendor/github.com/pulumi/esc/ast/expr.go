@@ -552,6 +552,53 @@ func Join(delimiter Expr, values *ArrayExpr) *JoinExpr {
 	}
 }
 
+// ConcatExpr concatenates arrays into a single array.
+type ConcatExpr struct {
+	builtinNode
+
+	Arrays Expr
+}
+
+func ConcatSyntax(node *syntax.ObjectNode, name *StringExpr, args Expr) *ConcatExpr {
+	return &ConcatExpr{
+		builtinNode: builtin(node, name, args),
+		Arrays:      args,
+	}
+}
+
+func Concat(arrays *ArrayExpr) *ConcatExpr {
+	name := String("fn::concat")
+	return &ConcatExpr{
+		builtinNode: builtin(nil, name, arrays),
+		Arrays:      arrays,
+	}
+}
+
+// SplitExpr splits a string on a delimiter into an array of strings.
+type SplitExpr struct {
+	builtinNode
+
+	Delimiter Expr
+	String    Expr
+}
+
+func SplitSyntax(node *syntax.ObjectNode, name *StringExpr, args, delimiter, str Expr) *SplitExpr {
+	return &SplitExpr{
+		builtinNode: builtin(node, name, args),
+		Delimiter:   delimiter,
+		String:      str,
+	}
+}
+
+func Split(delimiter Expr, str Expr) *SplitExpr {
+	name := String("fn::split")
+	return &SplitExpr{
+		builtinNode: builtin(nil, name, Array(delimiter, str)),
+		Delimiter:   delimiter,
+		String:      str,
+	}
+}
+
 type SecretExpr struct {
 	builtinNode
 
@@ -624,6 +671,53 @@ func FromBase64(value Expr) *FromBase64Expr {
 	return FromBase64Syntax(nil, name, value)
 }
 
+// FinalExpr marks a value as final, preventing child environments from overriding it.
+type FinalExpr struct {
+	builtinNode
+
+	Value Expr
+}
+
+func FinalSyntax(node *syntax.ObjectNode, name *StringExpr, args Expr) *FinalExpr {
+	return &FinalExpr{
+		builtinNode: builtin(node, name, args),
+		Value:       args,
+	}
+}
+
+func Final(value Expr) *FinalExpr {
+	name := String("fn::final")
+	return FinalSyntax(nil, name, value)
+}
+
+// ValidateExpr validates a value against a JSON schema.
+type ValidateExpr struct {
+	builtinNode
+
+	Schema Expr // The JSON schema to validate against
+	Value  Expr // The value to validate
+}
+
+func ValidateSyntax(node *syntax.ObjectNode, name *StringExpr, args, schemaExpr, valueExpr Expr) *ValidateExpr {
+	return &ValidateExpr{
+		builtinNode: builtin(node, name, args),
+		Schema:      schemaExpr,
+		Value:       valueExpr,
+	}
+}
+
+func Validate(schemaExpr, valueExpr Expr) *ValidateExpr {
+	name := String("fn::validate")
+	return &ValidateExpr{
+		builtinNode: builtin(nil, name, Object(
+			ObjectProperty{Key: String("schema"), Value: schemaExpr},
+			ObjectProperty{Key: String("value"), Value: valueExpr},
+		)),
+		Schema: schemaExpr,
+		Value:  valueExpr,
+	}
+}
+
 func tryParseFunction(node *syntax.ObjectNode) (Expr, syntax.Diagnostics, bool) {
 	var diags syntax.Diagnostics
 	if node.Len() != 1 {
@@ -640,6 +734,12 @@ func tryParseFunction(node *syntax.ObjectNode) (Expr, syntax.Diagnostics, bool) 
 
 	var parse func(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr, syntax.Diagnostics)
 	switch kvp.Key.Value() {
+	case "fn::concat":
+		parse = parseConcat
+	case "fn::final":
+		parse = parseFinal
+	case "fn::validate":
+		parse = parseValidate
 	case "fn::fromJSON":
 		parse = parseFromJSON
 	case "fn::fromBase64":
@@ -652,6 +752,8 @@ func tryParseFunction(node *syntax.ObjectNode) (Expr, syntax.Diagnostics, bool) 
 		parse = parseRotate
 	case "fn::secret":
 		parse = parseSecret
+	case "fn::split":
+		parse = parseSplit
 	case "fn::toBase64":
 		parse = parseToBase64
 	case "fn::toJSON":
@@ -825,6 +927,16 @@ func parseShortRotate(node *syntax.ObjectNode, name *StringExpr, args Expr) (Exp
 	return RotateSyntax(node, name, args, provider, inputs, state), diags
 }
 
+func parseConcat(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr, syntax.Diagnostics) {
+	list, ok := args.(*ArrayExpr)
+	if !ok {
+		diags := syntax.Diagnostics{ExprError(args, "the argument to fn::concat must be an array of arrays")}
+		return ConcatSyntax(node, name, args), diags
+	}
+
+	return ConcatSyntax(node, name, list), nil
+}
+
 func parseJoin(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr, syntax.Diagnostics) {
 	list, ok := args.(*ArrayExpr)
 	if !ok || len(list.Elements) != 2 {
@@ -833,6 +945,16 @@ func parseJoin(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr, synt
 	}
 
 	return JoinSyntax(node, name, list, list.Elements[0], list.Elements[1]), nil
+}
+
+func parseSplit(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr, syntax.Diagnostics) {
+	list, ok := args.(*ArrayExpr)
+	if !ok || len(list.Elements) != 2 {
+		diags := syntax.Diagnostics{ExprError(args, "the argument to fn::split must be a two-valued list")}
+		return SplitSyntax(node, name, args, nil, nil), diags
+	}
+
+	return SplitSyntax(node, name, list, list.Elements[0], list.Elements[1]), nil
 }
 
 func parseToJSON(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr, syntax.Diagnostics) {
@@ -847,6 +969,10 @@ func parseToString(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr, 
 	return ToStringSyntax(node, name, args), nil
 }
 
+func parseFinal(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr, syntax.Diagnostics) {
+	return FinalSyntax(node, name, args), nil
+}
+
 func parseToBase64(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr, syntax.Diagnostics) {
 	return ToBase64Syntax(node, name, args), nil
 }
@@ -858,7 +984,7 @@ func parseFromBase64(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr
 func parseSecret(node *syntax.ObjectNode, name *StringExpr, value Expr) (Expr, syntax.Diagnostics) {
 	if arg, ok := value.(*ObjectExpr); ok && len(arg.Entries) == 1 {
 		kvp := arg.Entries[0]
-		if kvp.Key.Value == "ciphertext" {
+		if kvp.Key.GetValue() == "ciphertext" {
 			if str, ok := kvp.Value.(*StringExpr); ok {
 				return CiphertextSyntax(node, name, arg, str), nil
 			}
@@ -872,4 +998,33 @@ func parseSecret(node *syntax.ObjectNode, name *StringExpr, value Expr) (Expr, s
 		diags = syntax.Diagnostics{ExprError(value, "secret values must be string literals")}
 	}
 	return PlaintextSyntax(node, name, str), diags
+}
+
+func parseValidate(node *syntax.ObjectNode, name *StringExpr, args Expr) (Expr, syntax.Diagnostics) {
+	obj, ok := args.(*ObjectExpr)
+	if !ok {
+		diags := syntax.Diagnostics{ExprError(args, "the argument to fn::validate must be an object containing 'schema' and 'value'")}
+		return ValidateSyntax(node, name, args, nil, nil), diags
+	}
+
+	var schemaExpr, valueExpr Expr
+	var diags syntax.Diagnostics
+
+	for _, kvp := range obj.Entries {
+		switch kvp.Key.GetValue() {
+		case "schema":
+			schemaExpr = kvp.Value
+		case "value":
+			valueExpr = kvp.Value
+		}
+	}
+
+	if schemaExpr == nil {
+		diags.Extend(ExprError(obj, "missing required property 'schema'"))
+	}
+	if valueExpr == nil {
+		diags.Extend(ExprError(obj, "missing required property 'value'"))
+	}
+
+	return ValidateSyntax(node, name, obj, schemaExpr, valueExpr), diags
 }

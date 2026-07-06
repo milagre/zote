@@ -124,7 +124,7 @@ import (
 //				Name:        pulumi.String("foo"),
 //				Region:      pulumi.String(digitalocean.RegionNYC1),
 //				AutoUpgrade: pulumi.Bool(true),
-//				Version:     pulumi.String(pulumi.String(example.LatestVersion)),
+//				Version:     pulumi.String(example.LatestVersion),
 //				MaintenancePolicy: &digitalocean.KubernetesClusterMaintenancePolicyArgs{
 //					StartTime: pulumi.String("04:00"),
 //					Day:       pulumi.String("sunday"),
@@ -239,7 +239,7 @@ type KubernetesCluster struct {
 	AmdGpuDevicePlugin KubernetesClusterAmdGpuDevicePluginOutput `pulumi:"amdGpuDevicePlugin"`
 	// A boolean value indicating whether the cluster will be automatically upgraded to new patch releases during its maintenance window.
 	AutoUpgrade pulumi.BoolPtrOutput `pulumi:"autoUpgrade"`
-	// Block containing options for cluster auto-scaling.
+	// Block containing options for cluster auto-scaling. For more information.
 	ClusterAutoscalerConfigurations KubernetesClusterClusterAutoscalerConfigurationArrayOutput `pulumi:"clusterAutoscalerConfigurations"`
 	// The range of IP addresses in the overlay network of the Kubernetes cluster. For more information, see [here](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-with-vpc-native).
 	ClusterSubnet pulumi.StringOutput `pulumi:"clusterSubnet"`
@@ -247,14 +247,16 @@ type KubernetesCluster struct {
 	ClusterUrn pulumi.StringOutput `pulumi:"clusterUrn"`
 	// A block representing the cluster's control plane firewall
 	ControlPlaneFirewall KubernetesClusterControlPlaneFirewallOutput `pulumi:"controlPlaneFirewall"`
+	// Block containing options for the CoreDNS Autoscaler component, which scales CoreDNS replicas in proportion to the cluster's size. Default: true (for 1.36.0 and later)
+	CorednsAutoscaler KubernetesClusterCorednsAutoscalerOutput `pulumi:"corednsAutoscaler"`
 	// The date and time when the node was created.
 	CreatedAt pulumi.StringOutput `pulumi:"createdAt"`
 	// **Use with caution.** When set to true, all associated DigitalOcean resources created via the Kubernetes API (load balancers, volumes, and volume snapshots) will be destroyed along with the cluster when it is destroyed.
 	DestroyAllAssociatedResources pulumi.BoolPtrOutput `pulumi:"destroyAllAssociatedResources"`
 	// The base URL of the API server on the Kubernetes master node.
 	Endpoint pulumi.StringOutput `pulumi:"endpoint"`
-	// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: false
-	Ha pulumi.BoolPtrOutput `pulumi:"ha"`
+	// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: true (for 1.36.0 and later)
+	Ha pulumi.BoolOutput `pulumi:"ha"`
 	// The public IPv4 address of the Kubernetes master node. This will not be set if high availability is configured on the cluster (v1.21+)
 	Ipv4Address pulumi.StringOutput `pulumi:"ipv4Address"`
 	// A representation of the Kubernetes cluster's kubeconfig with the following attributes:
@@ -277,8 +279,9 @@ type KubernetesCluster struct {
 	// Block containing options for the routing-agent component. If not specified, the routing-agent component will not be installed in the cluster.
 	RoutingAgent KubernetesClusterRoutingAgentOutput `pulumi:"routingAgent"`
 	// The range of assignable IP addresses for services running in the Kubernetes cluster. For more information, see [here](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-with-vpc-native).
-	ServiceSubnet pulumi.StringOutput             `pulumi:"serviceSubnet"`
-	Ssos          KubernetesClusterSsoArrayOutput `pulumi:"ssos"`
+	ServiceSubnet pulumi.StringOutput `pulumi:"serviceSubnet"`
+	// Block containing Single Sign-On (SSO) configuration for the cluster using OpenID Connect (OIDC).
+	Ssos KubernetesClusterSsoArrayOutput `pulumi:"ssos"`
 	// A string indicating the current status of the individual node.
 	Status pulumi.StringOutput `pulumi:"status"`
 	// Enable/disable surge upgrades for a cluster. Default: true
@@ -291,6 +294,8 @@ type KubernetesCluster struct {
 	Version pulumi.StringOutput `pulumi:"version"`
 	// The ID of the VPC where the Kubernetes cluster will be located.
 	VpcUuid pulumi.StringOutput `pulumi:"vpcUuid"`
+	// The ID of the VPC subnet for placing worker nodes. Must be a valid subnet in the cluster VPC. Requires that `vpcUuid` is also set.
+	WorkerSubnetUuid pulumi.StringOutput `pulumi:"workerSubnetUuid"`
 }
 
 // NewKubernetesCluster registers a new resource with the given unique name, arguments, and options.
@@ -342,7 +347,7 @@ type kubernetesClusterState struct {
 	AmdGpuDevicePlugin *KubernetesClusterAmdGpuDevicePlugin `pulumi:"amdGpuDevicePlugin"`
 	// A boolean value indicating whether the cluster will be automatically upgraded to new patch releases during its maintenance window.
 	AutoUpgrade *bool `pulumi:"autoUpgrade"`
-	// Block containing options for cluster auto-scaling.
+	// Block containing options for cluster auto-scaling. For more information.
 	ClusterAutoscalerConfigurations []KubernetesClusterClusterAutoscalerConfiguration `pulumi:"clusterAutoscalerConfigurations"`
 	// The range of IP addresses in the overlay network of the Kubernetes cluster. For more information, see [here](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-with-vpc-native).
 	ClusterSubnet *string `pulumi:"clusterSubnet"`
@@ -350,13 +355,15 @@ type kubernetesClusterState struct {
 	ClusterUrn *string `pulumi:"clusterUrn"`
 	// A block representing the cluster's control plane firewall
 	ControlPlaneFirewall *KubernetesClusterControlPlaneFirewall `pulumi:"controlPlaneFirewall"`
+	// Block containing options for the CoreDNS Autoscaler component, which scales CoreDNS replicas in proportion to the cluster's size. Default: true (for 1.36.0 and later)
+	CorednsAutoscaler *KubernetesClusterCorednsAutoscaler `pulumi:"corednsAutoscaler"`
 	// The date and time when the node was created.
 	CreatedAt *string `pulumi:"createdAt"`
 	// **Use with caution.** When set to true, all associated DigitalOcean resources created via the Kubernetes API (load balancers, volumes, and volume snapshots) will be destroyed along with the cluster when it is destroyed.
 	DestroyAllAssociatedResources *bool `pulumi:"destroyAllAssociatedResources"`
 	// The base URL of the API server on the Kubernetes master node.
 	Endpoint *string `pulumi:"endpoint"`
-	// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: false
+	// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: true (for 1.36.0 and later)
 	Ha *bool `pulumi:"ha"`
 	// The public IPv4 address of the Kubernetes master node. This will not be set if high availability is configured on the cluster (v1.21+)
 	Ipv4Address *string `pulumi:"ipv4Address"`
@@ -380,8 +387,9 @@ type kubernetesClusterState struct {
 	// Block containing options for the routing-agent component. If not specified, the routing-agent component will not be installed in the cluster.
 	RoutingAgent *KubernetesClusterRoutingAgent `pulumi:"routingAgent"`
 	// The range of assignable IP addresses for services running in the Kubernetes cluster. For more information, see [here](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-with-vpc-native).
-	ServiceSubnet *string                `pulumi:"serviceSubnet"`
-	Ssos          []KubernetesClusterSso `pulumi:"ssos"`
+	ServiceSubnet *string `pulumi:"serviceSubnet"`
+	// Block containing Single Sign-On (SSO) configuration for the cluster using OpenID Connect (OIDC).
+	Ssos []KubernetesClusterSso `pulumi:"ssos"`
 	// A string indicating the current status of the individual node.
 	Status *string `pulumi:"status"`
 	// Enable/disable surge upgrades for a cluster. Default: true
@@ -394,6 +402,8 @@ type kubernetesClusterState struct {
 	Version *string `pulumi:"version"`
 	// The ID of the VPC where the Kubernetes cluster will be located.
 	VpcUuid *string `pulumi:"vpcUuid"`
+	// The ID of the VPC subnet for placing worker nodes. Must be a valid subnet in the cluster VPC. Requires that `vpcUuid` is also set.
+	WorkerSubnetUuid *string `pulumi:"workerSubnetUuid"`
 }
 
 type KubernetesClusterState struct {
@@ -403,7 +413,7 @@ type KubernetesClusterState struct {
 	AmdGpuDevicePlugin KubernetesClusterAmdGpuDevicePluginPtrInput
 	// A boolean value indicating whether the cluster will be automatically upgraded to new patch releases during its maintenance window.
 	AutoUpgrade pulumi.BoolPtrInput
-	// Block containing options for cluster auto-scaling.
+	// Block containing options for cluster auto-scaling. For more information.
 	ClusterAutoscalerConfigurations KubernetesClusterClusterAutoscalerConfigurationArrayInput
 	// The range of IP addresses in the overlay network of the Kubernetes cluster. For more information, see [here](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-with-vpc-native).
 	ClusterSubnet pulumi.StringPtrInput
@@ -411,13 +421,15 @@ type KubernetesClusterState struct {
 	ClusterUrn pulumi.StringPtrInput
 	// A block representing the cluster's control plane firewall
 	ControlPlaneFirewall KubernetesClusterControlPlaneFirewallPtrInput
+	// Block containing options for the CoreDNS Autoscaler component, which scales CoreDNS replicas in proportion to the cluster's size. Default: true (for 1.36.0 and later)
+	CorednsAutoscaler KubernetesClusterCorednsAutoscalerPtrInput
 	// The date and time when the node was created.
 	CreatedAt pulumi.StringPtrInput
 	// **Use with caution.** When set to true, all associated DigitalOcean resources created via the Kubernetes API (load balancers, volumes, and volume snapshots) will be destroyed along with the cluster when it is destroyed.
 	DestroyAllAssociatedResources pulumi.BoolPtrInput
 	// The base URL of the API server on the Kubernetes master node.
 	Endpoint pulumi.StringPtrInput
-	// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: false
+	// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: true (for 1.36.0 and later)
 	Ha pulumi.BoolPtrInput
 	// The public IPv4 address of the Kubernetes master node. This will not be set if high availability is configured on the cluster (v1.21+)
 	Ipv4Address pulumi.StringPtrInput
@@ -442,7 +454,8 @@ type KubernetesClusterState struct {
 	RoutingAgent KubernetesClusterRoutingAgentPtrInput
 	// The range of assignable IP addresses for services running in the Kubernetes cluster. For more information, see [here](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-with-vpc-native).
 	ServiceSubnet pulumi.StringPtrInput
-	Ssos          KubernetesClusterSsoArrayInput
+	// Block containing Single Sign-On (SSO) configuration for the cluster using OpenID Connect (OIDC).
+	Ssos KubernetesClusterSsoArrayInput
 	// A string indicating the current status of the individual node.
 	Status pulumi.StringPtrInput
 	// Enable/disable surge upgrades for a cluster. Default: true
@@ -455,6 +468,8 @@ type KubernetesClusterState struct {
 	Version pulumi.StringPtrInput
 	// The ID of the VPC where the Kubernetes cluster will be located.
 	VpcUuid pulumi.StringPtrInput
+	// The ID of the VPC subnet for placing worker nodes. Must be a valid subnet in the cluster VPC. Requires that `vpcUuid` is also set.
+	WorkerSubnetUuid pulumi.StringPtrInput
 }
 
 func (KubernetesClusterState) ElementType() reflect.Type {
@@ -468,15 +483,17 @@ type kubernetesClusterArgs struct {
 	AmdGpuDevicePlugin *KubernetesClusterAmdGpuDevicePlugin `pulumi:"amdGpuDevicePlugin"`
 	// A boolean value indicating whether the cluster will be automatically upgraded to new patch releases during its maintenance window.
 	AutoUpgrade *bool `pulumi:"autoUpgrade"`
-	// Block containing options for cluster auto-scaling.
+	// Block containing options for cluster auto-scaling. For more information.
 	ClusterAutoscalerConfigurations []KubernetesClusterClusterAutoscalerConfiguration `pulumi:"clusterAutoscalerConfigurations"`
 	// The range of IP addresses in the overlay network of the Kubernetes cluster. For more information, see [here](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-with-vpc-native).
 	ClusterSubnet *string `pulumi:"clusterSubnet"`
 	// A block representing the cluster's control plane firewall
 	ControlPlaneFirewall *KubernetesClusterControlPlaneFirewall `pulumi:"controlPlaneFirewall"`
+	// Block containing options for the CoreDNS Autoscaler component, which scales CoreDNS replicas in proportion to the cluster's size. Default: true (for 1.36.0 and later)
+	CorednsAutoscaler *KubernetesClusterCorednsAutoscaler `pulumi:"corednsAutoscaler"`
 	// **Use with caution.** When set to true, all associated DigitalOcean resources created via the Kubernetes API (load balancers, volumes, and volume snapshots) will be destroyed along with the cluster when it is destroyed.
 	DestroyAllAssociatedResources *bool `pulumi:"destroyAllAssociatedResources"`
-	// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: false
+	// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: true (for 1.36.0 and later)
 	Ha *bool `pulumi:"ha"`
 	// The duration in seconds that the returned Kubernetes credentials will be valid. If not set or 0, the credentials will have a 7 day expiry.
 	KubeconfigExpireSeconds *int `pulumi:"kubeconfigExpireSeconds"`
@@ -496,8 +513,9 @@ type kubernetesClusterArgs struct {
 	// Block containing options for the routing-agent component. If not specified, the routing-agent component will not be installed in the cluster.
 	RoutingAgent *KubernetesClusterRoutingAgent `pulumi:"routingAgent"`
 	// The range of assignable IP addresses for services running in the Kubernetes cluster. For more information, see [here](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-with-vpc-native).
-	ServiceSubnet *string                `pulumi:"serviceSubnet"`
-	Ssos          []KubernetesClusterSso `pulumi:"ssos"`
+	ServiceSubnet *string `pulumi:"serviceSubnet"`
+	// Block containing Single Sign-On (SSO) configuration for the cluster using OpenID Connect (OIDC).
+	Ssos []KubernetesClusterSso `pulumi:"ssos"`
 	// Enable/disable surge upgrades for a cluster. Default: true
 	SurgeUpgrade *bool `pulumi:"surgeUpgrade"`
 	// A list of tag names to be applied to the Kubernetes cluster.
@@ -506,6 +524,8 @@ type kubernetesClusterArgs struct {
 	Version string `pulumi:"version"`
 	// The ID of the VPC where the Kubernetes cluster will be located.
 	VpcUuid *string `pulumi:"vpcUuid"`
+	// The ID of the VPC subnet for placing worker nodes. Must be a valid subnet in the cluster VPC. Requires that `vpcUuid` is also set.
+	WorkerSubnetUuid *string `pulumi:"workerSubnetUuid"`
 }
 
 // The set of arguments for constructing a KubernetesCluster resource.
@@ -516,15 +536,17 @@ type KubernetesClusterArgs struct {
 	AmdGpuDevicePlugin KubernetesClusterAmdGpuDevicePluginPtrInput
 	// A boolean value indicating whether the cluster will be automatically upgraded to new patch releases during its maintenance window.
 	AutoUpgrade pulumi.BoolPtrInput
-	// Block containing options for cluster auto-scaling.
+	// Block containing options for cluster auto-scaling. For more information.
 	ClusterAutoscalerConfigurations KubernetesClusterClusterAutoscalerConfigurationArrayInput
 	// The range of IP addresses in the overlay network of the Kubernetes cluster. For more information, see [here](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-with-vpc-native).
 	ClusterSubnet pulumi.StringPtrInput
 	// A block representing the cluster's control plane firewall
 	ControlPlaneFirewall KubernetesClusterControlPlaneFirewallPtrInput
+	// Block containing options for the CoreDNS Autoscaler component, which scales CoreDNS replicas in proportion to the cluster's size. Default: true (for 1.36.0 and later)
+	CorednsAutoscaler KubernetesClusterCorednsAutoscalerPtrInput
 	// **Use with caution.** When set to true, all associated DigitalOcean resources created via the Kubernetes API (load balancers, volumes, and volume snapshots) will be destroyed along with the cluster when it is destroyed.
 	DestroyAllAssociatedResources pulumi.BoolPtrInput
-	// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: false
+	// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: true (for 1.36.0 and later)
 	Ha pulumi.BoolPtrInput
 	// The duration in seconds that the returned Kubernetes credentials will be valid. If not set or 0, the credentials will have a 7 day expiry.
 	KubeconfigExpireSeconds pulumi.IntPtrInput
@@ -545,7 +567,8 @@ type KubernetesClusterArgs struct {
 	RoutingAgent KubernetesClusterRoutingAgentPtrInput
 	// The range of assignable IP addresses for services running in the Kubernetes cluster. For more information, see [here](https://docs.digitalocean.com/products/kubernetes/how-to/create-clusters/#create-with-vpc-native).
 	ServiceSubnet pulumi.StringPtrInput
-	Ssos          KubernetesClusterSsoArrayInput
+	// Block containing Single Sign-On (SSO) configuration for the cluster using OpenID Connect (OIDC).
+	Ssos KubernetesClusterSsoArrayInput
 	// Enable/disable surge upgrades for a cluster. Default: true
 	SurgeUpgrade pulumi.BoolPtrInput
 	// A list of tag names to be applied to the Kubernetes cluster.
@@ -554,6 +577,8 @@ type KubernetesClusterArgs struct {
 	Version pulumi.StringInput
 	// The ID of the VPC where the Kubernetes cluster will be located.
 	VpcUuid pulumi.StringPtrInput
+	// The ID of the VPC subnet for placing worker nodes. Must be a valid subnet in the cluster VPC. Requires that `vpcUuid` is also set.
+	WorkerSubnetUuid pulumi.StringPtrInput
 }
 
 func (KubernetesClusterArgs) ElementType() reflect.Type {
@@ -660,7 +685,7 @@ func (o KubernetesClusterOutput) AutoUpgrade() pulumi.BoolPtrOutput {
 	return o.ApplyT(func(v *KubernetesCluster) pulumi.BoolPtrOutput { return v.AutoUpgrade }).(pulumi.BoolPtrOutput)
 }
 
-// Block containing options for cluster auto-scaling.
+// Block containing options for cluster auto-scaling. For more information.
 func (o KubernetesClusterOutput) ClusterAutoscalerConfigurations() KubernetesClusterClusterAutoscalerConfigurationArrayOutput {
 	return o.ApplyT(func(v *KubernetesCluster) KubernetesClusterClusterAutoscalerConfigurationArrayOutput {
 		return v.ClusterAutoscalerConfigurations
@@ -682,6 +707,11 @@ func (o KubernetesClusterOutput) ControlPlaneFirewall() KubernetesClusterControl
 	return o.ApplyT(func(v *KubernetesCluster) KubernetesClusterControlPlaneFirewallOutput { return v.ControlPlaneFirewall }).(KubernetesClusterControlPlaneFirewallOutput)
 }
 
+// Block containing options for the CoreDNS Autoscaler component, which scales CoreDNS replicas in proportion to the cluster's size. Default: true (for 1.36.0 and later)
+func (o KubernetesClusterOutput) CorednsAutoscaler() KubernetesClusterCorednsAutoscalerOutput {
+	return o.ApplyT(func(v *KubernetesCluster) KubernetesClusterCorednsAutoscalerOutput { return v.CorednsAutoscaler }).(KubernetesClusterCorednsAutoscalerOutput)
+}
+
 // The date and time when the node was created.
 func (o KubernetesClusterOutput) CreatedAt() pulumi.StringOutput {
 	return o.ApplyT(func(v *KubernetesCluster) pulumi.StringOutput { return v.CreatedAt }).(pulumi.StringOutput)
@@ -697,9 +727,9 @@ func (o KubernetesClusterOutput) Endpoint() pulumi.StringOutput {
 	return o.ApplyT(func(v *KubernetesCluster) pulumi.StringOutput { return v.Endpoint }).(pulumi.StringOutput)
 }
 
-// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: false
-func (o KubernetesClusterOutput) Ha() pulumi.BoolPtrOutput {
-	return o.ApplyT(func(v *KubernetesCluster) pulumi.BoolPtrOutput { return v.Ha }).(pulumi.BoolPtrOutput)
+// Enable/disable the high availability control plane for a cluster. Once enabled for a cluster, high availability cannot be disabled. Default: true (for 1.36.0 and later)
+func (o KubernetesClusterOutput) Ha() pulumi.BoolOutput {
+	return o.ApplyT(func(v *KubernetesCluster) pulumi.BoolOutput { return v.Ha }).(pulumi.BoolOutput)
 }
 
 // The public IPv4 address of the Kubernetes master node. This will not be set if high availability is configured on the cluster (v1.21+)
@@ -765,6 +795,7 @@ func (o KubernetesClusterOutput) ServiceSubnet() pulumi.StringOutput {
 	return o.ApplyT(func(v *KubernetesCluster) pulumi.StringOutput { return v.ServiceSubnet }).(pulumi.StringOutput)
 }
 
+// Block containing Single Sign-On (SSO) configuration for the cluster using OpenID Connect (OIDC).
 func (o KubernetesClusterOutput) Ssos() KubernetesClusterSsoArrayOutput {
 	return o.ApplyT(func(v *KubernetesCluster) KubernetesClusterSsoArrayOutput { return v.Ssos }).(KubernetesClusterSsoArrayOutput)
 }
@@ -797,6 +828,11 @@ func (o KubernetesClusterOutput) Version() pulumi.StringOutput {
 // The ID of the VPC where the Kubernetes cluster will be located.
 func (o KubernetesClusterOutput) VpcUuid() pulumi.StringOutput {
 	return o.ApplyT(func(v *KubernetesCluster) pulumi.StringOutput { return v.VpcUuid }).(pulumi.StringOutput)
+}
+
+// The ID of the VPC subnet for placing worker nodes. Must be a valid subnet in the cluster VPC. Requires that `vpcUuid` is also set.
+func (o KubernetesClusterOutput) WorkerSubnetUuid() pulumi.StringOutput {
+	return o.ApplyT(func(v *KubernetesCluster) pulumi.StringOutput { return v.WorkerSubnetUuid }).(pulumi.StringOutput)
 }
 
 type KubernetesClusterArrayOutput struct{ *pulumi.OutputState }
