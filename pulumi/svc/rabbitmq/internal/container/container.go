@@ -57,8 +57,9 @@ type Container struct {
 	adminHostname pulumi.StringOutput
 	adminPort     pulumi.StringOutput
 
-	passwords map[string]pulumi.StringOutput
-	users     []string
+	passwords       map[string]pulumi.StringOutput
+	monitorPassword pulumi.StringOutput
+	users           []string
 }
 
 func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.ResourceOption) (*Container, error) {
@@ -84,11 +85,15 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	}
 
 	releaseName := fmt.Sprintf("rabbitmq-%s", args.Name)
-	// Synthetic admin is always present regardless of caller setup so
-	// operators always have a management-scope user to log into.
-	allUsers := make([]User, 0, len(args.Setup.Users)+1)
+	// Synthetic admin and monitor users are always present regardless of caller
+	// setup: admin so operators always have a management-scope login, monitor so
+	// autoscalers have a least-privilege queue-depth reader. Neither is placed in
+	// a vhost, so monitor holds no data-plane permissions (only its "monitoring"
+	// tag), while admin's access comes from the per-vhost admin permission rows.
+	allUsers := make([]User, 0, len(args.Setup.Users)+2)
 	allUsers = append(allUsers, args.Setup.Users...)
 	allUsers = append(allUsers, User{Name: adminUser, Tags: []string{"administrator", "management"}})
+	allUsers = append(allUsers, User{Name: monitorUser, Tags: []string{"monitoring"}})
 
 	userNames := make([]string, 0, len(allUsers))
 	for _, u := range allUsers {
@@ -170,6 +175,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	for _, u := range args.Setup.Users {
 		comp.passwords[u.Name] = creds[u.Name].password.Result
 	}
+	comp.monitorPassword = creds[monitorUser].password.Result
 	comp.users = userNames
 
 	if err := ctx.RegisterResourceOutputs(comp, pulumi.Map{}); err != nil {
@@ -184,3 +190,5 @@ func (c *Container) Port() pulumi.StringOutput                 { return c.port }
 func (c *Container) AdminHostname() pulumi.StringOutput        { return c.adminHostname }
 func (c *Container) AdminPort() pulumi.StringOutput            { return c.adminPort }
 func (c *Container) Passwords() map[string]pulumi.StringOutput { return c.passwords }
+func (c *Container) MonitorUser() string                       { return monitorUser }
+func (c *Container) MonitorPassword() pulumi.StringOutput      { return c.monitorPassword }

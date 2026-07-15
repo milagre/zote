@@ -327,7 +327,7 @@ func TestVecOpPanicDetail(t *testing.T) {
 		"zapi.responses",
 		"zapi_responses",
 		[]string{"env", "method", "namespace", "status"},
-		map[string]string{"env": "dev", "method": "POST", "namespace": "finance", "path": "/x", "route": "r", "service": "api", "status": "201"},
+		map[string]string{"env": "dev", "method": "POST", "namespace": "apps", "path": "/x", "route": "r", "service": "api", "status": "201"},
 		fmt.Errorf("inconsistent label cardinality: expected 4 label values but got 7"),
 	)
 	assert.Contains(t, msg, `metric zstats="zapi.responses"`)

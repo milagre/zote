@@ -22,6 +22,11 @@ type Cluster struct {
 	// PublicIngressServiceHostname is the in-cluster hostname of PublicIngressServiceName.
 	PublicIngressServiceHostname *string
 
+	// MetricsQueryURL is the Prometheus-compatible query endpoint of the deployed metrics
+	// store, used by KEDA prometheus-trigger autoscalers.
+	// Nil until the stats stack registers it.
+	MetricsQueryURL *string
+
 	// PrivateIngressClassName is reserved for a future private ingress controller.
 	PrivateIngressClassName *string
 
@@ -89,4 +94,14 @@ func (c *Cluster) SetGrafana(p *grafana.Provider) {
 	}
 
 	c.Grafana = p
+}
+
+// SetMetricsQueryURL records the Prometheus-compatible query endpoint of the
+// deployed metrics store.
+func (c *Cluster) SetMetricsQueryURL(url string) {
+	if c == nil {
+		return
+	}
+
+	c.MetricsQueryURL = stringPtr(url)
 }

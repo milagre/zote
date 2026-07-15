@@ -12,6 +12,7 @@ import (
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/k8s/deployment/internal/body"
+	"github.com/milagre/zote/pulumi/k8s/deployment/internal/scaledobject"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/util/profile"
@@ -54,6 +55,10 @@ type Args struct {
 	Setup    Options
 	Metrics  bool
 	Internal Internal
+
+	// Autoscale, when set, emits a KEDA ScaledObject. HTTP workloads never
+	// scale to zero: body enforces Profile.Num.Min >= 1.
+	Autoscale *scaledobject.Spec
 
 	// Cluster supplies registered ingress classes and the TLS issuer for autodiscovery.
 	Cluster *infra.Cluster
@@ -110,6 +115,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			Port: args.Setup.Port,
 			Freq: args.Setup.Freq,
 		},
+		Autoscale: args.Autoscale,
+		Cluster:   args.Cluster,
 	}, comp); err != nil {
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
 	}

@@ -78,6 +78,24 @@ func TestPublicHostnames(t *testing.T) {
 	}
 }
 
+// TestZAMQPUtilizationStat pins the query the zamqp-consumer convenience emits:
+// the ambient stats prefix (lowercased env prefix, namespace, workload name) is
+// qualified with the zamqp consumer utilization name and sanitized for
+// Prometheus, then matched via __name__ so hyphens (invalid in a bare metric
+// name) survive. The composition itself is owned by the zote runtime.
+func TestZAMQPUtilizationStat(t *testing.T) {
+	e, err := env.New("zote", "prod", "prod", "mars", "/home/mars", "APP")
+	if err != nil {
+		t.Fatalf("env.New: %v", err)
+	}
+
+	got := ZAMQPUtilizationStat(e, "apps", "my-worker")
+	want := `avg({__name__="app_apps_my-worker_zamqp_consumer_utilization"})`
+	if got != want {
+		t.Fatalf("ZAMQPUtilizationStat = %q, want %q", got, want)
+	}
+}
+
 // TestPrivateHostname encodes the Kubernetes in-cluster DNS naming
 // convention our workloads rely on. Drift here silently breaks every
 // caller that references a workload by its private hostname.

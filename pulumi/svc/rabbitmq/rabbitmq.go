@@ -50,10 +50,19 @@ type K8sUser struct {
 	Secret    pulumi.StringOutput
 }
 
+// K8sMonitor is the least-privilege monitoring surface used by autoscalers.
+// HostSecret names a Secret whose "host" key holds the full RabbitMQ management
+// URI (including the monitor user's credentials), ready for a KEDA
+// TriggerAuthentication.
+type K8sMonitor struct {
+	HostSecret pulumi.StringOutput
+}
+
 type K8s struct {
 	Rabbitmq K8sConfigMap
 	AMQP     K8sConfigMap
 	Users    map[string]K8sUser
+	Monitor  K8sMonitor
 }
 
 // Rabbitmq: K8s resource names; AMQP/API endpoints; Users map is plaintext passwords (treat as secret).
@@ -164,10 +173,16 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		}
 	}
 
+	monitorSecret, err := registerMonitorSecret(ctx, resourceName, comp, args.Namespace, nameAMQP, be)
+	if err != nil {
+		return nil, err
+	}
+
 	comp.K8s = K8s{
 		Rabbitmq: K8sConfigMap{ConfigMap: rabbitmqCM.Metadata.Name().Elem()},
 		AMQP:     K8sConfigMap{ConfigMap: amqpCM.Metadata.Name().Elem()},
 		Users:    users,
+		Monitor:  K8sMonitor{HostSecret: monitorSecret.Metadata.Name().Elem()},
 	}
 	comp.AMQP = Endpoint{Host: be.Hostname(), Port: be.Port()}
 	comp.API = Endpoint{Host: be.AdminHostname(), Port: be.AdminPort()}
@@ -203,6 +218,8 @@ type backend interface {
 	AdminHostname() pulumi.StringOutput
 	AdminPort() pulumi.StringOutput
 	Passwords() map[string]pulumi.StringOutput
+	MonitorUser() string
+	MonitorPassword() pulumi.StringOutput
 }
 
 func selectBackend(ctx *pulumi.Context, name string, args *Args, parent pulumi.Resource) (backend, error) {
@@ -226,6 +243,44 @@ func selectBackend(ctx *pulumi.Context, name string, args *Args, parent pulumi.R
 	}
 
 	return c, nil
+}
+
+// registerMonitorSecret materializes the management-API connection URI for the
+// least-privilege monitor user into a Secret consumable by a KEDA
+// TriggerAuthentication. The generated passwords are alphanumeric, so the URI
+// needs no percent-encoding.
+func registerMonitorSecret(
+	ctx *pulumi.Context,
+	resourceName string,
+	comp pulumi.Resource,
+	namespace string,
+	amqpBaseName string,
+	be backend,
+) (*corev1.Secret, error) {
+	hostURI := pulumi.Sprintf(
+		"http://%s:%s@%s:%s",
+		be.MonitorUser(),
+		be.MonitorPassword(),
+		be.AdminHostname(),
+		be.AdminPort(),
+	)
+
+	sec, err := corev1.NewSecret(ctx, resourceName+"-monitor", &corev1.SecretArgs{
+		Metadata: &metav1.ObjectMetaArgs{
+			Name:        pulumi.String(amqpBaseName + "-monitor"),
+			Namespace:   pulumi.String(namespace),
+			Annotations: pulumi.StringMap{"pulumi.com/patchForce": pulumi.String("true")},
+		},
+		Type: pulumi.String("Opaque"),
+		Data: stringdata.SecretData(map[string]pulumi.StringOutput{
+			"host": hostURI,
+		}),
+	}, pulumi.Parent(comp))
+	if err != nil {
+		return nil, fmt.Errorf("%s: monitor secret: %w", typeToken, err)
+	}
+
+	return sec, nil
 }
 
 func sortedUsers(users []container.User) []string {

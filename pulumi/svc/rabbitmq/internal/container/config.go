@@ -16,7 +16,12 @@ import (
 
 const (
 	adminUser = "admin"
-	username  = "rabbitmq"
+	// monitorUser is a least-privilege user for autoscalers (KEDA) that only
+	// read queue depth over the management API. It carries the "monitoring"
+	// tag (management-API read across all vhosts) but is granted no vhost
+	// permissions, so it cannot publish, consume, or configure anything.
+	monitorUser = "monitor"
+	username    = "rabbitmq"
 
 	hashingAlgorithm = "rabbit_password_hashing_sha512"
 )

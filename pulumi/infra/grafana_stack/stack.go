@@ -152,6 +152,10 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 
 	args.Cluster.SetGrafana(prov)
 
+	// Publish the Prometheus-compatible query endpoint so app-namespace
+	// autoscalers (KEDA prometheus triggers) can resolve the metrics store.
+	args.Cluster.SetMetricsQueryURL(mm.Prometheus.String())
+
 	return comp, nil
 }
 

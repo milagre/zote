@@ -9,7 +9,9 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/k8s/deployment/internal/body"
+	"github.com/milagre/zote/pulumi/k8s/deployment/internal/scaledobject"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/util/profile"
@@ -38,6 +40,13 @@ type Args struct {
 	Files Files
 
 	Metrics bool
+
+	// Autoscale, when set, emits a KEDA ScaledObject for this worker. Proc
+	// workloads may scale to zero (Profile.Num.Min == 0) with a queue trigger.
+	Autoscale *scaledobject.Spec
+
+	// Cluster supplies autoscaling coordinates; required when Autoscale is set.
+	Cluster *infra.Cluster
 }
 
 type Deployment struct {
@@ -82,6 +91,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		Files:     args.Files,
 		Ports:     ports,
 		Metrics:   args.Metrics,
+		Autoscale: args.Autoscale,
+		Cluster:   args.Cluster,
 	}, comp); err != nil {
 		return nil, fmt.Errorf("%s: %w", typeToken, err)
 	}

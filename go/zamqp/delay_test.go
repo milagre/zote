@@ -33,17 +33,17 @@ func TestAdjustedDelay(t *testing.T) {
 func TestDelayName(t *testing.T) {
 	t.Parallel()
 
-	require.Equal(t, "delay-debounce-router-6s", delayName("debounce-router", 5500*time.Millisecond))
+	require.Equal(t, "delay-orders-6s", delayName("orders", 5500*time.Millisecond))
 }
 
 func TestDelayQueue(t *testing.T) {
 	t.Parallel()
 
-	queue := delayQueue(Exchange{Name: "debounce-router", Type: ExchangeTypeDirect}, 30*time.Second)
+	queue := delayQueue(Exchange{Name: "orders", Type: ExchangeTypeDirect}, 30*time.Second)
 
-	require.Equal(t, "delay-debounce-router-30s", queue.Name)
+	require.Equal(t, "delay-orders-30s", queue.Name)
 	require.Equal(t, 30000, queue.Options[amqp091.QueueMessageTTLArg])
-	require.Equal(t, "debounce-router", queue.Options["x-dead-letter-exchange"])
+	require.Equal(t, "orders", queue.Options["x-dead-letter-exchange"])
 	_, hasDLRK := queue.Options["x-dead-letter-routing-key"]
 	require.False(t, hasDLRK)
 	require.Equal(t, amqp091.QueueTypeQuorum, queue.Options[amqp091.QueueTypeArg])
@@ -53,9 +53,9 @@ func TestDelayQueue(t *testing.T) {
 func TestDelayDeclarations(t *testing.T) {
 	t.Parallel()
 
-	name := delayName("debounce-router", 30*time.Second)
+	name := delayName("orders", 30*time.Second)
 	decl := delayDeclarations(
-		Exchange{Name: "debounce-router", Type: ExchangeTypeDirect},
+		Exchange{Name: "orders", Type: ExchangeTypeDirect},
 		30*time.Second,
 	)
 

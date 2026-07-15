@@ -9,6 +9,7 @@ import (
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/k8s/deployment/http"
+	"github.com/milagre/zote/pulumi/k8s/deployment/internal/scaledobject"
 	"github.com/milagre/zote/pulumi/k8s/deployment/proc"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 	"github.com/milagre/zote/pulumi/util/profile"
@@ -21,6 +22,12 @@ type (
 	Conf     = podspec.Conf
 	Files    = podspec.Files
 	HTTPMode = http.Options
+
+	// Autoscale configures KEDA-driven scaling for a workload. Replica bounds
+	// come from Profile.Num
+	Autoscale          = scaledobject.Spec
+	QueueTrigger       = scaledobject.QueueTrigger
+	UtilizationTrigger = scaledobject.UtilizationTrigger
 )
 
 type Mode struct {
@@ -49,6 +56,9 @@ type Args struct {
 	Files Files
 
 	Metrics bool
+
+	// Autoscale, when set, emits a KEDA ScaledObject for this workload.
+	Autoscale *Autoscale
 
 	// Cluster supplies registered ingress classes for HTTP workloads.
 	Cluster *infra.Cluster
@@ -105,7 +115,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 				PrivateHostname: comp.PrivateHostname,
 				VeneerHostnames: args.Veneers,
 			},
-			Cluster: args.Cluster,
+			Autoscale: args.Autoscale,
+			Cluster:   args.Cluster,
 		}, pulumi.Parent(comp)); err != nil {
 			return nil, fmt.Errorf("%s: %w", typeToken, err)
 		}
@@ -123,6 +134,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			Conf:      args.Conf,
 			Files:     args.Files,
 			Metrics:   args.Metrics,
+			Autoscale: args.Autoscale,
+			Cluster:   args.Cluster,
 		}, pulumi.Parent(comp)); err != nil {
 			return nil, fmt.Errorf("%s: %w", typeToken, err)
 		}

@@ -144,14 +144,17 @@ func resources(p profile.Profile) *corev1.ResourceRequirementsArgs {
 	}
 }
 
+// StatsPrefix is the ambient <PREFIX>_STATS_PREFIX value injected into every
+// workload: the lowercased env prefix, the namespace, and the workload name
+// joined with dots. Every metric a workload emits is qualified beneath it, so
+// anything reconstructing a stored metric name out of band must start here.
+func StatsPrefix(e env.Env, namespace, name string) string {
+	return fmt.Sprintf("%s.%s.%s", strings.ToLower(e.Prefix), namespace, name)
+}
+
 func statsEnv(a Args) corev1.EnvVarArray {
 	prefix := a.Env.Prefix
-	statsPrefix := fmt.Sprintf(
-		"%s.%s.%s",
-		strings.ToLower(prefix),
-		a.Namespace,
-		a.Name,
-	)
+	statsPrefix := StatsPrefix(a.Env, a.Namespace, a.Name)
 
 	tags, _ := json.Marshal(map[string]string{
 		"env":       a.Env.ID(),
