@@ -87,9 +87,9 @@ func New(ctx *pulumi.Context, parentName string, args *Args, opts ...pulumi.Reso
 	releaseName := fmt.Sprintf("rabbitmq-%s", args.Name)
 	// Synthetic admin and monitor users are always present regardless of caller
 	// setup: admin so operators always have a management-scope login, monitor so
-	// autoscalers have a least-privilege queue-depth reader. Neither is placed in
-	// a vhost, so monitor holds no data-plane permissions (only its "monitoring"
-	// tag), while admin's access comes from the per-vhost admin permission rows.
+	// autoscalers have a least-privilege queue-depth reader. Both get per-vhost
+	// permission rows (see definitionsJSON): admin full access, monitor read-only
+	// (which is required for KEDA to reach vhost-scoped queue endpoints).
 	allUsers := make([]User, 0, len(args.Setup.Users)+2)
 	allUsers = append(allUsers, args.Setup.Users...)
 	allUsers = append(allUsers, User{Name: adminUser, Tags: []string{"administrator", "management"}})

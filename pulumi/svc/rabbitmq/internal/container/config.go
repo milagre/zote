@@ -18,8 +18,10 @@ const (
 	adminUser = "admin"
 	// monitorUser is a least-privilege user for autoscalers (KEDA) that only
 	// read queue depth over the management API. It carries the "monitoring"
-	// tag (management-API read across all vhosts) but is granted no vhost
-	// permissions, so it cannot publish, consume, or configure anything.
+	// tag plus a read-only permission entry on every vhost (configure/write
+	// empty, read ".*"): the tag exposes management endpoints while the
+	// per-vhost entry authorizes vhost-scoped queue reads. It can never
+	// declare, delete, publish, or consume.
 	monitorUser = "monitor"
 	username    = "rabbitmq"
 
@@ -139,6 +141,16 @@ func definitionsJSON(users []User, vhosts []Vhost, creds map[string]userCreds) p
 			permDefs = append(permDefs, permDef{
 				User: adminUser, Vhost: v.Name,
 				Configure: ".*", Read: ".*", Write: ".*",
+			})
+			// The monitoring tag alone does not authorize vhost-scoped endpoints
+			// (e.g. GET /api/queues/{vhost}/{queue}, which KEDA polls for queue
+			// depth): RabbitMQ's connection-level vhost-access check requires the
+			// user to hold a permission record on the vhost. Grant read-only —
+			// read ".*" covers observing every queue while empty configure/write
+			// deny declaring, deleting, and publishing.
+			permDefs = append(permDefs, permDef{
+				User: monitorUser, Vhost: v.Name,
+				Configure: "^$", Read: ".*", Write: "^$",
 			})
 		}
 
