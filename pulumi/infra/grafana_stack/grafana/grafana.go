@@ -62,6 +62,11 @@ type Grafana struct {
 	UI    url.URL
 	API   url.URL
 	Admin Credentials
+
+	// Ingresses are the public/tunnel Ingress resources fronting Grafana. Callers
+	// that reach Grafana through [API] (e.g. the Pulumi Grafana provider) should
+	// DependsOn these so work is sequenced after the API becomes routable.
+	Ingresses []pulumi.Resource
 }
 
 type Credentials struct {
@@ -190,13 +195,14 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 
 	// The reachable endpoint depends on what Ingress was actually provisioned,
 	// so derive UI/API from registerIngresses rather than recomputing the host.
-	endpoint, err := registerIngresses(ctx, name, args, comp, comp, httpBase)
+	endpoint, ingresses, err := registerIngresses(ctx, name, args, comp, comp, httpBase)
 	if err != nil {
 		return nil, fmt.Errorf("grafana: ingress: %w", err)
 	}
 
 	comp.UI = endpoint
 	comp.API = endpoint
+	comp.Ingresses = ingresses
 
 	return comp, nil
 }

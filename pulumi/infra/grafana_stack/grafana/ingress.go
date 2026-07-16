@@ -16,41 +16,47 @@ import (
 const tlsSecretName = "grafana-tls"
 
 // registerIngresses provisions the public nginx (and, locally, cloudflare-tunnel)
-// Ingress for Grafana and returns the endpoint callers should use to reach it:
-// the primary public HTTPS host when an Ingress was created, otherwise inCluster.
-func registerIngresses(ctx *pulumi.Context, name string, args *Args, g *Grafana, parent pulumi.Resource, inCluster url.URL) (url.URL, error) {
+// Ingress for Grafana. It returns the endpoint callers should use to reach it
+// (the primary public HTTPS host when an Ingress was created, otherwise inCluster)
+// and the created Ingress resources so callers can sequence work after them.
+func registerIngresses(ctx *pulumi.Context, name string, args *Args, g *Grafana, parent pulumi.Resource, inCluster url.URL) (url.URL, []pulumi.Resource, error) {
 	if len(args.PublicDomains) == 0 {
-		return inCluster, nil
+		return inCluster, nil, nil
 	}
 
 	hosts := ingressHosts(name, args.Namespace, args.PublicDomains)
-	registered := false
+	var ingresses []pulumi.Resource
 
 	if class := pulumi.StringPtrFromPtr(publicIngressClassName(args.Cluster)); class != nil {
-		if err := registerPublicIngress(ctx, name, args, g, parent, class, hosts); err != nil {
-			return url.URL{}, err
+		ing, err := registerPublicIngress(ctx, name, args, g, parent, class, hosts)
+		if err != nil {
+			return url.URL{}, nil, err
 		}
-
-		registered = true
+		if ing != nil {
+			ingresses = append(ingresses, ing)
+		}
 	}
 
 	if args.Env.IsLocal() {
 		if class := pulumi.StringPtrFromPtr(tunnelIngressClassName(args.Cluster)); class != nil {
-			if err := registerTunnelIngress(ctx, name, args, g, parent, class, hosts); err != nil {
-				return url.URL{}, err
+			ing, err := registerTunnelIngress(ctx, name, args, g, parent, class, hosts)
+			if err != nil {
+				return url.URL{}, nil, err
 			}
 
-			registered = true
+			ingresses = append(ingresses, ing)
 		}
 	}
 
-	if !registered {
-		return inCluster, nil
+	if len(ingresses) == 0 {
+		return inCluster, nil, nil
 	}
 
-	return publicURL(hosts[0]), nil
+	return publicURL(hosts[0]), ingresses, nil
 }
 
+// registerPublicIngress returns a nil Ingress (without error) when a non-local
+// cluster has no ClusterIssuer, since TLS cannot be provisioned.
 func registerPublicIngress(
 	ctx *pulumi.Context,
 	name string,
@@ -59,7 +65,7 @@ func registerPublicIngress(
 	parent pulumi.Resource,
 	ingressClass pulumi.StringPtrInput,
 	hosts []string,
-) error {
+) (*networkingv1.Ingress, error) {
 	className := publicIngressClassName(args.Cluster)
 	ann := pulumi.StringMap{
 		annotations.WaitForKey:        pulumi.String(annotations.WaitForValueImmediate),
@@ -73,7 +79,7 @@ func registerPublicIngress(
 	if !args.Env.IsLocal() {
 		issuer := clusterIssuerName(args.Cluster)
 		if issuer == nil {
-			return nil
+			return nil, nil
 		}
 
 		ann["cert-manager.io/cluster-issuer"] = pulumi.String(*issuer)
@@ -90,7 +96,7 @@ func registerPublicIngress(
 		}
 	}
 
-	_, err := networkingv1.NewIngress(ctx, tokens.Qualify(args.Namespace, "grafana-nginx"), &networkingv1.IngressArgs{
+	ing, err := networkingv1.NewIngress(ctx, tokens.Qualify(args.Namespace, "grafana-nginx"), &networkingv1.IngressArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:        pulumi.String("grafana-nginx"),
 			Namespace:   pulumi.String(args.Namespace),
@@ -99,10 +105,10 @@ func registerPublicIngress(
 		Spec: spec,
 	}, pulumi.Parent(parent), pulumi.DependsOn(ingressDeps(args, g)))
 	if err != nil {
-		return fmt.Errorf("public ingress: %w", err)
+		return nil, fmt.Errorf("public ingress: %w", err)
 	}
 
-	return nil
+	return ing, nil
 }
 
 func registerTunnelIngress(
@@ -113,10 +119,10 @@ func registerTunnelIngress(
 	parent pulumi.Resource,
 	ingressClass pulumi.StringPtrInput,
 	hosts []string,
-) error {
+) (*networkingv1.Ingress, error) {
 	className := tunnelIngressClassName(args.Cluster)
 
-	_, err := networkingv1.NewIngress(ctx, tokens.Qualify(args.Namespace, "grafana-tunnel"), &networkingv1.IngressArgs{
+	ing, err := networkingv1.NewIngress(ctx, tokens.Qualify(args.Namespace, "grafana-tunnel"), &networkingv1.IngressArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String("grafana-tunnel"),
 			Namespace: pulumi.String(args.Namespace),
@@ -131,10 +137,10 @@ func registerTunnelIngress(
 		},
 	}, pulumi.Parent(parent), pulumi.DependsOn(ingressDeps(args, g)))
 	if err != nil {
-		return fmt.Errorf("tunnel ingress: %w", err)
+		return nil, fmt.Errorf("tunnel ingress: %w", err)
 	}
 
-	return nil
+	return ing, nil
 }
 
 func ingressDeps(args *Args, g *Grafana) []pulumi.Resource {

@@ -15,7 +15,7 @@ func TestRender(t *testing.T) {
 		t.Fatal("dashboard still contains datasource placeholder")
 	}
 
-	if !strings.Contains(got, `"name": "Mimir"`) {
+	if !strings.Contains(got, `"datasource": "Mimir"`) {
 		t.Fatal("dashboard datasource not rendered")
 	}
 
