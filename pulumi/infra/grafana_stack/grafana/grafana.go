@@ -19,6 +19,8 @@ import (
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
+const persistenceSize = "1Gi"
+
 var (
 	typeToken = tokens.Token("infra", "Grafana")
 	helmSpec  = helm.ChartSpec{
@@ -127,6 +129,16 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	values := pulumi.Map{
 		"adminUser":     pulumi.String(adminUser),
 		"adminPassword": adminPassword.Result,
+		// Persist Grafana's SQLite DB so dashboards pushed via the API (and org/prefs)
+		// survive pod restarts; without a PVC the chart uses an emptyDir that is wiped
+		// on every restart. Recreate avoids a ReadWriteOnce multi-attach hang on rollout.
+		"persistence": pulumi.Map{
+			"enabled": pulumi.Bool(true),
+			"size":    pulumi.String(persistenceSize),
+		},
+		"deploymentStrategy": pulumi.Map{
+			"type": pulumi.String("Recreate"),
+		},
 	}
 	if args.Datasources != nil {
 		values["datasources"] = helm.Values(args.Datasources)
