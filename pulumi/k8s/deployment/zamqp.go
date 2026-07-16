@@ -25,9 +25,11 @@ import (
 //   - zprometheus.MetricName applies the exact sanitization the Prometheus
 //     adapter uses when registering it.
 //
-// The result matches on __name__ rather than naming the metric directly so the
-// query parses regardless of the Prometheus name-validation scheme; workload
-// names routinely contain hyphens, which are invalid in a bare metric name.
+// zprometheus.MetricName sanitizes every character invalid in a metric name to
+// '_' (so a hyphenated workload name is stored as e.g. account_analyzer, not
+// account-analyzer), guaranteeing this query targets the exact series the
+// adapter emits. The result is matched on __name__ so it stays correct even if
+// that sanitized name ever contains a character a bare selector would reject.
 func ZAMQPUtilizationStat(e env.Env, namespace, name string) string {
 	metric := zprometheus.MetricName(
 		zamqp.ConsumerUtilizationStatName(podspec.StatsPrefix(e, namespace, name)),

@@ -81,8 +81,9 @@ func TestPublicHostnames(t *testing.T) {
 // TestZAMQPUtilizationStat pins the query the zamqp-consumer convenience emits:
 // the ambient stats prefix (lowercased env prefix, namespace, workload name) is
 // qualified with the zamqp consumer utilization name and sanitized for
-// Prometheus, then matched via __name__ so hyphens (invalid in a bare metric
-// name) survive. The composition itself is owned by the zote runtime.
+// Prometheus. The hyphen in "my-worker" must collapse to "_" (matching the
+// series the adapter actually stores), and the result is matched via __name__.
+// The composition itself is owned by the zote runtime.
 func TestZAMQPUtilizationStat(t *testing.T) {
 	e, err := env.New("zote", "prod", "prod", "mars", "/home/mars", "APP")
 	if err != nil {
@@ -90,7 +91,7 @@ func TestZAMQPUtilizationStat(t *testing.T) {
 	}
 
 	got := ZAMQPUtilizationStat(e, "apps", "my-worker")
-	want := `avg({__name__="app_apps_my-worker_zamqp_consumer_utilization"})`
+	want := `avg({__name__="app_apps_my_worker_zamqp_consumer_utilization"})`
 	if got != want {
 		t.Fatalf("ZAMQPUtilizationStat = %q, want %q", got, want)
 	}

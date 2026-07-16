@@ -145,9 +145,13 @@ func (a *Adapter) prometheusName(name string) string {
 }
 
 // MetricName converts a dot-delimited zstats name into the Prometheus metric
-// name this adapter registers: dots become underscores and a leading character
-// that is not a letter or underscore is prefixed with '_'. Every other rune
-// (including hyphens) is preserved unchanged.
+// name this adapter registers. Every character that is invalid in a Prometheus
+// metric name is replaced with '_' (so dots and hyphens alike become '_'), and
+// a leading character that cannot start a name is additionally prefixed with
+// '_'. The result is always a valid legacy metric name, which is exactly what
+// ends up stored after scraping — Prometheus underscore-escapes any invalid
+// character (e.g. the hyphen in a workload name) on exposition, so emitting the
+// already-escaped name here keeps registration, exposition, and storage in sync.
 //
 // It is exported so callers that must reconstruct a stored metric name out of
 // band — e.g. a deployer generating a PromQL query for a metric this adapter
@@ -155,22 +159,31 @@ func (a *Adapter) prometheusName(name string) string {
 func MetricName(name string) string {
 	var b strings.Builder
 	for i, r := range name {
-		switch {
-		case i == 0 && !isNameStart(r):
+		if i == 0 && !isNameStart(r) {
 			b.WriteByte('_')
-			b.WriteRune(r)
-		case r == '.':
-			b.WriteByte('_')
-		default:
-			b.WriteRune(r)
 		}
+		b.WriteRune(sanitizeNameChar(r))
 	}
 
 	return b.String()
 }
 
+// sanitizeNameChar maps a rune to itself when it is valid within a Prometheus
+// metric name and to '_' otherwise.
+func sanitizeNameChar(r rune) rune {
+	if isNameContinuation(r) {
+		return r
+	}
+
+	return '_'
+}
+
 func isNameStart(r rune) bool {
-	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '_'
+	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '_' || r == ':'
+}
+
+func isNameContinuation(r rune) bool {
+	return isNameStart(r) || (r >= '0' && r <= '9')
 }
 
 // getOrUpdateLabelNames gets the canonical label names for a metric, or updates them

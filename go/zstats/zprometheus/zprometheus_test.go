@@ -237,6 +237,8 @@ func TestPrometheusName(t *testing.T) {
 		{"_valid", "_valid"},
 		{"valid123", "valid123"},
 		{"a.b.c.d", "a_b_c_d"},
+		{"wm.finance.account-analyzer", "wm_finance_account_analyzer"},
+		{"has-hyphen", "has_hyphen"},
 	}
 
 	for _, tt := range tests {
@@ -572,12 +574,13 @@ func TestPrometheusName_EdgeCases(t *testing.T) {
 		expected string
 	}{
 		{"empty string", "", ""},
-		{"single dot", ".", "_."},        // First char is dot, gets prefixed with "_"
-		{"multiple dots", "...", "_.__"}, // First char is dot, gets prefixed with "_", rest dots become "_"
+		{"single dot", ".", "__"},         // Invalid start: prefixed with "_", then the dot itself becomes "_"
+		{"multiple dots", "...", "____"},  // Same prefixing, and every dot becomes "_"
 		{"starts with number", "9metric", "_9metric"},
 		{"mixed case", "Test.Metric.Name", "Test_Metric_Name"},
 		{"with underscore", "test_metric", "test_metric"},
 		{"dots and numbers", "test.123.metric", "test_123_metric"},
+		{"hyphenated segment", "svc.a-b.metric", "svc_a_b_metric"},
 	}
 
 	for _, tt := range tests {
