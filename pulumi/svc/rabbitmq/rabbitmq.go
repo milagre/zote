@@ -11,7 +11,9 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/svc/rabbitmq/internal/container"
+	"github.com/milagre/zote/pulumi/svc/rabbitmq/internal/dashboard"
 	"github.com/milagre/zote/pulumi/util/profile"
 	"github.com/milagre/zote/pulumi/util/stringdata"
 	"github.com/milagre/zote/pulumi/util/tokens"
@@ -31,6 +33,9 @@ type Args struct {
 	Name      string
 
 	Config Config
+
+	// Cluster supplies Grafana coordinates for optional observability dashboards.
+	Cluster *infra.Cluster
 
 	// Setup is the workload user/vhost topology (not YAML-decoded today).
 	Setup container.Setup
@@ -93,6 +98,12 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	be, err := selectBackend(ctx, resourceName, args, comp)
 	if err != nil {
 		return nil, err
+	}
+
+	if args.Cluster != nil {
+		if err := dashboard.RegisterOnce(ctx, args.Cluster, comp); err != nil {
+			return nil, fmt.Errorf("%s: %w", typeToken, err)
+		}
 	}
 
 	cfgAMQP := fmt.Sprintf("%s_AMQP_%s", args.Env.Prefix, strings.ToUpper(args.Name))

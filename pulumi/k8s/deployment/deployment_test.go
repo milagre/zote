@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/util/profile"
 )
 
@@ -150,6 +151,34 @@ func TestArgsValidate(t *testing.T) {
 			"http mode without health path",
 			func(a *Args) { a.Mode.HTTP = &HTTPMode{Port: 8080} },
 			"Mode.HTTP.Health is required",
+		},
+		{"zamqp consumer process type", func(a *Args) {
+			a.ProcessType = ProcessZAMQPConsumer
+			a.Metrics = true
+			a.Cluster = &infra.Cluster{}
+		}, "Cluster.Grafana is required when ProcessType is set"},
+		{"zapi process type", func(a *Args) {
+			a.ProcessType = ProcessZAPI
+			a.Metrics = true
+			a.Cluster = &infra.Cluster{}
+		}, "Cluster.Grafana is required when ProcessType is set"},
+		{
+			"invalid process type",
+			func(a *Args) { a.ProcessType = ProcessType("cron") },
+			`ProcessType "cron" is invalid`,
+		},
+		{
+			"process type without metrics",
+			func(a *Args) { a.ProcessType = ProcessZAMQPConsumer },
+			"Metrics must be true when ProcessType is set",
+		},
+		{
+			"process type without grafana",
+			func(a *Args) {
+				a.ProcessType = ProcessZAMQPConsumer
+				a.Metrics = true
+			},
+			"Cluster.Grafana is required when ProcessType is set",
 		},
 	}
 

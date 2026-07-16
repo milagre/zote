@@ -9,6 +9,7 @@ import (
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/k8s/deployment/http"
+	"github.com/milagre/zote/pulumi/k8s/deployment/internal/dashboard"
 	"github.com/milagre/zote/pulumi/k8s/deployment/internal/scaledobject"
 	"github.com/milagre/zote/pulumi/k8s/deployment/proc"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
@@ -41,6 +42,15 @@ const (
 	KindProc Kind = "proc"
 )
 
+// ProcessType hints which application-level process runtime a workload
+// implements. Empty means unspecified.
+type ProcessType string
+
+const (
+	ProcessZAMQPConsumer ProcessType = "zamqp-consumer"
+	ProcessZAPI          ProcessType = "zapi"
+)
+
 type Args struct {
 	Env       env.Env
 	Namespace string
@@ -56,6 +66,10 @@ type Args struct {
 	Files Files
 
 	Metrics bool
+
+	// ProcessType hints which application-level process runtime this workload
+	// uses (for example a zamqp consumer or zapi HTTP server).
+	ProcessType ProcessType
 
 	// Autoscale, when set, emits a KEDA ScaledObject for this workload.
 	Autoscale *Autoscale
@@ -74,6 +88,7 @@ type Deployment struct {
 
 	PublicHostnames []string
 	PrivateHostname string
+	ProcessType     ProcessType
 }
 
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*Deployment, error) {
@@ -93,6 +108,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 
 	comp.PublicHostnames = publicHostnames(args.Name, args.Namespace, args.PublicDomains, args.Veneers)
 	comp.PrivateHostname = privateHostname(args.Name, args.Namespace)
+	comp.ProcessType = args.ProcessType
 
 	kind := selectKind(args.Mode)
 	switch kind {
@@ -141,6 +157,12 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		}
 	}
 
+	if args.ProcessType != "" {
+		if err := registerProcessDashboard(ctx, resourceName, args, comp); err != nil {
+			return nil, fmt.Errorf("%s: dashboard: %w", typeToken, err)
+		}
+	}
+
 	publicHostnamesOut := make(pulumi.StringArray, 0, len(comp.PublicHostnames))
 	for _, h := range comp.PublicHostnames {
 		publicHostnamesOut = append(publicHostnamesOut, pulumi.String(h))
@@ -148,6 +170,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if err := ctx.RegisterResourceOutputs(comp, pulumi.Map{
 		"publicHostnames": publicHostnamesOut,
 		"privateHostname": pulumi.String(comp.PrivateHostname),
+		"processType":     pulumi.String(string(comp.ProcessType)),
 	}); err != nil {
 		return nil, fmt.Errorf("%s: registering outputs: %w", typeToken, err)
 	}
@@ -208,6 +231,40 @@ func (a *Args) validate() error {
 			return fmt.Errorf("Mode.HTTP.Health is required")
 		}
 	}
+	if err := a.ProcessType.validate(); err != nil {
+		return err
+	}
+	if a.ProcessType != "" {
+		if !a.Metrics {
+			return fmt.Errorf("Metrics must be true when ProcessType is set")
+		}
+		if a.Cluster == nil || a.Cluster.Grafana == nil {
+			return fmt.Errorf("Cluster.Grafana is required when ProcessType is set")
+		}
+	}
 
 	return nil
+}
+
+func registerProcessDashboard(ctx *pulumi.Context, resourceName string, args *Args, parent pulumi.Resource) error {
+	err := dashboard.Register(ctx, resourceName, dashboard.Spec{
+		Env:       args.Env,
+		Namespace: args.Namespace,
+		Name:      args.Name,
+		Process:   string(args.ProcessType),
+	}, args.Cluster.Grafana, parent)
+	if err != nil {
+		return fmt.Errorf("registering process dashboard: %w", err)
+	}
+
+	return nil
+}
+
+func (p ProcessType) validate() error {
+	switch p {
+	case "", ProcessZAMQPConsumer, ProcessZAPI:
+		return nil
+	default:
+		return fmt.Errorf("ProcessType %q is invalid (want zamqp-consumer, zapi, or empty)", p)
+	}
 }
