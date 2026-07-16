@@ -11,6 +11,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/infra"
 	"github.com/milagre/zote/pulumi/internal/helm"
 	"github.com/milagre/zote/pulumi/util/annotations"
 	"github.com/milagre/zote/pulumi/util/endpoint"
@@ -33,6 +34,18 @@ type Args struct {
 	Namespace string
 
 	Config Config
+
+	// PublicDomains lists public DNS suffixes served by Grafana ingress. When
+	// non-empty, [Grafana.API] and [Grafana.UI] target the public hostname
+	// (<name>.<namespace>.<domain>) so callers outside the cluster can reach the API.
+	PublicDomains []string
+
+	// IngressDeps are resources Ingress creation must wait on (cert-manager, ingress
+	// controllers, …). Pass to DependsOn.
+	IngressDeps []pulumi.Resource
+
+	// Cluster supplies registered ingress classes and the TLS issuer for autodiscovery.
+	Cluster *infra.Cluster
 
 	// Datasources is optional chart `datasources:` values (e.g. built from Loki/Mimir URLs). Not loaded from Config YAML.
 	Datasources map[string]any
@@ -170,12 +183,20 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		ConfigMap: cm.Metadata.Name().Elem(),
 		Secret:    sec.Metadata.Name().Elem(),
 	}
-	comp.UI = httpBase
-	comp.API = httpBase
 	comp.Admin = Credentials{
 		Username: pulumi.String(adminUser).ToStringOutput(),
 		Password: adminPassword.Result,
 	}
+
+	// The reachable endpoint depends on what Ingress was actually provisioned,
+	// so derive UI/API from registerIngresses rather than recomputing the host.
+	endpoint, err := registerIngresses(ctx, name, args, comp, comp, httpBase)
+	if err != nil {
+		return nil, fmt.Errorf("grafana: ingress: %w", err)
+	}
+
+	comp.UI = endpoint
+	comp.API = endpoint
 
 	return comp, nil
 }

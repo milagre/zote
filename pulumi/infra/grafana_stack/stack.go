@@ -32,6 +32,13 @@ type Args struct {
 	Config        Config
 	ObjectStorage objectstorage.ObjectStorage
 
+	// PublicDomains configures Grafana ingress and the public API URL.
+	PublicDomains []string
+
+	// IngressDeps are resources Grafana ingress must wait on (cert-manager, ingress
+	// controllers, …). Pass to DependsOn.
+	IngressDeps []pulumi.Resource
+
 	// Cluster registers deployed capabilities when non-nil.
 	Cluster *infra.Cluster
 }
@@ -114,10 +121,13 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	g, err := grafana.New(ctx, "grafana", &grafana.Args{
-		Env:         args.Env,
-		Namespace:   args.Namespace,
-		Config:      *args.Config.Dashboard,
-		Datasources: defaultGrafanaDatasources(lk.Gateway.String(), mm.Prometheus.String()),
+		Env:           args.Env,
+		Namespace:     args.Namespace,
+		Config:        *args.Config.Dashboard,
+		PublicDomains: args.PublicDomains,
+		IngressDeps:   args.IngressDeps,
+		Cluster:       args.Cluster,
+		Datasources:   defaultGrafanaDatasources(lk.Gateway.String(), mm.Prometheus.String()),
 	}, pulumi.Parent(comp))
 	if err != nil {
 		return nil, fmt.Errorf("%s: grafana: %w", typeToken, err)
@@ -159,8 +169,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
-// newGrafanaProvider configures the Pulumiverse Grafana provider against the
-// in-cluster dashboard API (basic auth admin credentials from the Helm release).
+// newGrafanaProvider configures the Pulumiverse Grafana provider against [Grafana.API].
 func newGrafanaProvider(ctx *pulumi.Context, name string, g *grafana.Grafana, parent pulumi.Resource) (*grafanapulumi.Provider, error) {
 	auth := pulumi.All(g.Admin.Username, g.Admin.Password).ApplyT(func(vals []any) (string, error) {
 		return fmt.Sprintf("%s:%s", vals[0].(string), vals[1].(string)), nil
