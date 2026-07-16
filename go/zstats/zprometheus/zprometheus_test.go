@@ -574,8 +574,8 @@ func TestPrometheusName_EdgeCases(t *testing.T) {
 		expected string
 	}{
 		{"empty string", "", ""},
-		{"single dot", ".", "__"},         // Invalid start: prefixed with "_", then the dot itself becomes "_"
-		{"multiple dots", "...", "____"},  // Same prefixing, and every dot becomes "_"
+		{"single dot", ".", "__"},        // Invalid start: prefixed with "_", then the dot itself becomes "_"
+		{"multiple dots", "...", "____"}, // Same prefixing, and every dot becomes "_"
 		{"starts with number", "9metric", "_9metric"},
 		{"mixed case", "Test.Metric.Name", "Test_Metric_Name"},
 		{"with underscore", "test_metric", "test_metric"},
