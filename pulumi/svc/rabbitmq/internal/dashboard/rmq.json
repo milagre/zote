@@ -21,7 +21,10 @@
   "links": [],
   "panels": [
     {
-      "datasource": "__DATASOURCE__",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "__DATASOURCE__"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -104,7 +107,10 @@
       },
       "targets": [
         {
-          "datasource": "__DATASOURCE__",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "__DATASOURCE__"
+          },
           "editorMode": "builder",
           "expr": "max by(queue) (rabbitmq_queue_messages{namespace=\"$namespace\", name=\"$cluster\", queue!~\"^(fatal-|retry-|delay-).*\"})",
           "format": "time_series",
@@ -117,7 +123,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "__DATASOURCE__",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "__DATASOURCE__"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -199,7 +208,10 @@
       },
       "targets": [
         {
-          "datasource": "__DATASOURCE__",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "__DATASOURCE__"
+          },
           "editorMode": "builder",
           "expr": "max by(queue) (rabbitmq_queue_messages{namespace=\"$namespace\", name=\"$cluster\", queue=~\"fatal-.*\"})",
           "format": "time_series",
@@ -212,7 +224,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "__DATASOURCE__",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "__DATASOURCE__"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -294,7 +309,10 @@
       },
       "targets": [
         {
-          "datasource": "__DATASOURCE__",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "__DATASOURCE__"
+          },
           "editorMode": "builder",
           "expr": "max by(queue) (rabbitmq_queue_messages{namespace=\"$namespace\", name=\"$cluster\", queue=~\"delay-.*\"})",
           "format": "time_series",
@@ -307,7 +325,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "__DATASOURCE__",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "__DATASOURCE__"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -389,7 +410,10 @@
       },
       "targets": [
         {
-          "datasource": "__DATASOURCE__",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "__DATASOURCE__"
+          },
           "editorMode": "builder",
           "expr": "max by(queue) (rabbitmq_queue_messages{namespace=\"$namespace\", name=\"$cluster\", queue=~\"retry-.*\"})",
           "format": "time_series",
@@ -412,7 +436,10 @@
           "text": "finance",
           "value": "finance"
         },
-        "datasource": "__DATASOURCE__",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__DATASOURCE__"
+        },
         "definition": "label_values(rabbitmq_queue_messages,namespace)",
         "hide": 0,
         "includeAll": true,
@@ -434,7 +461,10 @@
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "__DATASOURCE__",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "__DATASOURCE__"
+        },
         "definition": "label_values(rabbitmq_queue_messages{namespace=\"$namespace\"},name)",
         "hide": 0,
         "includeAll": true,

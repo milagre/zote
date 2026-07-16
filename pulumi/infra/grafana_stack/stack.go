@@ -185,6 +185,14 @@ func newGrafanaProvider(ctx *pulumi.Context, name string, g *grafana.Grafana, pa
 	}, pulumi.Parent(parent), pulumi.DependsOn(deps))
 }
 
+// Stable datasource UIDs so provisioned dashboards can bind to these datasources
+// by uid (Grafana resolves panel datasource references by uid, not name). Dashboard
+// packages hardcode the same uids in their embedded JSON.
+const (
+	lokiDatasourceUID  = "loki"
+	mimirDatasourceUID = "mimir"
+)
+
 func defaultGrafanaDatasources(lokiBaseURL string, mimirPrometheusURL string) map[string]any {
 	return map[string]any{
 		"datasources.yaml": map[string]any{
@@ -192,15 +200,26 @@ func defaultGrafanaDatasources(lokiBaseURL string, mimirPrometheusURL string) ma
 			"datasources": []any{
 				map[string]any{
 					"name":   "Loki",
+					"uid":    lokiDatasourceUID,
 					"type":   "loki",
 					"access": "proxy",
 					"url":    lokiBaseURL,
 				},
 				map[string]any{
-					"name":   "Mimir",
-					"type":   "prometheus",
-					"access": "proxy",
-					"url":    mimirPrometheusURL,
+					"name":      "Mimir",
+					"uid":       mimirDatasourceUID,
+					"type":      "prometheus",
+					"access":    "proxy",
+					"url":       mimirPrometheusURL,
+					"isDefault": true,
+					// timeInterval must match the Alloy scrape cadence (prometheus.scrape
+					// defaults to 60s). Grafana derives $__rate_interval from it as
+					// max($__interval + timeInterval, 4*timeInterval); if it is left at the
+					// 15s default, rate/increase windows are too short for 60s samples and
+					// panels render "No data".
+					"jsonData": map[string]any{
+						"timeInterval": "60s",
+					},
 				},
 			},
 		},

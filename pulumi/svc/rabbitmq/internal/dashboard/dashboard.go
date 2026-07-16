@@ -15,7 +15,9 @@ import (
 	"github.com/milagre/zote/pulumi/infra"
 )
 
-const mimirDatasource = "Mimir"
+// mimirDatasource is the uid of the provisioned Mimir datasource (see
+// grafana_stack); panels reference the datasource by uid so Grafana binds them.
+const mimirDatasource = "mimir"
 
 //go:embed rmq.json
 var template string

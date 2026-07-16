@@ -41,8 +41,12 @@ func TestRenderZAMQPConsumerDashboard(t *testing.T) {
 		t.Fatalf("dashboard uid not rendered")
 	}
 
-	if !strings.Contains(got, `"datasource": "Mimir"`) {
-		t.Fatalf("dashboard datasource not rendered")
+	if !strings.Contains(got, `"uid": "mimir"`) {
+		t.Fatalf("dashboard datasource not bound to mimir uid")
+	}
+
+	if strings.Contains(got, "__DATASOURCE__") {
+		t.Fatalf("dashboard still contains datasource placeholder")
 	}
 }
 
