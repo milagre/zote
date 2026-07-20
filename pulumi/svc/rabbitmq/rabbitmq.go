@@ -101,7 +101,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	if args.Cluster != nil {
-		if err := dashboard.RegisterOnce(ctx, args.Cluster, comp); err != nil {
+		if err := dashboard.RegisterOnce(ctx, args.Cluster); err != nil {
 			return nil, fmt.Errorf("%s: %w", typeToken, err)
 		}
 	}

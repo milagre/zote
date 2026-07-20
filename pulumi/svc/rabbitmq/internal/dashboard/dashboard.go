@@ -29,13 +29,17 @@ var (
 
 // RegisterOnce creates or updates the shared RabbitMQ dashboard the first time a
 // container RabbitMQ deployment runs while Grafana is available.
-func RegisterOnce(ctx *pulumi.Context, cluster *infra.Cluster, parent pulumi.Resource) error {
+//
+// Dashboards are intentionally not Parent'ed under Rabbitmq: DependsOn(Rabbitmq)
+// would otherwise pull the dashboard into every consumer's dependency graph, and
+// a Grafana outage would block refreshes of unrelated workloads.
+func RegisterOnce(ctx *pulumi.Context, cluster *infra.Cluster) error {
 	if cluster == nil || cluster.Grafana == nil {
 		return nil
 	}
 
 	registerOnce.Do(func() {
-		registerErr = register(ctx, cluster.Grafana, parent)
+		registerErr = register(ctx, cluster.Grafana)
 	})
 
 	if registerErr != nil {
@@ -45,7 +49,7 @@ func RegisterOnce(ctx *pulumi.Context, cluster *infra.Cluster, parent pulumi.Res
 	return nil
 }
 
-func register(ctx *pulumi.Context, grafana *grafanapulumi.Provider, parent pulumi.Resource) error {
+func register(ctx *pulumi.Context, grafana *grafanapulumi.Provider) error {
 	configJSON, err := render()
 	if err != nil {
 		return fmt.Errorf("rendering dashboard: %w", err)
@@ -54,7 +58,7 @@ func register(ctx *pulumi.Context, grafana *grafanapulumi.Provider, parent pulum
 	_, err = oss.NewDashboard(ctx, "rabbitmq-dashboard", &oss.DashboardArgs{
 		ConfigJson: pulumi.String(configJSON),
 		Overwrite:  pulumi.BoolPtr(true),
-	}, pulumi.Parent(parent), pulumi.Provider(grafana))
+	}, pulumi.Provider(grafana))
 	if err != nil {
 		return fmt.Errorf("creating dashboard: %w", err)
 	}

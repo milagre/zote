@@ -40,7 +40,6 @@ func Register(
 	resourceName string,
 	spec Spec,
 	grafana *grafana.Provider,
-	parent pulumi.Resource,
 ) error {
 	configJSON, err := render(spec)
 	if err != nil {
@@ -50,7 +49,7 @@ func Register(
 	_, err = oss.NewDashboard(ctx, resourceName+"-dashboard", &oss.DashboardArgs{
 		ConfigJson: pulumi.String(configJSON),
 		Overwrite:  pulumi.BoolPtr(true),
-	}, pulumi.Parent(parent), pulumi.Provider(grafana))
+	}, pulumi.Provider(grafana))
 	if err != nil {
 		return fmt.Errorf("creating dashboard: %w", err)
 	}

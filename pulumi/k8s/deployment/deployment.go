@@ -158,7 +158,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	if args.ProcessType != "" {
-		if err := registerProcessDashboard(ctx, resourceName, args, comp); err != nil {
+		if err := registerProcessDashboard(ctx, resourceName, args); err != nil {
 			return nil, fmt.Errorf("%s: dashboard: %w", typeToken, err)
 		}
 	}
@@ -246,13 +246,13 @@ func (a *Args) validate() error {
 	return nil
 }
 
-func registerProcessDashboard(ctx *pulumi.Context, resourceName string, args *Args, parent pulumi.Resource) error {
+func registerProcessDashboard(ctx *pulumi.Context, resourceName string, args *Args) error {
 	err := dashboard.Register(ctx, resourceName, dashboard.Spec{
 		Env:       args.Env,
 		Namespace: args.Namespace,
 		Name:      args.Name,
 		Process:   string(args.ProcessType),
-	}, args.Cluster.Grafana, parent)
+	}, args.Cluster.Grafana)
 	if err != nil {
 		return fmt.Errorf("registering process dashboard: %w", err)
 	}
