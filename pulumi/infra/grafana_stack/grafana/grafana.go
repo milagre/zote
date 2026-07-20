@@ -139,6 +139,13 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		"deploymentStrategy": pulumi.Map{
 			"type": pulumi.String("Recreate"),
 		},
+		// Chart default init-chown-data drops all caps except CHOWN. After the first
+		// start the volume is owned by 472, and a later chown fails with
+		// "Permission denied" on csv/png/pdf (grafana/helm-charts#3699). Pod
+		// fsGroup:472 already fixes ownership; skip the broken init.
+		"initChownData": pulumi.Map{
+			"enabled": pulumi.Bool(false),
+		},
 	}
 	if args.Datasources != nil {
 		values["datasources"] = helm.Values(args.Datasources)
