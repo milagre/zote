@@ -37,6 +37,15 @@ const (
 	// Sizing the running pool beyond one is left to the utilization trigger.
 	// A caller that wants proportional queue scaling sets MessagesPerReplica.
 	activationOnlyQueueValue = 100_000_000
+
+	// defaultInitialCooldownSeconds is the grace period a scale-to-zero
+	// workload gets before KEDA may take it to zero for the first time. The
+	// deployment layer seeds such a workload with one replica precisely so that
+	// pod can declare the queue this ScaledObject reads; without a floor on
+	// time-to-first-scaledown that pod could be reaped before it finishes
+	// booting, leaving the trigger pointed at a queue that does not exist.
+	// Sized to cover an image pull and startup, and only ever paid once.
+	defaultInitialCooldownSeconds = 300
 )
 
 // Spec turns on KEDA autoscaling for one workload. At least one trigger must
@@ -48,6 +57,12 @@ type Spec struct {
 	// CooldownSeconds is KEDA's cooldownPeriod: how long a workload must stay
 	// idle before scaling back to the floor. Zero uses KEDA's default (300s).
 	CooldownSeconds int
+
+	// InitialCooldownSeconds is KEDA's initialCooldownPeriod: how long after
+	// this ScaledObject is created KEDA must wait before the first scale to
+	// zero. It only applies to a zero floor, where zero takes the bootstrap
+	// default (see defaultInitialCooldownSeconds); a nonzero floor ignores it.
+	InitialCooldownSeconds int
 }
 
 // QueueTrigger scales on RabbitMQ queue depth over the management API.
@@ -142,6 +157,9 @@ func Register(
 	if args.Spec.CooldownSeconds > 0 {
 		spec["cooldownPeriod"] = pulumi.Int(args.Spec.CooldownSeconds)
 	}
+	if initial := args.initialCooldownSeconds(); initial > 0 {
+		spec["initialCooldownPeriod"] = pulumi.Int(initial)
+	}
 
 	_, err := apiextensions.NewCustomResource(ctx, name, &apiextensions.CustomResourceArgs{
 		ApiVersion: pulumi.String(apiVersion),
@@ -233,6 +251,22 @@ func utilizationTrigger(u *UtilizationTrigger) pulumi.Map {
 			"threshold":     pulumi.String(strconv.Itoa(u.TargetPercent)),
 		},
 	}
+}
+
+// initialCooldownSeconds is the grace period before the first scale to zero.
+// It is meaningful only for a zero floor, which is also the only case the
+// deployment layer bootstraps with a seeded replica; a workload that never
+// reaches zero has nothing to protect. Zero on a zero floor takes the default
+// rather than KEDA's (which is no grace period at all).
+func (a Args) initialCooldownSeconds() int {
+	if a.Min > 0 {
+		return 0
+	}
+	if a.Spec.InitialCooldownSeconds > 0 {
+		return a.Spec.InitialCooldownSeconds
+	}
+
+	return defaultInitialCooldownSeconds
 }
 
 func (a Args) validate() error {

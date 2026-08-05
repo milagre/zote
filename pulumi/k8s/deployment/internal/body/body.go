@@ -117,6 +117,8 @@ func Register(
 		ignoredFields = []string{"spec.replicas"}
 	}
 
+	replicas := seedReplicas(args)
+
 	dep, err := appsv1.NewDeployment(ctx, name, &appsv1.DeploymentArgs{
 		Metadata: &metav1.ObjectMetaArgs{
 			Name:      pulumi.String(args.Name),
@@ -127,7 +129,7 @@ func Register(
 			},
 		},
 		Spec: &appsv1.DeploymentSpecArgs{
-			Replicas: pulumi.Int(args.Profile.Num.Min),
+			Replicas: pulumi.Int(replicas),
 			Selector: &metav1.LabelSelectorArgs{
 				MatchLabels: podLabels,
 			},
@@ -155,6 +157,24 @@ func Register(
 	}
 
 	return dep, nil
+}
+
+// seedReplicas is the replica count the Deployment is *created* with. It is
+// normally the profile floor, but a workload that autoscales to zero is created
+// with one replica instead: its first pod is what declares the RabbitMQ
+// topology the queue trigger reads, and a Deployment created at zero would
+// leave that trigger pointed at a queue that never comes into existence.
+//
+// This is a create-time seed only, not a floor. spec.replicas is in
+// IgnoreChanges whenever Autoscale is set, so Pulumi applies this value once
+// and then leaves the count to KEDA — which takes it back to zero after
+// initialCooldownPeriod and never sees Pulumi put it back.
+func seedReplicas(args Args) int {
+	if args.Autoscale != nil && args.Profile.Num.Min == 0 {
+		return 1
+	}
+
+	return args.Profile.Num.Min
 }
 
 // validateAutoscale enforces the invariants the autoscaler depends on before

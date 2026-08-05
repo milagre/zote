@@ -22,6 +22,43 @@ func validUtilizationTrigger() *UtilizationTrigger {
 	}
 }
 
+// TestInitialCooldownSeconds covers the grace period that keeps KEDA from
+// reaping the seeded bootstrap pod before it has declared its queue. It exists
+// only for a zero floor; KEDA's own default is no grace period at all, so
+// leaving it unset there would reopen the race the seed closes.
+func TestInitialCooldownSeconds(t *testing.T) {
+	tests := []struct {
+		name    string
+		min     int
+		initial int
+		want    int
+	}{
+		{"zero floor defaults", 0, 0, defaultInitialCooldownSeconds},
+		{"zero floor honors override", 0, 45, 45},
+		{"nonzero floor needs none", 1, 0, 0},
+		{"nonzero floor ignores override", 1, 45, 0},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			a := Args{
+				Namespace:  "apps",
+				TargetName: "worker",
+				Min:        tc.min,
+				Max:        5,
+				Spec: Spec{
+					Queue:                  validQueueTrigger(),
+					InitialCooldownSeconds: tc.initial,
+				},
+			}
+			if got := a.initialCooldownSeconds(); got != tc.want {
+				t.Fatalf("initialCooldownSeconds() = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
 // TestArgsValidate isolates each rule so the returned message is trustworthy at
 // the call site. The safety-critical rule is that a zero floor demands a
 // pod-independent (queue) trigger.
