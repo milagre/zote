@@ -87,8 +87,15 @@ type Deployment struct {
 	pulumi.ResourceState
 
 	PublicHostnames []string
-	PrivateHostname string
-	ProcessType     ProcessType
+	// CanonicalPublicHostname is the synthesized <name>.<namespace>.<domain> host. It does not
+	// change when veneers are added or reordered, so it is the stable one to record or key off.
+	// Empty for workloads with no public domains, which is every proc-mode one.
+	CanonicalPublicHostname string
+	// PreferredPublicHostname is the one to hand a browser or put in a link: the first veneer
+	// when any are configured, else the canonical host. Empty on the same terms.
+	PreferredPublicHostname string
+	PrivateHostname         string
+	ProcessType             ProcessType
 }
 
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*Deployment, error) {
@@ -107,6 +114,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	comp.PublicHostnames = publicHostnames(args.Name, args.Namespace, args.PublicDomains, args.Veneers)
+	comp.CanonicalPublicHostname = CanonicalPublicHostname(args.Name, args.Namespace, args.PublicDomains)
+	comp.PreferredPublicHostname = PreferredPublicHostname(args.Name, args.Namespace, args.PublicDomains, args.Veneers)
 	comp.PrivateHostname = privateHostname(args.Name, args.Namespace)
 	comp.ProcessType = args.ProcessType
 
@@ -168,9 +177,11 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		publicHostnamesOut = append(publicHostnamesOut, pulumi.String(h))
 	}
 	if err := ctx.RegisterResourceOutputs(comp, pulumi.Map{
-		"publicHostnames": publicHostnamesOut,
-		"privateHostname": pulumi.String(comp.PrivateHostname),
-		"processType":     pulumi.String(string(comp.ProcessType)),
+		"publicHostnames":         publicHostnamesOut,
+		"canonicalPublicHostname": pulumi.String(comp.CanonicalPublicHostname),
+		"preferredPublicHostname": pulumi.String(comp.PreferredPublicHostname),
+		"privateHostname":         pulumi.String(comp.PrivateHostname),
+		"processType":             pulumi.String(string(comp.ProcessType)),
 	}); err != nil {
 		return nil, fmt.Errorf("%s: registering outputs: %w", typeToken, err)
 	}
@@ -184,6 +195,28 @@ func selectKind(m Mode) Kind {
 	}
 
 	return KindProc
+}
+
+// CanonicalPublicHostname returns the synthesized host, which veneer changes do not move. Empty
+// when no domains are configured.
+func CanonicalPublicHostname(name, namespace string, domains []string) string {
+	synthesized := synthesizedPublicHostnames(name, namespace, domains)
+	if len(synthesized) == 0 {
+		return ""
+	}
+
+	return synthesized[0]
+}
+
+// PreferredPublicHostname returns the hostname to put in front of a user: a veneer when one is
+// configured, otherwise the canonical host. Exported alongside the Deployment fields so callers
+// holding only config resolve the same hostnames the component does.
+func PreferredPublicHostname(name, namespace string, domains, veneers []string) string {
+	if len(veneers) > 0 {
+		return veneers[0]
+	}
+
+	return CanonicalPublicHostname(name, namespace, domains)
 }
 
 func publicHostnames(name, namespace string, domains, veneers []string) []string {

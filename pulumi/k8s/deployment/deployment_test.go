@@ -40,6 +40,57 @@ func TestSelectKind(t *testing.T) {
 // Order matters (domain-synthesized hosts first, then verbatim veneers)
 // because callers rely on it to drive predictable cert-manager TLS
 // secret contents.
+// Veneers must not move this value; callers rely on it staying put across config edits.
+func TestCanonicalPublicHostname(t *testing.T) {
+	tests := []struct {
+		name      string
+		workload  string
+		namespace string
+		domains   []string
+		want      string
+	}{
+		{"first domain wins", "svc", "ns", []string{"a.example.com", "b.example.com"}, "svc.ns.a.example.com"},
+		{"empty when no domains", "svc", "ns", nil, ""},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			got := CanonicalPublicHostname(tc.workload, tc.namespace, tc.domains)
+			if got != tc.want {
+				t.Fatalf("CanonicalPublicHostname(...) = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestPreferredPublicHostname(t *testing.T) {
+	tests := []struct {
+		name      string
+		workload  string
+		namespace string
+		domains   []string
+		veneers   []string
+		want      string
+	}{
+		{"veneer wins over synthesized", "svc", "ns", []string{"example.com"}, []string{"alias.example.org"}, "alias.example.org"},
+		{"first veneer wins", "svc", "ns", nil, []string{"a.example.org", "b.example.org"}, "a.example.org"},
+		{"synthesized when no veneers", "svc", "ns", []string{"example.com"}, nil, "svc.ns.example.com"},
+		{"first domain wins", "svc", "ns", []string{"a.example.com", "b.example.com"}, nil, "svc.ns.a.example.com"},
+		{"empty when neither configured", "svc", "ns", nil, nil, ""},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			got := PreferredPublicHostname(tc.workload, tc.namespace, tc.domains, tc.veneers)
+			if got != tc.want {
+				t.Fatalf("PreferredPublicHostname(...) = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestPublicHostnames(t *testing.T) {
 	tests := []struct {
 		name      string
