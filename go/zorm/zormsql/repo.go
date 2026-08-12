@@ -11,6 +11,7 @@ import (
 	"github.com/milagre/zote/go/zelement"
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zelem"
+	"github.com/milagre/zote/go/zelement/zsort"
 	"github.com/milagre/zote/go/zfunc"
 	"github.com/milagre/zote/go/zorm"
 	"github.com/milagre/zote/go/zreflect"
@@ -666,30 +667,53 @@ func (r *queryer) buildFKWhereClause(parentVal reflect.Value, rel relInfo) (zcla
 	return nil, fmt.Errorf("no FK columns found in relation")
 }
 
+// relatedModelPageSize bounds each page of the related-model scan used for orphan
+// detection. The scan pages until exhausted, so a parent may hold any number of
+// related rows.
+const relatedModelPageSize = 1000
+
 // findRelatedModels finds models of the given type matching the WHERE clause.
 func (r *queryer) findRelatedModels(ctx context.Context, mapping Mapping, where zclause.Clause) ([]reflect.Value, error) {
-	// Create a slice to hold results
-	sliceType := reflect.SliceOf(reflect.TypeOf(mapping.PtrType))
-	resultSlice := reflect.MakeSlice(sliceType, 0, 10)
-	resultPtr := reflect.New(sliceType)
-	resultPtr.Elem().Set(resultSlice)
-
-	// Find using the mapping's model type
-	err := r.find(ctx, resultPtr.Interface(), zorm.FindOptions{
-		Where: where,
-	})
+	pkFields, err := mapping.primaryKeyFields()
 	if err != nil {
-		return nil, fmt.Errorf("finding related models: %w", err)
+		return nil, fmt.Errorf("getting related primary key fields: %w", err)
 	}
 
-	// Convert result to []reflect.Value
-	resultSlice = resultPtr.Elem()
-	result := make([]reflect.Value, resultSlice.Len())
-	for i := 0; i < resultSlice.Len(); i++ {
-		result[i] = resultSlice.Index(i)
+	// Page ordered by primary key: an unordered scan can repeat or skip rows across pages.
+	sorts := make([]zsort.Sort, 0, len(pkFields))
+	for _, field := range pkFields {
+		sorts = append(sorts, zelem.Asc(zelem.Field(field)))
 	}
 
-	return result, nil
+	sliceType := reflect.SliceOf(reflect.TypeOf(mapping.PtrType))
+
+	var result []reflect.Value
+	offset := 0
+
+	for {
+		pagePtr := reflect.New(sliceType)
+		pagePtr.Elem().Set(reflect.MakeSlice(sliceType, 0, relatedModelPageSize))
+
+		err := r.find(ctx, pagePtr.Interface(), zorm.FindOptions{
+			Where:  where,
+			Sort:   sorts,
+			Offset: offset,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("finding related models at offset %d: %w", offset, err)
+		}
+
+		page := pagePtr.Elem()
+		for i := 0; i < page.Len(); i++ {
+			result = append(result, page.Index(i))
+		}
+
+		if page.Len() < relatedModelPageSize {
+			return result, nil
+		}
+
+		offset += relatedModelPageSize
+	}
 }
 
 // extractPKString extracts a string representation of the PK for comparison.
