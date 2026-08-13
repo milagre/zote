@@ -72,5 +72,51 @@ func (v *elemVisitor) visitDotDelimitedField(path string) (string, error) {
 }
 
 func (v *elemVisitor) VisitMethod(e zelement.Method) error {
-	return fmt.Errorf("methods not supported")
+	strp := v.driver.PrepareMethod(e.Name)
+
+	if strp == nil {
+		v.result += e.Name
+		v.result += "("
+		for i, p := range e.Params {
+			err := p.Accept(v)
+			if err != nil {
+				return fmt.Errorf("visiting element in method '%s' at param %d: %w", e.Name, i, err)
+			}
+			if i < len(e.Params)-1 {
+				v.result += ", "
+			}
+		}
+		v.result += ")"
+
+		return nil
+	}
+
+	clause := *strp
+
+	for i, c := range e.Params {
+		subVisitor := elemVisitor{
+			driver:            v.driver,
+			table:             v.table,
+			columnAliasPrefix: v.columnAliasPrefix,
+			mapping:           v.mapping,
+			cfg:               v.cfg,
+		}
+
+		sub, vals, err := subVisitor.Visit(c)
+		if err != nil {
+			return fmt.Errorf("visiting element in method '%s' at param %d: %w", e.Name, i, err)
+		}
+
+		if strings.Contains(clause, "%s") {
+			clause = strings.Replace(clause, "%s", sub, 1)
+		} else {
+			clause += sub
+		}
+
+		v.values = append(v.values, vals...)
+	}
+
+	v.result += clause
+
+	return nil
 }

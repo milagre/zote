@@ -16,6 +16,7 @@ var validators = map[Method]methodValidator{
 	Now:           nowValidator{},
 	Match:         matchValidator{},
 	Contains:      containsValidator{},
+	Coalesce:      coalesceValidator{},
 	RegexpReplace: regexpReplaceValidator{},
 }
 
