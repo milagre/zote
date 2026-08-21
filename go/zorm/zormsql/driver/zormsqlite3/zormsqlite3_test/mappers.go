@@ -46,7 +46,6 @@ var AccountMapping = zormsql.Mapping{
 	},
 	Relations: []zormsql.Relation{
 		{
-			Table: "users",
 			Columns: map[string]string{
 				"id": "account_id",
 			},
@@ -136,21 +135,18 @@ var UserMapping = zormsql.Mapping{
 	},
 	Relations: []zormsql.Relation{
 		{
-			Table: "accounts",
 			Columns: map[string]string{
 				"account_id": "id",
 			},
 			Field: "Account",
 		},
 		{
-			Table: "user_auths",
 			Columns: map[string]string{
 				"id": "user_id",
 			},
 			Field: "Auths",
 		},
 		{
-			Table: "user_addresses",
 			Columns: map[string]string{
 				"user_address_id": "id",
 			},
@@ -202,7 +198,6 @@ var UserAuthMapping = zormsql.Mapping{
 	},
 	Relations: []zormsql.Relation{
 		{
-			Table: "users",
 			Columns: map[string]string{
 				"user_id": "id",
 			},

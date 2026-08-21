@@ -95,7 +95,6 @@ func TestNavigateRelationPath(t *testing.T) {
 		},
 		Relations: []Relation{
 			{
-				Table: "addresses",
 				Columns: map[string]string{
 					"id": "address_id",
 				},
@@ -186,7 +185,6 @@ func TestNavigateRelationPath(t *testing.T) {
 			},
 			Relations: []Relation{
 				{
-					Table: "unknowns",
 					Columns: map[string]string{
 						"id": "unknown_id",
 					},
@@ -232,7 +230,6 @@ func TestResolveDotDelimitedField(t *testing.T) {
 		},
 		Relations: []Relation{
 			{
-				Table: "users",
 				Columns: map[string]string{
 					"id": "account_id",
 				},
@@ -251,7 +248,6 @@ func TestResolveDotDelimitedField(t *testing.T) {
 		},
 		Relations: []Relation{
 			{
-				Table: "addresses",
 				Columns: map[string]string{
 					"id": "address_id",
 				},

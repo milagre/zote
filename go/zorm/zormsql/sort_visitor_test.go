@@ -71,7 +71,6 @@ func TestSortVisitor_DotDelimitedField(t *testing.T) {
 		},
 		Relations: []Relation{
 			{
-				Table: "addresses",
 				Columns: map[string]string{
 					"id": "address_id",
 				},

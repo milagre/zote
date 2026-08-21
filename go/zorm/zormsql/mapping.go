@@ -25,7 +25,7 @@ import (
 //	        {Name: "account_id", Field: "AccountID"},
 //	    },
 //	    Relations: []zormsql.Relation{
-//	        {Table: "accounts", Columns: map[string]string{"account_id": "id"}, Field: "Account"},
+//	        {Columns: map[string]string{"account_id": "id"}, Field: "Account"},
 //	    },
 //	}
 type Mapping struct {
@@ -70,6 +70,9 @@ type Column struct {
 
 // Relation defines a navigational relationship from this model to another.
 //
+// The related table is not named here: Field's type identifies the related
+// model, and that model's own mapping supplies its table.
+//
 // The same underlying FK constraint can be defined from both sides:
 //   - Account.Users: accounts.id = users.account_id (one-to-many)
 //   - User.Account: users.account_id = accounts.id (many-to-one)
@@ -77,7 +80,6 @@ type Column struct {
 // Example (many-to-one, FK on this model):
 //
 //	Relation{
-//	    Table:   "accounts",
 //	    Columns: map[string]string{"account_id": "id"},  // users.account_id = accounts.id
 //	    Field:   "Account",
 //	}
@@ -85,14 +87,10 @@ type Column struct {
 // Example (one-to-many, FK on related model):
 //
 //	Relation{
-//	    Table:   "users",
 //	    Columns: map[string]string{"id": "account_id"},  // accounts.id = users.account_id
 //	    Field:   "Users",
 //	}
 type Relation struct {
-	// Table is the related table name.
-	Table string
-
 	// Columns maps this model's column names to the related model's column names.
 	// The map key is a column on this model's table; the value is a column on the related table.
 	Columns map[string]string

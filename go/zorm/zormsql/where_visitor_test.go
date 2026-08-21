@@ -61,7 +61,6 @@ var mappingWithAddress = Mapping{
 	},
 	Relations: []Relation{
 		{
-			Table: "addresses",
 			Columns: map[string]string{
 				"id": "address_id",
 			},
