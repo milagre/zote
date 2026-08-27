@@ -11,6 +11,17 @@ import (
 	"github.com/rabbitmq/amqp091-go"
 )
 
+// The content encodings a body can be published under. A consumer reads them
+// back off the delivery to know whether the body needs inflating.
+const (
+	encodingIdentity = "identity"
+	encodingDeflate  = "deflate"
+
+	// Bodies published before this spelling still arrive marked "compress",
+	// which names LZW rather than the zlib format they actually hold.
+	encodingCompress = "compress"
+)
+
 // MessageOptions are optional pieces of data for publishing a message. An empty object is valid.
 type MessageOptions struct {
 	Compress                bool
@@ -88,11 +99,13 @@ func messageToPublishing(msg Message) (amqp091.Publishing, error) {
 		return amqp091.Publishing{}, fmt.Errorf("getting message content: %w", err)
 	}
 
+	opts := msg.Options()
+
 	body := bytes.NewBuffer(content)
 
-	contentEncoding := "identity"
-	if msg.Options().Compress {
-		contentEncoding = "compress"
+	contentEncoding := encodingIdentity
+	if opts.Compress {
+		contentEncoding = encodingDeflate
 
 		compressedBody := &bytes.Buffer{}
 		w := zlib.NewWriter(compressedBody)
@@ -116,10 +129,10 @@ func messageToPublishing(msg Message) (amqp091.Publishing, error) {
 
 	return amqp091.Publishing{
 		Body:            body.Bytes(),
-		Headers:         msg.Options().Headers.toTable(),
+		Headers:         opts.Headers.toTable(),
 		ContentType:     contentType,
 		ContentEncoding: contentEncoding,
-		DeliveryMode:    publishingDeliveryMode(msg.Options()),
+		DeliveryMode:    publishingDeliveryMode(opts),
 	}, nil
 }
 
@@ -134,6 +147,7 @@ func publishingDeliveryMode(opts MessageOptions) uint8 {
 type requeueMessage struct {
 	data              []byte
 	contentType       string
+	compress          bool
 	originalQueueName string
 	headers           Headers
 	delay             time.Duration
@@ -146,7 +160,7 @@ var _ Message = requeueMessage{}
 func (m requeueMessage) Options() MessageOptions {
 	jobID, _ := headerString(m.headers, headerJobID)
 	return MessageOptions{
-		Compress:   false,
+		Compress:   m.compress,
 		Headers:    m.finalHeaders(),
 		RoutingKey: m.queueDefinition().Name,
 		JobID:      jobID,

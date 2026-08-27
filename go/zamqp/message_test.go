@@ -34,6 +34,19 @@ func TestMessageToPublishing_TransientDeliveryMode(t *testing.T) {
 	require.Equal(t, amqp091.Transient, pub.DeliveryMode)
 }
 
+func TestMessageToPublishing_CompressPublishesTheDeflateEncoding(t *testing.T) {
+	t.Parallel()
+
+	pub, err := messageToPublishing(NewRawMessage(
+		[]byte("payload"),
+		"text/plain",
+		Exchange{Name: "dest"},
+		MessageOptions{Compress: true},
+	))
+	require.NoError(t, err)
+	require.Equal(t, "deflate", pub.ContentEncoding)
+}
+
 func TestPublishingDeliveryMode(t *testing.T) {
 	t.Parallel()
 

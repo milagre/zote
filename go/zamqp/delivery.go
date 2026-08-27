@@ -42,6 +42,10 @@ type delivery struct {
 	delivery  amqp091.Delivery
 	complete  bool
 	lock      sync.Mutex
+
+	decode    sync.Once
+	decoded   []byte
+	decodeErr error
 }
 
 func (m *delivery) Parse(target interface{}) error {
@@ -54,23 +58,7 @@ func (m *delivery) Parse(target interface{}) error {
 		return fmt.Errorf("unsupported content type '%s', parse the body directly", m.ContentType())
 	}
 
-	var decoder io.Reader
-	switch m.ContentEncoding() {
-	case "identity", "":
-		decoder = bytes.NewBuffer(m.Body())
-
-	case "compress":
-		r, err := zlib.NewReader(bytes.NewBuffer(m.Body()))
-		if err != nil {
-			return fmt.Errorf("making zlib reader: %w", err)
-		}
-
-		decoder = r
-	default:
-		return fmt.Errorf("unsupported content encoding '%s', parse the body directly", m.ContentEncoding())
-	}
-
-	decoded, err := io.ReadAll(decoder)
+	decoded, err := m.decodedBody()
 	if err != nil {
 		return fmt.Errorf("decoding message body: %w", err)
 	}
@@ -81,6 +69,44 @@ func (m *delivery) Parse(target interface{}) error {
 	}
 
 	return nil
+}
+
+// decodedBody is the body decoded from any contentEncoding over the wire.
+func (m *delivery) decodedBody() ([]byte, error) {
+	m.decode.Do(func() {
+		m.decoded, m.decodeErr = decodeBody(m.ContentEncoding(), m.Body())
+	})
+
+	return m.decoded, m.decodeErr
+}
+
+func decodeBody(contentEncoding string, body []byte) ([]byte, error) {
+	var decoder io.Reader
+	switch contentEncoding {
+	case encodingIdentity, "":
+		decoder = bytes.NewBuffer(body)
+
+	case encodingDeflate, encodingCompress:
+		r, err := zlib.NewReader(bytes.NewBuffer(body))
+		if err != nil {
+			return nil, fmt.Errorf("making zlib reader: %w", err)
+		}
+
+		decoder = r
+	default:
+		return nil, fmt.Errorf("unsupported content encoding '%s', parse the body directly", contentEncoding)
+	}
+
+	decoded, err := io.ReadAll(decoder)
+	if err != nil {
+		return nil, fmt.Errorf("reading message body: %w", err)
+	}
+
+	return decoded, nil
+}
+
+func compressed(contentEncoding string) bool {
+	return contentEncoding == encodingDeflate || contentEncoding == encodingCompress
 }
 
 func wrapDelivery(channel Channel, queueName string, del amqp091.Delivery) Delivery {
@@ -167,19 +193,53 @@ func (m *delivery) Reject(ctx context.Context) error {
 	return nil
 }
 
+// requeueOwn republishes this delivery's body unchanged, but re-encoded
+func (m *delivery) requeueOwn(kind string, delay time.Duration) (requeueMessage, error) {
+	decoded, err := m.decodedBody()
+	if err != nil {
+		return requeueMessage{}, fmt.Errorf("decoding message body: %w", err)
+	}
+
+	msg := m.requeueData(kind, decoded, m.ContentType(), delay)
+
+	return msg, nil
+}
+
+// requeueData republishes a body in place of this delivery's
+func (m *delivery) requeueData(kind string, content []byte, contentType string, delay time.Duration) requeueMessage {
+	return requeueMessage{
+		data:              content,
+		contentType:       contentType,
+		compress:          compressed(m.ContentEncoding()),
+		originalQueueName: m.queueName,
+		headers:           m.Headers(),
+		delay:             delay,
+		kind:              kind,
+	}
+}
+
 func (m *delivery) Retry(ctx context.Context) error {
-	return m.RetryWithData(ctx, m.Body(), m.ContentType())
+	msg, err := m.requeueOwn("retry", 0)
+	if err != nil {
+		return fmt.Errorf("preparing message for retry: %w", err)
+	}
+
+	err = m.respond(func() error {
+		return m.requeue(ctx, msg)
+	})
+	if err != nil {
+		return fmt.Errorf("retrying message: %w", err)
+	}
+
+	zstats.FromContext(ctx).Count("delivery.retry", 1)
+	zlog.FromContext(ctx).Info("Message retried")
+
+	return nil
 }
 
 func (m *delivery) RetryWithData(ctx context.Context, content []byte, contentType string) error {
 	err := m.respond(func() error {
-		return m.requeue(ctx, requeueMessage{
-			data:              content,
-			contentType:       contentType,
-			originalQueueName: m.queueName,
-			headers:           m.Headers(),
-			kind:              "retry",
-		})
+		return m.requeue(ctx, m.requeueData("retry", content, contentType, 0))
 	})
 	if err != nil {
 		return fmt.Errorf("retrying message: %w", err)
@@ -192,19 +252,27 @@ func (m *delivery) RetryWithData(ctx context.Context, content []byte, contentTyp
 }
 
 func (m *delivery) RetryDelayed(ctx context.Context, delay time.Duration) error {
-	return m.RetryDelayedWithData(ctx, delay, m.Body(), m.ContentType())
+	msg, err := m.requeueOwn("retry", delay)
+	if err != nil {
+		return fmt.Errorf("preparing message for delayed retry: %w", err)
+	}
+
+	err = m.respond(func() error {
+		return m.requeue(ctx, msg)
+	})
+	if err != nil {
+		return fmt.Errorf("retrying message with delay: %w", err)
+	}
+
+	zstats.FromContext(ctx).WithTag("delay", delay.String()).Count("delivery.retry", 1)
+	zlog.FromContext(ctx).Infof("Message queued for retry in %s", delay)
+
+	return nil
 }
 
 func (m *delivery) RetryDelayedWithData(ctx context.Context, delay time.Duration, content []byte, contentType string) error {
 	err := m.respond(func() error {
-		return m.requeue(ctx, requeueMessage{
-			data:              content,
-			contentType:       contentType,
-			originalQueueName: m.queueName,
-			headers:           m.Headers(),
-			delay:             delay,
-			kind:              "retry",
-		})
+		return m.requeue(ctx, m.requeueData("retry", content, contentType, delay))
 	})
 	if err != nil {
 		return fmt.Errorf("retrying message with delay: %w", err)
@@ -217,14 +285,13 @@ func (m *delivery) RetryDelayedWithData(ctx context.Context, delay time.Duration
 }
 
 func (m *delivery) Fatal(ctx context.Context) error {
-	err := m.respond(func() error {
-		return m.requeue(ctx, requeueMessage{
-			data:              m.Body(),
-			contentType:       m.ContentType(),
-			originalQueueName: m.queueName,
-			headers:           m.Headers(),
-			kind:              "fatal",
-		})
+	msg, err := m.requeueOwn("fatal", 0)
+	if err != nil {
+		return fmt.Errorf("preparing message for the fatal queue: %w", err)
+	}
+
+	err = m.respond(func() error {
+		return m.requeue(ctx, msg)
 	})
 	if err != nil {
 		return fmt.Errorf("retrying message with delay: %w", err)
