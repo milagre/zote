@@ -55,8 +55,7 @@ func (c *directConsumer) Start(ctx context.Context) error {
 	restart := make(chan int)
 
 	logger := zlog.FromContext(processCtx)
-	stats := zstats.FromContext(processCtx)
-	stats.AddPrefix(ConsumerStatsPrefix).AddTag("queue", c.queueName)
+	stats := consumerStats(processCtx, c.queueName)
 
 	consumeChannel, err := makeConsumeChannel(c.conn, c.concurrency)
 	if err != nil {
@@ -122,7 +121,7 @@ func (c *directConsumer) Start(ctx context.Context) error {
 				}
 			}()
 
-			c.consume(consumerContext, publisher, messages)
+			c.consume(consumerContext, stats, publisher, messages)
 		}
 	}
 
@@ -173,6 +172,11 @@ func (c *directConsumer) Start(ctx context.Context) error {
 	return nil
 }
 
+// consumerStats scopes a consumer's own metrics beneath [ConsumerStatsPrefix]
+func consumerStats(ctx context.Context, queueName string) zstats.Stats {
+	return zstats.FromContext(ctx).WithPrefix(ConsumerStatsPrefix).WithTag("queue", queueName)
+}
+
 func makeConsumeChannel(conn Connection, concurrency int) (Channel, error) {
 	channel, err := conn.NewChannel()
 	if err != nil {
@@ -187,8 +191,9 @@ func makeConsumeChannel(conn Connection, concurrency int) (Channel, error) {
 	return channel, nil
 }
 
-func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliveries chan Delivery) {
-	stats := zstats.FromContext(ctx)
+// consume runs deliveries through the handler until ctx is cancelled or the
+// channel closes.
+func (c *directConsumer) consume(ctx context.Context, stats zstats.Stats, publisher Publisher, deliveries chan Delivery) {
 	logger := zlog.FromContext(ctx)
 	for {
 		select {
@@ -205,7 +210,8 @@ func (c *directConsumer) consume(ctx context.Context, publisher Publisher, deliv
 			stats.Count("received", 1)
 
 			h := del.Headers()
-			msgCtx := Context(ctx,
+			msgCtx := Context(
+				ctx,
 				headerStringDefault(h, headerJobID, uuid.NewString),
 				headerStringDefault(h, headerMessageID, uuid.NewString),
 			)
