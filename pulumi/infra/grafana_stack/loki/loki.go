@@ -19,7 +19,7 @@ import (
 const (
 	chart          = "loki"
 	repository     = "https://grafana.github.io/helm-charts"
-	defaultVersion = "7.0.0"
+	defaultVersion = "7.3.0"
 )
 
 // Loki Helm defaults auth_enabled true, which requires a X-Scope-OrgID on every request.

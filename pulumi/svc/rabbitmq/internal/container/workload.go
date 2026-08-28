@@ -90,7 +90,7 @@ func registerWorkload(
 					InitContainers: corev1.ContainerArray{
 						&corev1.ContainerArgs{
 							Name:    pulumi.String("rabbitmq-config"),
-							Image:   pulumi.String("busybox:1.32.0"),
+							Image:   pulumi.String("busybox:1.38.0"),
 							Command: initCmd,
 							VolumeMounts: corev1.VolumeMountArray{
 								&corev1.VolumeMountArgs{Name: pulumi.String("config"), MountPath: pulumi.String("/tmp/rabbitmq")},

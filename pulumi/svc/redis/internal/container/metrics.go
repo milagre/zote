@@ -9,7 +9,7 @@ import (
 
 const (
 	portPrometheus = 9121
-	exporterImage  = "quay.io/oliver006/redis_exporter:v1.67.0"
+	exporterImage  = "quay.io/oliver006/redis_exporter:v1.90.0"
 )
 
 // PrometheusPodAnnotations are pod template annotations for Alloy's annotation-based scrape.

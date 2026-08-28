@@ -27,7 +27,7 @@ var (
 		TypeToken:      tokens.Token("infra", "GrafanaHelm"),
 		Chart:          "grafana",
 		Repository:     "https://grafana-community.github.io/helm-charts",
-		DefaultVersion: "12.1.1",
+		DefaultVersion: "12.11.2",
 	}
 )
 

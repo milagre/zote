@@ -16,7 +16,7 @@ var spec = helm.ChartSpec{
 	TypeToken:      tokens.Token("infra", "Prometheus"),
 	Chart:          "kube-prometheus-stack",
 	Repository:     "https://prometheus-community.github.io/helm-charts",
-	DefaultVersion: "80.6.0",
+	DefaultVersion: "80.14.4",
 }
 
 type Args struct {

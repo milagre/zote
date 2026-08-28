@@ -12,9 +12,10 @@ import (
 )
 
 var spec = helm.ChartSpec{
-	TypeToken:  tokens.Token("infra", "CloudflareTunnel"),
-	Chart:      "cloudflare-tunnel-ingress-controller",
-	Repository: "https://helm.strrl.dev/",
+	TypeToken:      tokens.Token("infra", "CloudflareTunnel"),
+	Chart:          "cloudflare-tunnel-ingress-controller",
+	Repository:     "https://helm.strrl.dev/",
+	DefaultVersion: "0.1.0",
 }
 
 const IngressClassName = "cloudflare-tunnel" // chart-fixed IngressClass
