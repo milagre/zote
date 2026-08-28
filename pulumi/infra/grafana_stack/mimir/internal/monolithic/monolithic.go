@@ -16,7 +16,7 @@ import (
 	"github.com/milagre/zote/pulumi/util/endpoint"
 )
 
-const defaultImage = "grafana/mimir:2.16.0"
+const defaultImage = "grafana/mimir:2.17.11"
 
 type Result struct {
 	Gateway    url.URL

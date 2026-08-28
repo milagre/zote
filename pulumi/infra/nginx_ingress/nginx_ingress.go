@@ -18,7 +18,7 @@ var spec = helm.ChartSpec{
 	TypeToken:      tokens.Token("infra", "NginxIngress"),
 	Chart:          "ingress-nginx",
 	Repository:     "https://kubernetes.github.io/ingress-nginx",
-	DefaultVersion: "4.7.2",
+	DefaultVersion: "4.15.1",
 }
 
 type Args struct {

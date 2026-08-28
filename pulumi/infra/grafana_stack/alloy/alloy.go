@@ -14,7 +14,7 @@ var spec = helm.ChartSpec{
 	TypeToken:      tokens.Token("infra", "Alloy"),
 	Chart:          "alloy",
 	Repository:     "https://grafana.github.io/helm-charts",
-	DefaultVersion: "1.8.1",
+	DefaultVersion: "1.12.1",
 }
 
 type Args struct {

@@ -15,7 +15,7 @@ var spec = helm.ChartSpec{
 	TypeToken:      tokens.Token("infra", "MetricsServer"),
 	Chart:          "metrics-server",
 	Repository:     "https://kubernetes-sigs.github.io/metrics-server",
-	DefaultVersion: "3.11.0",
+	DefaultVersion: "3.14.0",
 }
 
 type Args struct {

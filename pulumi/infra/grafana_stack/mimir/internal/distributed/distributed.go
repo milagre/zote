@@ -18,7 +18,7 @@ import (
 const (
 	chart          = "mimir-distributed"
 	repository     = "https://grafana.github.io/helm-charts"
-	defaultVersion = "6.1.0-weekly.391"
+	defaultVersion = "6.2.0"
 )
 
 type Result struct {

@@ -19,7 +19,7 @@ var spec = helm.ChartSpec{
 	TypeToken:      tokens.Token("infra", "CertManager"),
 	Chart:          "cert-manager",
 	Repository:     "https://charts.jetstack.io",
-	DefaultVersion: "1.13.1",
+	DefaultVersion: "1.21.1",
 }
 
 type Args struct {
