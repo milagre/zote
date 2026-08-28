@@ -193,6 +193,10 @@ const (
 	mimirDatasourceUID = "mimir"
 )
 
+// scrapeInterval is how often Alloy reads a pod, and what the Mimir datasource
+// declares as its timeInterval.
+const scrapeInterval = "15s"
+
 func defaultGrafanaDatasources(lokiBaseURL string, mimirPrometheusURL string) map[string]any {
 	return map[string]any{
 		"datasources.yaml": map[string]any{
@@ -212,13 +216,8 @@ func defaultGrafanaDatasources(lokiBaseURL string, mimirPrometheusURL string) ma
 					"access":    "proxy",
 					"url":       mimirPrometheusURL,
 					"isDefault": true,
-					// timeInterval must match the Alloy scrape cadence (prometheus.scrape
-					// defaults to 60s). Grafana derives $__rate_interval from it as
-					// max($__interval + timeInterval, 4*timeInterval); if it is left at the
-					// 15s default, rate/increase windows are too short for 60s samples and
-					// panels render "No data".
 					"jsonData": map[string]any{
-						"timeInterval": "60s",
+						"timeInterval": scrapeInterval,
 					},
 				},
 			},
@@ -232,7 +231,7 @@ func defaultAlloyRiver(lokiPush, mimirPush pulumi.StringOutput) pulumi.StringOut
 		lk := vals[0].(string)
 		mm := vals[1].(string)
 
-		return fmt.Sprintf(defaultAlloyRiverTemplate, mm, lk)
+		return fmt.Sprintf(defaultAlloyRiverTemplate, mm, scrapeInterval, lk)
 	}).(pulumi.StringOutput)
 }
 
@@ -321,9 +320,12 @@ prometheus.relabel "zote_metrics" {
   }
 }
 
+// The interval is set rather than left to Alloy's 60s default: at 60s the
+// narrowest bucket a counting panel can draw is two minutes. See scrapeInterval.
 prometheus.scrape "pods_annotations" {
-  targets    = discovery.relabel.pods_scrape.output
-  forward_to = [prometheus.relabel.zote_metrics.receiver]
+  targets         = discovery.relabel.pods_scrape.output
+  forward_to      = [prometheus.relabel.zote_metrics.receiver]
+  scrape_interval = "%s"
 }
 
 // Pod logs (per-node): Grafana Alloy Helm sets HOSTNAME to the node name for field selectors.

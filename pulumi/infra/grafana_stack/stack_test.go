@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDefaultAlloyRiverTemplate_includesScrapes(t *testing.T) {
 	t.Parallel()
 
-	cfg := fmt.Sprintf(defaultAlloyRiverTemplate, "http://mimir/push", "http://loki/push")
+	cfg := fmt.Sprintf(defaultAlloyRiverTemplate, "http://mimir/push", 15*time.Second, "http://loki/push")
 
 	for _, want := range []string{
 		"prometheus.operator.podmonitors",
@@ -23,7 +24,7 @@ func TestDefaultAlloyRiverTemplate_includesScrapes(t *testing.T) {
 		"prometheus.relabel \"zote_metrics\"",
 		`regex         = "influxdb;(.+)"`,
 		`replacement   = "influxdb_$1"`,
-		`forward_to = [prometheus.relabel.zote_metrics.receiver]`,
+		`forward_to      = [prometheus.relabel.zote_metrics.receiver]`,
 		"prometheus.scrape \"pods_annotations\"",
 		"loki.source.kubernetes \"pod_logs\"",
 		"discovery.kubernetes \"pod_logs\"",
