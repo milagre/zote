@@ -23,6 +23,9 @@ type ResponseBuilder interface {
 type Request interface {
 	HTTPRequest() *http.Request
 
+	// Route is the route this request matched
+	Route() Route
+
 	Context() context.Context
 	AddContextValue(key any, val any)
 
@@ -33,7 +36,7 @@ type Request interface {
 	Method() string
 	Query(key string) string
 	Param(p string) string
-	//Params() map[string][]string
+	// Params() map[string][]string
 }
 
 type Route interface {

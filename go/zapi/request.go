@@ -21,6 +21,10 @@ func (r *request) HTTPRequest() *http.Request {
 	return r.request
 }
 
+func (r *request) Route() Route {
+	return r.route
+}
+
 func (r *request) Context() context.Context {
 	return r.request.Context()
 }
