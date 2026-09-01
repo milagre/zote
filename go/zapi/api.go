@@ -26,6 +26,9 @@ type Request interface {
 	// Route is the route this request matched
 	Route() Route
 
+	// Routes is the path of routes this request matched, root first, Route() last
+	Routes() []Route
+
 	Context() context.Context
 	AddContextValue(key any, val any)
 

@@ -13,6 +13,7 @@ var _ Request = &request{}
 type request struct {
 	request   *http.Request
 	route     Route
+	routes    []Route
 	params    map[string][]string
 	bodyCache []byte
 }
@@ -23,6 +24,10 @@ func (r *request) HTTPRequest() *http.Request {
 
 func (r *request) Route() Route {
 	return r.route
+}
+
+func (r *request) Routes() []Route {
+	return r.routes
 }
 
 func (r *request) Context() context.Context {

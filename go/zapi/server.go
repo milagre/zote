@@ -228,6 +228,7 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		req := &request{
 			request: r,
 			route:   targetRoute,
+			routes:  allRoutes,
 			params:  params,
 		}
 
@@ -266,18 +267,17 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		resp = h.server.middlewareChain(handler)(req)
 	}
 
-	path := r.URL.Path
-	parts := strings.Split(strings.Trim(path, "/"), "/")
 	params := map[string][]string{}
-
-	// Root resource requested, short circuit
-	if len(parts) == 1 && parts[0] == "" {
-		execute([]Route{}, h.root.route, params)
-		return
-	}
-
 	parents := []Route{h.root.route}
 	current := h.root
+
+	// The root resource contributes no parts, leaving the walk below with nothing
+	// to descend into and the root itself as the match.
+	var parts []string
+	if trimmed := strings.Trim(r.URL.Path, "/"); trimmed != "" {
+		parts = strings.Split(trimmed, "/")
+	}
+
 	for _, part := range parts {
 		child, ok := current.children[part]
 		if !ok {
