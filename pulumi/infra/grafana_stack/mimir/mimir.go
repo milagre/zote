@@ -62,13 +62,14 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			Name:          name,
 			ObjectStorage: args.ObjectStorage,
 			Bucket:        args.Config.Bucket,
+			Storage:       storagePtr(args.Config.Storage),
 		})
 		if err != nil {
 			return nil, fmt.Errorf("mimir: monolithic: %w", err)
 		}
 
 		comp.Gateway, comp.Prometheus, comp.Push = res.Gateway, res.Prometheus, res.Push
-		comp.Deps = []pulumi.Resource{res.Deployment, res.Service}
+		comp.Deps = []pulumi.Resource{res.StatefulSet, res.Service}
 		comp.PushURL, comp.GatewayURL, comp.PrometheusURL = urlsAfterID(
 			res.Service.ID(), res.Push, res.Gateway, res.Prometheus)
 
@@ -133,6 +134,14 @@ func (a *Args) validate() error {
 	}
 
 	return nil
+}
+
+func storagePtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+
+	return &s
 }
 
 func bucketIn(bucket string, buckets map[string]string) bool {

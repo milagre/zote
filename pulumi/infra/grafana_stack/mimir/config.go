@@ -6,9 +6,13 @@ import (
 
 // Config is the YAML-decoded mimir configuration.
 type Config struct {
-	Version string `yaml:"version"`
+	Version    string `yaml:"version"`
 	Monolithic bool   `yaml:"monolithic"`
-	Bucket string `yaml:"bucket"`
+	Bucket     string `yaml:"bucket"`
+
+	// Storage sizes the monolithic ingester's TSDB volume. Empty uses the
+	// baked-in default; ignored when Monolithic is false.
+	Storage string `yaml:"storage"`
 }
 
 func (c *Config) Validate() error {
