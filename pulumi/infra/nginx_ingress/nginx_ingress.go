@@ -27,6 +27,13 @@ type Args struct {
 
 	IngressClassName string
 
+	// AllowSnippetAnnotations opens the controller to *-snippet annotations and
+	// raises the accepted annotation risk to Critical. Both are needed before
+	// the controller will admit an Ingress carrying a snippet, and both apply
+	// cluster-wide: any Ingress in any namespace can then inject nginx
+	// configuration. Set it only when the caller's own Ingresses require it.
+	AllowSnippetAnnotations bool
+
 	Config Config
 
 	// Cluster registers deployed capabilities when non-nil.
@@ -57,7 +64,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
 		Version:   helm.OptionalChartVersion(args.Config.Version),
-		Values:    values(args.Env, prof, ingressClass),
+		Values:    values(args.Env, prof, ingressClass, args.AllowSnippetAnnotations),
 	}, &comp.ChartComponent, opts...); err != nil {
 		return nil, err
 	}
@@ -70,7 +77,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
-func values(e env.Env, p profile.Profile, ingressClass string) pulumi.Map {
+func values(e env.Env, p profile.Profile, ingressClass string, allowSnippets bool) pulumi.Map {
 	autoscaling := map[string]any{
 		"enabled":                           true,
 		"minReplicas":                       3,
@@ -125,6 +132,19 @@ func values(e env.Env, p profile.Profile, ingressClass string) pulumi.Map {
 	controller["ingressClassResource"] = map[string]any{
 		"name":    ingressClass,
 		"enabled": true,
+	}
+
+	// Snippet annotations need both gates open: the chart's
+	// allow-snippet-annotations, and a risk level admitting Critical
+	// (configuration-snippet's class). With either closed the controller
+	// discards the whole Ingress carrying one — no server block, so the host
+	// falls through to the default TLS certificate rather than erroring
+	// anywhere visible.
+	if allowSnippets {
+		controller["allowSnippetAnnotations"] = true
+		controller["config"] = map[string]any{
+			"annotations-risk-level": "Critical",
+		}
 	}
 
 	return helm.Values(map[string]any{"controller": controller})
