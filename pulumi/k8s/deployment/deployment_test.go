@@ -149,6 +149,23 @@ func TestZAMQPUtilizationStat(t *testing.T) {
 	}
 }
 
+// TestZAPIUtilizationStat pins the query the zapi convenience emits. The
+// division by the per-replica target is what turns a raw in-flight count into
+// the percentage the utilization trigger scales on, and the average keeps it
+// per-replica: the trigger multiplies back up by the running replica count.
+func TestZAPIUtilizationStat(t *testing.T) {
+	e, err := env.New("zote", "prod", "prod", "mars", "/home/mars", "APP")
+	if err != nil {
+		t.Fatalf("env.New: %v", err)
+	}
+
+	got := ZAPIUtilizationStat(e, "apps", "my-api", 8)
+	want := `avg({__name__="app_apps_my_api_zapi_concurrency"}) * 100 / 8`
+	if got != want {
+		t.Fatalf("ZAPIUtilizationStat = %q, want %q", got, want)
+	}
+}
+
 // TestPrivateHostname encodes the Kubernetes in-cluster DNS naming
 // convention our workloads rely on. Drift here silently breaks every
 // caller that references a workload by its private hostname.

@@ -8,36 +8,36 @@ import (
 )
 
 func TestRenderZAMQPConsumerDashboard(t *testing.T) {
-	e, err := env.New("wm", "local", "dev", "local", "/root", "WM")
+	e, err := env.New("zote", "local", "dev", "local", "/root", "APP")
 	if err != nil {
 		t.Fatalf("env.New: %v", err)
 	}
 
 	got, err := render(Spec{
 		Env:       e,
-		Namespace: "finance",
-		Name:      "account-analyzer",
+		Namespace: "apps",
+		Name:      "my-worker",
 		Process:   "zamqp-consumer",
 	})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
 
-	wantMetric := "wm_finance_account_analyzer_zamqp_consumer_utilization"
+	wantMetric := "app_apps_my_worker_zamqp_consumer_utilization"
 	if !strings.Contains(got, wantMetric) {
 		t.Fatalf("dashboard missing utilization metric %q", wantMetric)
 	}
 
-	wantReceived := "wm_finance_account_analyzer_zamqp_consumer_received"
+	wantReceived := "app_apps_my_worker_zamqp_consumer_received"
 	if !strings.Contains(got, wantReceived) {
 		t.Fatalf("dashboard missing received metric %q", wantReceived)
 	}
 
-	if !strings.Contains(got, `"title": "Finance: Account Analyzer"`) {
+	if !strings.Contains(got, `"title": "Apps: My Worker"`) {
 		t.Fatalf("dashboard title not rendered")
 	}
 
-	if !strings.Contains(got, `"uid": "finance-account-analyzer"`) {
+	if !strings.Contains(got, `"uid": "apps-my-worker"`) {
 		t.Fatalf("dashboard uid not rendered")
 	}
 
@@ -51,54 +51,59 @@ func TestRenderZAMQPConsumerDashboard(t *testing.T) {
 }
 
 func TestRenderZAPIDashboard(t *testing.T) {
-	e, err := env.New("wm", "local", "dev", "local", "/root", "WM")
+	e, err := env.New("zote", "local", "dev", "local", "/root", "APP")
 	if err != nil {
 		t.Fatalf("env.New: %v", err)
 	}
 
 	got, err := render(Spec{
 		Env:       e,
-		Namespace: "finance",
-		Name:      "api",
+		Namespace: "apps",
+		Name:      "my-api",
 		Process:   "zapi",
 	})
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
 
-	wantRequests := "wm_finance_api_zapi_requests"
+	wantRequests := "app_apps_my_api_zapi_requests"
 	if !strings.Contains(got, wantRequests) {
 		t.Fatalf("dashboard missing requests metric %q", wantRequests)
 	}
 
-	wantResponses := "wm_finance_api_zapi_responses"
+	wantResponses := "app_apps_my_api_zapi_responses"
 	if !strings.Contains(got, wantResponses) {
 		t.Fatalf("dashboard missing responses metric %q", wantResponses)
 	}
 
-	if !strings.Contains(got, `"title": "Finance: Api"`) {
+	wantConcurrency := "app_apps_my_api_zapi_concurrency"
+	if !strings.Contains(got, wantConcurrency) {
+		t.Fatalf("dashboard missing concurrency metric %q", wantConcurrency)
+	}
+
+	if !strings.Contains(got, `"title": "Apps: My Api"`) {
 		t.Fatalf("dashboard title not rendered")
 	}
 }
 
 func TestDashboardTitle(t *testing.T) {
-	got := dashboardTitle("backend", "client-events-processor")
-	want := "Backend: Client Events Processor"
+	got := dashboardTitle("apps", "my-worker")
+	want := "Apps: My Worker"
 	if got != want {
 		t.Fatalf("dashboardTitle = %q, want %q", got, want)
 	}
 }
 
 func TestRenderUnsupportedProcessType(t *testing.T) {
-	e, err := env.New("wm", "local", "dev", "local", "/root", "WM")
+	e, err := env.New("zote", "local", "dev", "local", "/root", "APP")
 	if err != nil {
 		t.Fatalf("env.New: %v", err)
 	}
 
 	_, err = render(Spec{
 		Env:       e,
-		Namespace: "finance",
-		Name:      "api",
+		Namespace: "apps",
+		Name:      "my-api",
 		Process:   "cron",
 	})
 	if err == nil {

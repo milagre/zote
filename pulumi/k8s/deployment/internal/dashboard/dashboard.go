@@ -108,6 +108,7 @@ func replacementsFor(spec Spec) (map[string]string, error) {
 	case "zapi":
 		replacements["__REQUESTS_METRIC__"] = ZAPIRequestsMetric(spec.Env, spec.Namespace, spec.Name)
 		replacements["__RESPONSES_METRIC__"] = ZAPIResponsesMetric(spec.Env, spec.Namespace, spec.Name)
+		replacements["__CONCURRENCY_METRIC__"] = ZAPIConcurrencyMetric(spec.Env, spec.Namespace, spec.Name)
 	default:
 		return nil, fmt.Errorf("unsupported process type %q", spec.Process)
 	}
