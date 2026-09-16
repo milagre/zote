@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +18,10 @@ import (
 )
 
 const defaultShutdownTimeout = 60 * time.Second
+
+// concurrencyReportInterval is how often a serving server republishes its
+// in-flight gauge.
+const concurrencyReportInterval = time.Second
 
 type Server interface {
 	ListenAndServe(addr string) error
@@ -35,6 +40,10 @@ type server struct {
 	}
 	routes  map[string]Route
 	parents map[string]Route
+
+	// inFlight counts requests that have been accepted but whose response has
+	// not finished being written.
+	inFlight atomic.Int64
 
 	// Set when listen is called
 	server *http.Server
@@ -162,6 +171,11 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		_ = r.Body.Close()
 	}()
 
+	// Registered before the deferred response write below so it runs after it:
+	// a request occupies the server until its response is on the wire.
+	h.server.inFlight.Add(1)
+	defer h.server.inFlight.Add(-1)
+
 	start := time.Now()
 	requestID := uuid.New().String()
 
@@ -174,7 +188,7 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	routeMetricTags := newRequestStatTags(r)
 
 	stats := zstats.FromContext(h.server.rootContext)
-	stats = stats.WithPrefix("zapi")
+	stats = stats.WithPrefix(StatsPrefix)
 	stats = stats.WithTags(routeMetricTags.tags())
 	requestContext = zstats.Context(requestContext, stats)
 
@@ -395,6 +409,11 @@ func (h *handlerTree) add(route Route) error {
 
 func (s *server) ListenAndServe(addr string) error {
 	s.server = &http.Server{Addr: addr, Handler: s.handler}
+
+	reporting, stopReporting := context.WithCancel(s.rootContext)
+	defer stopReporting()
+	go s.reportConcurrency(reporting, concurrencyReportInterval)
+
 	err := s.server.ListenAndServe()
 	if err != http.ErrServerClosed {
 		return err
@@ -406,6 +425,27 @@ func (s *server) ListenAndServe(addr string) error {
 func (s *server) Shutdown(ctx context.Context) error {
 	defer close(s.shutdown)
 	return s.server.Shutdown(ctx)
+}
+
+// reportConcurrency publishes the in-flight gauge every interval until ctx is
+// done. Emitting on a timer rather than at request boundaries is what lets an
+// idle server report zero: a scraped gauge otherwise holds whatever the last
+// completed request left behind.
+func (s *server) reportConcurrency(ctx context.Context, interval time.Duration) {
+	stats := zstats.FromContext(s.rootContext).WithPrefix(StatsPrefix)
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			stats.Gauge(ConcurrencyMetric, float64(s.inFlight.Load()))
+
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func (s *server) mount(route Route) error {
