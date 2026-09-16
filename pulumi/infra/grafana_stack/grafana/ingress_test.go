@@ -10,10 +10,10 @@ import (
 func TestIngressHosts(t *testing.T) {
 	t.Parallel()
 
-	got := ingressHosts("grafana", "infra", []string{"wealthmode.test", "wealthmode.com"})
+	got := ingressHosts("grafana", "infra", []string{"example.test", "example.com"})
 	want := []string{
-		"grafana.infra.wealthmode.test",
-		"grafana.infra.wealthmode.com",
+		"grafana.infra.example.test",
+		"grafana.infra.example.com",
 	}
 	if len(got) != len(want) {
 		t.Fatalf("len = %d, want %d", len(got), len(want))
@@ -28,10 +28,10 @@ func TestIngressHosts(t *testing.T) {
 func TestPublicURL(t *testing.T) {
 	t.Parallel()
 
-	got := publicURL("grafana.infra.wealthmode.com")
+	got := publicURL("grafana.infra.example.com")
 	want := url.URL{
 		Scheme: "https",
-		Host:   "grafana.infra.wealthmode.com",
+		Host:   "grafana.infra.example.com",
 		Path:   "/",
 	}
 	if got != want {

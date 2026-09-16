@@ -23,7 +23,7 @@ func TestConsumerScopingLeavesTheProcessStatsAlone(t *testing.T) {
 	recorder := &recordingAdapter{}
 	ctx := zstats.Context(testContext(), zstats.NewStats(recorder))
 
-	consumerStats(ctx, "account-analyzer").Count("utilization", 1)
+	consumerStats(ctx, "myqueue").Count("utilization", 1)
 	zstats.FromContext(ctx).Count("llm.requests", 1)
 
 	assert.Equal(t, []string{"zamqp.consumer.utilization", "llm.requests"}, recorder.names())
@@ -40,7 +40,7 @@ func TestConsumerCountsItsOwnWorkBeneathTheConsumerPrefix(t *testing.T) {
 	consumer.consume(ctx, consumerStats(ctx, consumer.queueName), nil, oneDelivery(t))
 
 	assert.Equal(t, []string{"zamqp.consumer.received", "zamqp.consumer.completed"}, recorder.names())
-	assert.Equal(t, "account-analyzer", recorder.tagsFor("zamqp.consumer.received")["queue"])
+	assert.Equal(t, "myqueue", recorder.tagsFor("zamqp.consumer.received")["queue"])
 }
 
 func TestHandlerMetricsAreNotScopedToTheConsumer(t *testing.T) {
@@ -64,7 +64,7 @@ func testContext() context.Context {
 
 func testConsumer(process ConsumeFunc) *directConsumer {
 	return &directConsumer{
-		queueName:   "account-analyzer",
+		queueName:   "myqueue",
 		concurrency: 1,
 		process:     process,
 		busyCounter: &atomic.Int64{},

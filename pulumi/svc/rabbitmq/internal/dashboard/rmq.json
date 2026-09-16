@@ -433,8 +433,8 @@
     "list": [
       {
         "current": {
-          "text": "finance",
-          "value": "finance"
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": {
           "type": "prometheus",

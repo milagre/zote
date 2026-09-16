@@ -146,7 +146,7 @@ func TestRequeueOwnRefusesABodyItCannotDecode(t *testing.T) {
 
 func deliveryOf(publishing amqp091.Publishing) *delivery {
 	return &delivery{
-		queueName: "account-analyzer",
+		queueName: "myqueue",
 		delivery: amqp091.Delivery{
 			Body:            publishing.Body,
 			ContentType:     publishing.ContentType,

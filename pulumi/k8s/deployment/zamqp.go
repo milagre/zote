@@ -26,8 +26,8 @@ import (
 //     adapter uses when registering it.
 //
 // zprometheus.MetricName sanitizes every character invalid in a metric name to
-// '_' (so a hyphenated workload name is stored as e.g. account_analyzer, not
-// account-analyzer), guaranteeing this query targets the exact series the
+// '_' (so a hyphenated workload name is stored as e.g. my_worker, not
+// my-worker), guaranteeing this query targets the exact series the
 // adapter emits. The result is matched on __name__ so it stays correct even if
 // that sanitized name ever contains a character a bare selector would reject.
 func ZAMQPUtilizationStat(e env.Env, namespace, name string) string {

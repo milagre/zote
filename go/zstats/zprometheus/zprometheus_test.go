@@ -237,7 +237,7 @@ func TestPrometheusName(t *testing.T) {
 		{"_valid", "_valid"},
 		{"valid123", "valid123"},
 		{"a.b.c.d", "a_b_c_d"},
-		{"wm.finance.account-analyzer", "wm_finance_account_analyzer"},
+		{"app.apps.my-worker", "app_apps_my_worker"},
 		{"has-hyphen", "has_hyphen"},
 	}
 
