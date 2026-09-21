@@ -21,6 +21,12 @@ import (
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
+// HonorLabelsAnnotation, set to "true" on a pod that also carries
+// prometheus.io/scrape, keeps the labels the pod exports instead of attaching
+// its own namespace, name, and service labels. It is for exporters whose series
+// describe other objects and label them with that object's namespace.
+const HonorLabelsAnnotation = "prometheus.io/honor-labels"
+
 var typeToken = tokens.Token("infra", "GrafanaStack")
 
 // Args configures the Grafana stack. It is intentionally high-level:
@@ -242,7 +248,7 @@ const defaultAlloyRiverTemplate = `logging {
 
 prometheus.remote_write "default" {
   endpoint {
-    url = "%s"
+    url = "%[1]s"
   }
 }
 
@@ -259,11 +265,12 @@ prometheus.operator.servicemonitors "default" {
 // - prometheus.io/scrape: "true"
 // - prometheus.io/path (optional)
 // - prometheus.io/port (optional)
+// - prometheus.io/honor-labels: "true" (optional; see HonorLabelsAnnotation)
 discovery.kubernetes "pods" {
   role = "pod"
 }
 
-discovery.relabel "pods_scrape" {
+discovery.relabel "pods_scrape_targets" {
   targets = discovery.kubernetes.pods.targets
 
   rule {
@@ -286,6 +293,16 @@ discovery.relabel "pods_scrape" {
     regex         = "([^:]+)(?::\\d+)?;(\\d+)"
     replacement   = "$1:$2"
   }
+}
+
+discovery.relabel "pods_scrape" {
+  targets = discovery.relabel.pods_scrape_targets.output
+
+  rule {
+    source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_honor_labels"]
+    action        = "drop"
+    regex         = "true"
+  }
 
   rule {
     source_labels = ["__meta_kubernetes_namespace"]
@@ -303,6 +320,18 @@ discovery.relabel "pods_scrape" {
     source_labels = ["__meta_kubernetes_pod_label_service"]
     action        = "replace"
     target_label  = "service"
+  }
+}
+
+// Pods that honor their own labels get no workload labels attached: the series
+// they export describe other objects, and already say which.
+discovery.relabel "pods_scrape_honor_labels" {
+  targets = discovery.relabel.pods_scrape_targets.output
+
+  rule {
+    source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_honor_labels"]
+    action        = "keep"
+    regex         = "true"
   }
 }
 
@@ -325,7 +354,14 @@ prometheus.relabel "zote_metrics" {
 prometheus.scrape "pods_annotations" {
   targets         = discovery.relabel.pods_scrape.output
   forward_to      = [prometheus.relabel.zote_metrics.receiver]
-  scrape_interval = "%s"
+  scrape_interval = "%[2]s"
+}
+
+prometheus.scrape "pods_annotations_honor_labels" {
+  targets         = discovery.relabel.pods_scrape_honor_labels.output
+  forward_to      = [prometheus.remote_write.default.receiver]
+  honor_labels    = true
+  scrape_interval = "%[2]s"
 }
 
 // Pod logs (per-node): Grafana Alloy Helm sets HOSTNAME to the node name for field selectors.
@@ -388,7 +424,7 @@ loki.source.kubernetes "pod_logs" {
 
 loki.write "default" {
   endpoint {
-    url = "%s"
+    url = "%[3]s"
   }
 }
 `

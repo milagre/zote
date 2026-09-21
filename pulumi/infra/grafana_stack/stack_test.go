@@ -35,3 +35,22 @@ func TestDefaultAlloyRiverTemplate_includesScrapes(t *testing.T) {
 		}
 	}
 }
+
+// A pod annotated to honor its own labels is scraped apart from the rest, so
+// labels it exports (e.g. the namespace of an object it describes) are not
+// overwritten by the labels of the pod that exported them.
+func TestDefaultAlloyRiverTemplate_honorLabelsScrape(t *testing.T) {
+	t.Parallel()
+
+	cfg := fmt.Sprintf(defaultAlloyRiverTemplate, "http://mimir/push", 15*time.Second, "http://loki/push")
+
+	for _, want := range []string{
+		"__meta_kubernetes_pod_annotation_" + strings.NewReplacer(".", "_", "/", "_", "-", "_").Replace(HonorLabelsAnnotation),
+		"prometheus.scrape \"pods_annotations_honor_labels\"",
+		"honor_labels    = true",
+	} {
+		if !strings.Contains(cfg, want) {
+			t.Errorf("config missing %q", want)
+		}
+	}
+}

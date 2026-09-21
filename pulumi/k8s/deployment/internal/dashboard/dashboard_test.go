@@ -111,6 +111,27 @@ func TestRenderZAMQPConsumerDashboardScaleBounds(t *testing.T) {
 	assertScaleBounds(t, spec, ZAMQPConsumerUtilizationMetric(e, "apps", "my-worker"), 70, 100)
 }
 
+// Each process dashboard charts the workload's own Deployment replicas, matched
+// on the namespace and name the Deployment is created with.
+func TestRenderDashboardPods(t *testing.T) {
+	e, err := env.New("zote", "local", "dev", "local", "/root", "APP")
+	if err != nil {
+		t.Fatalf("env.New: %v", err)
+	}
+
+	for _, process := range []string{"zapi", "zamqp-consumer"} {
+		got, err := render(Spec{Env: e, Namespace: "apps", Name: "my-worker", Process: process})
+		if err != nil {
+			t.Fatalf("%s: render: %v", process, err)
+		}
+
+		want := `kube_deployment_status_replicas_available{namespace=\"apps\", deployment=\"my-worker\"}`
+		if !strings.Contains(got, want) {
+			t.Errorf("%s: dashboard missing %s", process, want)
+		}
+	}
+}
+
 func TestDashboardTitle(t *testing.T) {
 	got := dashboardTitle("apps", "my-worker")
 	want := "Apps: My Worker"

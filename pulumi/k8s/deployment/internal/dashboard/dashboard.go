@@ -112,6 +112,8 @@ func replacementsFor(spec Spec) (map[string]string, error) {
 		"__TITLE__":      title,
 		"__UID__":        uid,
 		"__DATASOURCE__": mimirDatasource,
+		"__NAMESPACE__":  spec.Namespace,
+		"__DEPLOYMENT__": spec.Name,
 	}
 
 	switch spec.Process {
