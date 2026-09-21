@@ -76,9 +76,9 @@ func TestRenderZAPIDashboard(t *testing.T) {
 		t.Fatalf("dashboard missing responses metric %q", wantResponses)
 	}
 
-	wantConcurrency := "app_apps_my_api_zapi_concurrency"
-	if !strings.Contains(got, wantConcurrency) {
-		t.Fatalf("dashboard missing concurrency metric %q", wantConcurrency)
+	wantBusy := "app_apps_my_api_zapi_busy_seconds"
+	if !strings.Contains(got, wantBusy) {
+		t.Fatalf("dashboard missing busy seconds metric %q", wantBusy)
 	}
 
 	if !strings.Contains(got, `"title": "Apps: My Api"`) {

@@ -14,41 +14,66 @@ import (
 	"github.com/milagre/zote/go/zstats"
 )
 
-// recordingAdapter keeps the latest value seen for each gauge.
+// recordingAdapter sums every value counted under each name.
 type recordingAdapter struct {
 	mu     sync.Mutex
-	gauges map[string]float64
+	counts map[string]float64
 }
 
 func newRecordingAdapter() *recordingAdapter {
-	return &recordingAdapter{gauges: map[string]float64{}}
+	return &recordingAdapter{counts: map[string]float64{}}
 }
 
-func (a *recordingAdapter) Count(string, float64, zstats.Tags) {}
-
-func (a *recordingAdapter) Gauge(name string, value float64, _ zstats.Tags) {
+func (a *recordingAdapter) Count(name string, value float64, _ zstats.Tags) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	a.gauges[name] = value
+	a.counts[name] += value
 }
+
+func (a *recordingAdapter) Gauge(string, float64, zstats.Tags) {}
 
 func (a *recordingAdapter) Timer(_ string, cb func(), _ zstats.Tags) { cb() }
 
-func (a *recordingAdapter) gauge(name string) (float64, bool) {
+func (a *recordingAdapter) count(name string) float64 {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	v, ok := a.gauges[name]
-	return v, ok
+	return a.counts[name]
 }
 
-func TestConcurrencyStatName(t *testing.T) {
-	assert.Equal(t, "app.apps.api.zapi.concurrency", ConcurrencyStatName("app.apps.api"))
+func TestBusySecondsStatName(t *testing.T) {
+	assert.Equal(t, "app.apps.my-api.zapi.busy_seconds", BusySecondsStatName("app.apps.my-api"))
+}
+
+// Busy time is the integral of in-flight requests over time, so its rate is the
+// mean concurrency however short the requests are relative to the scrape.
+func TestBusyClockIntegratesOverlappingRequests(t *testing.T) {
+	var c busyClock
+	t0 := time.Unix(0, 0)
+
+	c.add(t0, 1)
+	c.add(t0.Add(time.Second), 1)
+	c.add(t0.Add(2*time.Second), -1)
+	c.add(t0.Add(3*time.Second), -1)
+
+	assert.Equal(t, 4*time.Second, c.total(t0.Add(10*time.Second)))
+}
+
+// A request still open counts toward busy time as it runs, not only once it
+// completes, so a long request does not land as a single spike at its end.
+func TestBusyClockCountsOpenRequests(t *testing.T) {
+	var c busyClock
+	t0 := time.Unix(0, 0)
+
+	c.add(t0, 2)
+
+	assert.Equal(t, 2*time.Second, c.total(t0.Add(time.Second)))
+	assert.Equal(t, 6*time.Second, c.total(t0.Add(3*time.Second)))
 }
 
 // A request counts as in flight from the moment it is routed until its response
-// has been written, so the gauge covers the whole time a replica is occupied and
+// has been written, so busy time covers the whole time a replica is occupied and
 // not just the handler.
 func TestInFlightSpansTheWholeRequest(t *testing.T) {
 	entered := make(chan struct{})
@@ -63,17 +88,16 @@ func TestInFlightSpansTheWholeRequest(t *testing.T) {
 	}()
 
 	<-entered
-	assert.Equal(t, int64(1), srv.inFlight.Load())
+	assert.Equal(t, int64(1), srv.busy.current())
 
 	close(release)
 	<-done
-	assert.Equal(t, int64(0), srv.inFlight.Load())
+	assert.Equal(t, int64(0), srv.busy.current())
 }
 
-// The gauge is republished on a timer rather than at request boundaries: a
-// scraped gauge holds its last value, so a server that went idle would keep
-// reporting the concurrency it had when its final request finished.
-func TestReportConcurrencyRepublishesWhileIdle(t *testing.T) {
+// Every interval of busy time is published exactly once, including the tail
+// accrued after the last tick, so the counter's total matches the clock's.
+func TestReportBusyPublishesAllBusyTime(t *testing.T) {
 	adapter := newRecordingAdapter()
 	ctx := zstats.Context(context.Background(), zstats.NewStats(adapter))
 
@@ -81,16 +105,22 @@ func TestReportConcurrencyRepublishesWhileIdle(t *testing.T) {
 	require.NoError(t, err)
 
 	reportCtx, stop := context.WithCancel(ctx)
-	defer stop()
-	go srv.reportConcurrency(reportCtx, time.Millisecond)
+	reported := make(chan struct{})
+	go func() {
+		defer close(reported)
+		srv.reportBusy(reportCtx, time.Millisecond)
+	}()
 
-	name := ConcurrencyStatName("")
+	name := BusySecondsStatName("")
 
-	srv.inFlight.Store(3)
-	assertGauge(t, adapter, name, 3)
+	srv.busy.add(time.Now(), 1)
+	assert.Eventually(t, func() bool { return adapter.count(name) > 0 }, time.Second, time.Millisecond)
+	srv.busy.add(time.Now(), -1)
 
-	srv.inFlight.Store(0)
-	assertGauge(t, adapter, name, 0)
+	stop()
+	<-reported
+
+	assert.InDelta(t, srv.busy.total(time.Now()).Seconds(), adapter.count(name), 1e-9)
 }
 
 func blockingServer(t *testing.T, entered, release chan struct{}) *server {
@@ -119,13 +149,4 @@ func blockingServer(t *testing.T, entered, release chan struct{}) *server {
 
 func serve(srv *server) {
 	srv.handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
-}
-
-func assertGauge(t *testing.T, adapter *recordingAdapter, name string, want float64) {
-	t.Helper()
-
-	assert.Eventually(t, func() bool {
-		got, ok := adapter.gauge(name)
-		return ok && got == want
-	}, time.Second, time.Millisecond)
 }

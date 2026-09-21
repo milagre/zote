@@ -149,10 +149,11 @@ func TestZAMQPUtilizationStat(t *testing.T) {
 	}
 }
 
-// TestZAPIUtilizationStat pins the query the zapi convenience emits. The
-// division by the per-replica target is what turns a raw in-flight count into
-// the percentage the utilization trigger scales on, and the average keeps it
-// per-replica: the trigger multiplies back up by the running replica count.
+// TestZAPIUtilizationStat pins the query the zapi convenience emits. The rate
+// of busy time is the mean in-flight count, the division by the per-replica
+// target turns that into the percentage the utilization trigger scales on, and
+// the average keeps it per-replica: the trigger multiplies back up by the
+// running replica count.
 func TestZAPIUtilizationStat(t *testing.T) {
 	e, err := env.New("zote", "prod", "prod", "mars", "/home/mars", "APP")
 	if err != nil {
@@ -160,7 +161,7 @@ func TestZAPIUtilizationStat(t *testing.T) {
 	}
 
 	got := ZAPIUtilizationStat(e, "apps", "my-api", 8)
-	want := `avg({__name__="app_apps_my_api_zapi_concurrency"}) * 100 / 8`
+	want := `avg(rate({__name__="app_apps_my_api_zapi_busy_seconds"}[1m])) * 100 / 8`
 	if got != want {
 		t.Fatalf("ZAPIUtilizationStat = %q, want %q", got, want)
 	}

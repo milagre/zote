@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"runtime/debug"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,9 +18,9 @@ import (
 
 const defaultShutdownTimeout = 60 * time.Second
 
-// concurrencyReportInterval is how often a serving server republishes its
-// in-flight gauge.
-const concurrencyReportInterval = time.Second
+// busyReportInterval is how often a serving server publishes busy time accrued
+// since its last report.
+const busyReportInterval = time.Second
 
 type Server interface {
 	ListenAndServe(addr string) error
@@ -41,9 +40,9 @@ type server struct {
 	routes  map[string]Route
 	parents map[string]Route
 
-	// inFlight counts requests that have been accepted but whose response has
-	// not finished being written.
-	inFlight atomic.Int64
+	// busy tracks requests that have been accepted but whose response has not
+	// finished being written.
+	busy busyClock
 
 	// Set when listen is called
 	server *http.Server
@@ -173,8 +172,8 @@ func (h *handlerTree) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// Registered before the deferred response write below so it runs after it:
 	// a request occupies the server until its response is on the wire.
-	h.server.inFlight.Add(1)
-	defer h.server.inFlight.Add(-1)
+	h.server.busy.add(time.Now(), 1)
+	defer func() { h.server.busy.add(time.Now(), -1) }()
 
 	start := time.Now()
 	requestID := uuid.New().String()
@@ -412,7 +411,7 @@ func (s *server) ListenAndServe(addr string) error {
 
 	reporting, stopReporting := context.WithCancel(s.rootContext)
 	defer stopReporting()
-	go s.reportConcurrency(reporting, concurrencyReportInterval)
+	go s.reportBusy(reporting, busyReportInterval)
 
 	err := s.server.ListenAndServe()
 	if err != http.ErrServerClosed {
@@ -427,12 +426,18 @@ func (s *server) Shutdown(ctx context.Context) error {
 	return s.server.Shutdown(ctx)
 }
 
-// reportConcurrency publishes the in-flight gauge every interval until ctx is
-// done. Emitting on a timer rather than at request boundaries is what lets an
-// idle server report zero: a scraped gauge otherwise holds whatever the last
-// completed request left behind.
-func (s *server) reportConcurrency(ctx context.Context, interval time.Duration) {
+// reportBusy counts busy time accrued since the previous report, every
+// interval and once more when ctx is done, so each request-second is published
+// exactly once.
+func (s *server) reportBusy(ctx context.Context, interval time.Duration) {
 	stats := zstats.FromContext(s.rootContext).WithPrefix(StatsPrefix)
+
+	var reported time.Duration
+	report := func() {
+		total := s.busy.total(time.Now())
+		stats.Count(BusySecondsMetric, (total - reported).Seconds())
+		reported = total
+	}
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -440,9 +445,10 @@ func (s *server) reportConcurrency(ctx context.Context, interval time.Duration) 
 	for {
 		select {
 		case <-ticker.C:
-			stats.Gauge(ConcurrencyMetric, float64(s.inFlight.Load()))
+			report()
 
 		case <-ctx.Done():
+			report()
 			return
 		}
 	}

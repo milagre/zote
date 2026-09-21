@@ -21,11 +21,11 @@ func ZAPIResponsesMetric(e env.Env, namespace, name string) string {
 	return zapiMetric(e, namespace, name, "responses")
 }
 
-// ZAPIConcurrencyMetric returns the Prometheus metric name a zapi HTTP server
-// publishes for requests in flight.
-func ZAPIConcurrencyMetric(e env.Env, namespace, name string) string {
+// ZAPIBusySecondsMetric returns the Prometheus metric name a zapi HTTP server
+// publishes for busy request-seconds.
+func ZAPIBusySecondsMetric(e env.Env, namespace, name string) string {
 	return zprometheus.MetricName(
-		zapi.ConcurrencyStatName(podspec.StatsPrefix(e, namespace, name)),
+		zapi.BusySecondsStatName(podspec.StatsPrefix(e, namespace, name)),
 	)
 }
 
