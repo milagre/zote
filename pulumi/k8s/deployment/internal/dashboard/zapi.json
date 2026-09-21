@@ -198,8 +198,8 @@
             "uid": "__DATASOURCE__"
           },
           "editorMode": "code",
-          "expr": "sum(rate(__BUSY_SECONDS_METRIC__[$__rate_interval]))",
-          "legendFormat": "__auto",
+          "expr": "avg(rate(__BUSY_SECONDS_METRIC__[$__rate_interval]))",
+          "legendFormat": "per pod",
           "range": true,
           "refId": "A"
         }

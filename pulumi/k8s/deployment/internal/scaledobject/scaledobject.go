@@ -96,8 +96,13 @@ type UtilizationTrigger struct {
 
 	// Query is the PromQL expression whose scalar result drives scaling.
 	// Required: the workload owns which signal it scales on (see
-	// deployment.ZAMQPUtilizationStat for the zamqp-consumer convenience).
+	// deployment.ZAMQPUtilization for the zamqp-consumer convenience).
 	Query string
+
+	// Capacity is the value of the raw signal that Query scales to 100%, e.g.
+	// requests in flight per replica. Optional and never read by KEDA; it lets
+	// the signal be charted against the trigger's bounds in its own units.
+	Capacity float64
 }
 
 // Args is the input to Register.

@@ -10,11 +10,10 @@ import (
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 )
 
-// ZAPIUtilizationStat returns the PromQL that reads a workload's mean in-flight
-// request count as a per-replica utilization percentage, for use as
-// [UtilizationTrigger.Query]. Only HTTP workloads running a zapi server expose
-// this metric; a workload autoscaling on any other signal must supply its own
-// query.
+// ZAPIUtilization returns a utilization trigger that scales a workload on its
+// mean in-flight request count per replica. Only HTTP workloads running a zapi
+// server expose this metric; a workload autoscaling on any other signal must
+// supply its own query.
 //
 // e, namespace, and name identify the workload exactly as passed to New, so the
 // query targets the metric name that workload emits. Both halves of the stored
@@ -30,17 +29,21 @@ import (
 // replica ceiling). The runtime publishes busy request-seconds, whose rate is
 // the mean number of requests in flight over the window; the division turns
 // that into the 0-100 signal [UtilizationTrigger] expects: a replica holding
-// perReplica requests on average reads as 100%. The window spans several
-// scrapes so a single missed scrape does not blank the signal. Averaging rather than summing is
-// what makes that per-replica — the trigger multiplies back up by the running
-// replica count.
+// perReplica requests on average reads as 100%, and targetPercent is the share
+// of that KEDA holds each replica to. perReplica is also the trigger's
+// Capacity. The window spans several scrapes so a single missed scrape does
+// not blank the signal.
 //
 // The metric is matched on __name__ so the query stays correct even if the
 // sanitized name contains a character a bare selector would reject.
-func ZAPIUtilizationStat(e env.Env, namespace, name string, perReplica int) string {
+func ZAPIUtilization(e env.Env, namespace, name string, perReplica, targetPercent int) *UtilizationTrigger {
 	metric := zprometheus.MetricName(
 		zapi.BusySecondsStatName(podspec.StatsPrefix(e, namespace, name)),
 	)
 
-	return fmt.Sprintf("avg(rate({__name__=%q}[1m])) * 100 / %d", metric, perReplica)
+	return &UtilizationTrigger{
+		TargetPercent: targetPercent,
+		Query:         fmt.Sprintf("avg(rate({__name__=%q}[1m])) * 100 / %d", metric, perReplica),
+		Capacity:      float64(perReplica),
+	}
 }

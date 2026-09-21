@@ -10,9 +10,9 @@ import (
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
 )
 
-// ZAMQPUtilizationStat returns the PromQL that averages the zamqp consumer
-// utilization gauge a workload publishes, for use as
-// [UtilizationTrigger.Query]. Only proc workloads that actually run a zamqp
+// ZAMQPUtilization returns a utilization trigger that scales a workload on the
+// zamqp consumer utilization gauge it publishes, averaged across replicas and
+// held to targetPercent. Only proc workloads that actually run a zamqp
 // consumer expose this metric; a workload autoscaling on any other signal must
 // supply its own query.
 //
@@ -30,10 +30,16 @@ import (
 // my-worker), guaranteeing this query targets the exact series the
 // adapter emits. The result is matched on __name__ so it stays correct even if
 // that sanitized name ever contains a character a bare selector would reject.
-func ZAMQPUtilizationStat(e env.Env, namespace, name string) string {
+//
+// The gauge is already a 0-100 percentage, so the trigger's Capacity is 100.
+func ZAMQPUtilization(e env.Env, namespace, name string, targetPercent int) *UtilizationTrigger {
 	metric := zprometheus.MetricName(
 		zamqp.ConsumerUtilizationStatName(podspec.StatsPrefix(e, namespace, name)),
 	)
 
-	return fmt.Sprintf("avg({__name__=%q})", metric)
+	return &UtilizationTrigger{
+		TargetPercent: targetPercent,
+		Query:         fmt.Sprintf("avg({__name__=%q})", metric),
+		Capacity:      100,
+	}
 }

@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -86,6 +87,30 @@ func TestRenderZAPIDashboard(t *testing.T) {
 	}
 }
 
+// Autoscale bounds are drawn on the scaling signal's own panel, and the axis
+// reaches capacity even while the signal sits far below it.
+func TestRenderZAPIDashboardScaleBounds(t *testing.T) {
+	e, err := env.New("zote", "local", "dev", "local", "/root", "APP")
+	if err != nil {
+		t.Fatalf("env.New: %v", err)
+	}
+
+	spec := Spec{Env: e, Namespace: "apps", Name: "my-api", Process: "zapi"}
+
+	assertScaleBounds(t, spec, ZAPIBusySecondsMetric(e, "apps", "my-api"), 8, 10)
+}
+
+func TestRenderZAMQPConsumerDashboardScaleBounds(t *testing.T) {
+	e, err := env.New("zote", "local", "dev", "local", "/root", "APP")
+	if err != nil {
+		t.Fatalf("env.New: %v", err)
+	}
+
+	spec := Spec{Env: e, Namespace: "apps", Name: "my-worker", Process: "zamqp-consumer"}
+
+	assertScaleBounds(t, spec, ZAMQPConsumerUtilizationMetric(e, "apps", "my-worker"), 70, 100)
+}
+
 func TestDashboardTitle(t *testing.T) {
 	got := dashboardTitle("apps", "my-worker")
 	want := "Apps: My Worker"
@@ -109,4 +134,86 @@ func TestRenderUnsupportedProcessType(t *testing.T) {
 	if err == nil {
 		t.Fatal("render = nil, want error")
 	}
+}
+
+type panelDefaults struct {
+	Custom struct {
+		AxisSoftMax     *float64 `json:"axisSoftMax"`
+		ThresholdsStyle struct {
+			Mode string `json:"mode"`
+		} `json:"thresholdsStyle"`
+	} `json:"custom"`
+	Thresholds struct {
+		Steps []struct {
+			Value *float64 `json:"value"`
+		} `json:"steps"`
+	} `json:"thresholds"`
+}
+
+// assertScaleBounds checks that the panel charting metric draws no bounds for
+// spec as given, and draws target and capacity once spec carries them.
+func assertScaleBounds(t *testing.T, spec Spec, metric string, target, capacity float64) {
+	t.Helper()
+
+	defaults := panelDefaultsCharting(t, spec, metric)
+	if got := defaults.Custom.ThresholdsStyle.Mode; got != "off" {
+		t.Fatalf("without bounds: thresholds style = %q, want off", got)
+	}
+
+	spec.Capacity = capacity
+	spec.Target = target
+
+	defaults = panelDefaultsCharting(t, spec, metric)
+	if got := defaults.Custom.ThresholdsStyle.Mode; got == "off" {
+		t.Fatalf("with bounds: thresholds not drawn")
+	}
+	if defaults.Custom.AxisSoftMax == nil || *defaults.Custom.AxisSoftMax != capacity {
+		t.Fatalf("with bounds: axisSoftMax = %v, want %v", defaults.Custom.AxisSoftMax, capacity)
+	}
+
+	var values []float64
+	for _, step := range defaults.Thresholds.Steps {
+		if step.Value != nil {
+			values = append(values, *step.Value)
+		}
+	}
+	if len(values) != 2 || values[0] != target || values[1] != capacity {
+		t.Fatalf("with bounds: threshold values = %v, want [%v %v]", values, target, capacity)
+	}
+}
+
+// panelDefaultsCharting renders spec and returns the field defaults of the
+// panel charting metric.
+func panelDefaultsCharting(t *testing.T, spec Spec, metric string) panelDefaults {
+	t.Helper()
+
+	got, err := render(spec)
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	var dashboard struct {
+		Panels []struct {
+			FieldConfig struct {
+				Defaults panelDefaults `json:"defaults"`
+			} `json:"fieldConfig"`
+			Targets []struct {
+				Expr string `json:"expr"`
+			} `json:"targets"`
+		} `json:"panels"`
+	}
+	if err := json.Unmarshal([]byte(got), &dashboard); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	for _, panel := range dashboard.Panels {
+		for _, target := range panel.Targets {
+			if strings.Contains(target.Expr, metric) {
+				return panel.FieldConfig.Defaults
+			}
+		}
+	}
+
+	t.Fatalf("no panel charts %q", metric)
+	return panelDefaults{}
 }

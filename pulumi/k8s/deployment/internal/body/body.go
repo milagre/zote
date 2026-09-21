@@ -203,7 +203,7 @@ func validateAutoscale(args Args) error {
 
 // registerAutoscaler builds the ScaledObject for dep, resolving the utilization
 // trigger's metrics endpoint from the cluster when the caller left it unset. The
-// metric query itself is caller-supplied (see deployment.ZAMQPUtilizationStat
+// metric query itself is caller-supplied (see deployment.ZAMQPUtilization
 // for the zamqp-consumer case) because not every proc workload emits the same
 // utilization signal.
 func registerAutoscaler(ctx *pulumi.Context, name string, args Args, dep pulumi.Resource) error {

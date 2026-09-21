@@ -3,6 +3,7 @@
 package dashboard
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -31,6 +32,11 @@ type Spec struct {
 	Namespace string
 	Name      string
 	Process   string
+
+	// Capacity and Target are the workload's autoscale bounds in the units of
+	// the signal it scales on. Zero draws no bounds.
+	Capacity float64
+	Target   float64
 }
 
 // Register creates or updates the Grafana dashboard for spec when grafana is
@@ -71,6 +77,13 @@ func render(spec Spec) (string, error) {
 	out := template
 	for placeholder, value := range replacements {
 		out = strings.ReplaceAll(out, placeholder, value)
+	}
+
+	if spec.Capacity > 0 {
+		out, err = drawScaleBounds(out, scaleSignalMetric(spec), spec.Capacity, spec.Target)
+		if err != nil {
+			return "", fmt.Errorf("drawing scale bounds: %w", err)
+		}
 	}
 
 	if err := validateJSON(out); err != nil {
@@ -114,6 +127,95 @@ func replacementsFor(spec Spec) (map[string]string, error) {
 	}
 
 	return replacements, nil
+}
+
+// scaleSignalMetric returns the metric a process's autoscale bounds are drawn
+// against.
+func scaleSignalMetric(spec Spec) string {
+	switch spec.Process {
+	case "zamqp-consumer":
+		return ZAMQPConsumerUtilizationMetric(spec.Env, spec.Namespace, spec.Name)
+	default:
+		return ZAPIBusySecondsMetric(spec.Env, spec.Namespace, spec.Name)
+	}
+}
+
+// drawScaleBounds marks target and capacity as dashed threshold lines on every
+// panel charting metric, and extends its axis to capacity so the lines stay in
+// view while traffic sits far below them.
+func drawScaleBounds(dashboardJSON, metric string, capacity, target float64) (string, error) {
+	var dashboard map[string]any
+	if err := json.Unmarshal([]byte(dashboardJSON), &dashboard); err != nil {
+		return "", fmt.Errorf("parsing dashboard: %w", err)
+	}
+
+	panels, _ := dashboard["panels"].([]any)
+	for _, p := range panels {
+		panel, ok := p.(map[string]any)
+		if !ok || !panelCharts(panel, metric) {
+			continue
+		}
+
+		defaults, ok := nestedMap(panel, "fieldConfig", "defaults")
+		if !ok {
+			return "", fmt.Errorf("panel charting %s has no field defaults", metric)
+		}
+		custom, ok := nestedMap(defaults, "custom")
+		if !ok {
+			return "", fmt.Errorf("panel charting %s has no custom field config", metric)
+		}
+
+		custom["axisSoftMax"] = capacity
+		custom["thresholdsStyle"] = map[string]any{"mode": "dashed"}
+		defaults["thresholds"] = map[string]any{
+			"mode": "absolute",
+			"steps": []any{
+				map[string]any{"color": "green", "value": nil},
+				map[string]any{"color": "orange", "value": target},
+				map[string]any{"color": "red", "value": capacity},
+			},
+		}
+	}
+
+	var out bytes.Buffer
+	enc := json.NewEncoder(&out)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(dashboard); err != nil {
+		return "", fmt.Errorf("encoding dashboard: %w", err)
+	}
+
+	return out.String(), nil
+}
+
+func panelCharts(panel map[string]any, metric string) bool {
+	targets, _ := panel["targets"].([]any)
+	for _, t := range targets {
+		target, ok := t.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		expr, _ := target["expr"].(string)
+		if strings.Contains(expr, metric) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func nestedMap(m map[string]any, keys ...string) (map[string]any, bool) {
+	for _, key := range keys {
+		next, ok := m[key].(map[string]any)
+		if !ok {
+			return nil, false
+		}
+
+		m = next
+	}
+
+	return m, true
 }
 
 func dashboardUID(namespace, name string) string {

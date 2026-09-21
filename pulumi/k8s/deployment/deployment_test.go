@@ -130,40 +130,78 @@ func TestPublicHostnames(t *testing.T) {
 	}
 }
 
-// TestZAMQPUtilizationStat pins the query the zamqp-consumer convenience emits:
+// TestZAMQPUtilization pins the trigger the zamqp-consumer convenience builds:
 // the ambient stats prefix (lowercased env prefix, namespace, workload name) is
 // qualified with the zamqp consumer utilization name and sanitized for
 // Prometheus. The hyphen in "my-worker" must collapse to "_" (matching the
 // series the adapter actually stores), and the result is matched via __name__.
-// The composition itself is owned by the zote runtime.
-func TestZAMQPUtilizationStat(t *testing.T) {
+// The composition itself is owned by the zote runtime. The gauge is already a
+// percentage, so its capacity is 100.
+func TestZAMQPUtilization(t *testing.T) {
 	e, err := env.New("zote", "prod", "prod", "mars", "/home/mars", "APP")
 	if err != nil {
 		t.Fatalf("env.New: %v", err)
 	}
 
-	got := ZAMQPUtilizationStat(e, "apps", "my-worker")
-	want := `avg({__name__="app_apps_my_worker_zamqp_consumer_utilization"})`
-	if got != want {
-		t.Fatalf("ZAMQPUtilizationStat = %q, want %q", got, want)
+	got := ZAMQPUtilization(e, "apps", "my-worker", 70)
+	want := UtilizationTrigger{
+		TargetPercent: 70,
+		Query:         `avg({__name__="app_apps_my_worker_zamqp_consumer_utilization"})`,
+		Capacity:      100,
+	}
+	if *got != want {
+		t.Fatalf("ZAMQPUtilization = %+v, want %+v", *got, want)
 	}
 }
 
-// TestZAPIUtilizationStat pins the query the zapi convenience emits. The rate
+// TestZAPIUtilization pins the trigger the zapi convenience builds. The rate
 // of busy time is the mean in-flight count, the division by the per-replica
-// target turns that into the percentage the utilization trigger scales on, and
-// the average keeps it per-replica: the trigger multiplies back up by the
+// capacity turns that into the percentage the utilization trigger scales on,
+// and the average keeps it per-replica: the trigger multiplies back up by the
 // running replica count.
-func TestZAPIUtilizationStat(t *testing.T) {
+func TestZAPIUtilization(t *testing.T) {
 	e, err := env.New("zote", "prod", "prod", "mars", "/home/mars", "APP")
 	if err != nil {
 		t.Fatalf("env.New: %v", err)
 	}
 
-	got := ZAPIUtilizationStat(e, "apps", "my-api", 8)
-	want := `avg(rate({__name__="app_apps_my_api_zapi_busy_seconds"}[1m])) * 100 / 8`
-	if got != want {
-		t.Fatalf("ZAPIUtilizationStat = %q, want %q", got, want)
+	got := ZAPIUtilization(e, "apps", "my-api", 10, 80)
+	want := UtilizationTrigger{
+		TargetPercent: 80,
+		Query:         `avg(rate({__name__="app_apps_my_api_zapi_busy_seconds"}[1m])) * 100 / 10`,
+		Capacity:      10,
+	}
+	if *got != want {
+		t.Fatalf("ZAPIUtilization = %+v, want %+v", *got, want)
+	}
+}
+
+// The dashboard draws a utilization trigger's bounds on the raw signal's own
+// scale: capacity as-is, and the target as that share of it.
+func TestProcessDashboardSpecScaleBounds(t *testing.T) {
+	args := &Args{
+		Name:        "my-api",
+		ProcessType: ProcessZAPI,
+		Autoscale: &Autoscale{
+			Utilization: &UtilizationTrigger{TargetPercent: 80, Capacity: 10},
+		},
+	}
+
+	got := processDashboardSpec(args)
+	if got.Capacity != 10 || got.Target != 8 {
+		t.Fatalf("capacity, target = %v, %v, want 10, 8", got.Capacity, got.Target)
+	}
+
+	args.Autoscale.Utilization.Capacity = 0
+	got = processDashboardSpec(args)
+	if got.Capacity != 0 || got.Target != 0 {
+		t.Fatalf("without capacity: capacity, target = %v, %v, want 0, 0", got.Capacity, got.Target)
+	}
+
+	args.Autoscale = nil
+	got = processDashboardSpec(args)
+	if got.Capacity != 0 || got.Target != 0 {
+		t.Fatalf("without autoscale: capacity, target = %v, %v, want 0, 0", got.Capacity, got.Target)
 	}
 }
 

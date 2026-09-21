@@ -109,7 +109,7 @@
             "uid": "__DATASOURCE__"
           },
           "editorMode": "builder",
-          "expr": "max by(__name__) (__UTILIZATION_METRIC__)",
+          "expr": "avg by(__name__) (__UTILIZATION_METRIC__)",
           "legendFormat": "__auto",
           "range": true,
           "refId": "A"

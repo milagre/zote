@@ -280,17 +280,29 @@ func (a *Args) validate() error {
 }
 
 func registerProcessDashboard(ctx *pulumi.Context, resourceName string, args *Args) error {
-	err := dashboard.Register(ctx, resourceName, dashboard.Spec{
-		Env:       args.Env,
-		Namespace: args.Namespace,
-		Name:      args.Name,
-		Process:   string(args.ProcessType),
-	}, args.Cluster.Grafana)
+	err := dashboard.Register(ctx, resourceName, processDashboardSpec(args), args.Cluster.Grafana)
 	if err != nil {
 		return fmt.Errorf("registering process dashboard: %w", err)
 	}
 
 	return nil
+}
+
+func processDashboardSpec(args *Args) dashboard.Spec {
+	spec := dashboard.Spec{
+		Env:       args.Env,
+		Namespace: args.Namespace,
+		Name:      args.Name,
+		Process:   string(args.ProcessType),
+	}
+
+	if args.Autoscale != nil && args.Autoscale.Utilization != nil && args.Autoscale.Utilization.Capacity > 0 {
+		trigger := args.Autoscale.Utilization
+		spec.Capacity = trigger.Capacity
+		spec.Target = trigger.Capacity * float64(trigger.TargetPercent) / 100
+	}
+
+	return spec
 }
 
 func (p ProcessType) validate() error {
