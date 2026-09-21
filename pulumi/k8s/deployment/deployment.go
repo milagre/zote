@@ -302,6 +302,11 @@ func processDashboardSpec(args *Args) dashboard.Spec {
 		spec.Target = trigger.Capacity * float64(trigger.TargetPercent) / 100
 	}
 
+	if args.Autoscale != nil && args.Profile.Num != nil {
+		spec.MinPods = args.Profile.Num.Min
+		spec.MaxPods = args.Profile.Num.Max
+	}
+
 	return spec
 }
 

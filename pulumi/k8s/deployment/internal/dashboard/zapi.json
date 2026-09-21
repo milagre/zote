@@ -81,7 +81,7 @@
       "gridPos": {
         "h": 11,
         "w": 12,
-        "x": 0,
+        "x": 12,
         "y": 0
       },
       "id": 1,
@@ -134,7 +134,7 @@
             "barAlignment": 1,
             "barWidthFactor": 0.8,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -174,7 +174,7 @@
       "gridPos": {
         "h": 11,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 0
       },
       "id": 3,
@@ -227,7 +227,7 @@
             "barAlignment": 1,
             "barWidthFactor": 0.8,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -268,7 +268,7 @@
       "gridPos": {
         "h": 11,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 11
       },
       "id": 4,
@@ -292,7 +292,7 @@
             "uid": "__DATASOURCE__"
           },
           "editorMode": "code",
-          "expr": "max(kube_deployment_status_replicas_available{namespace=\"__NAMESPACE__\", deployment=\"__DEPLOYMENT__\"})",
+          "expr": "max(__PODS_METRIC__{namespace=\"__NAMESPACE__\", deployment=\"__DEPLOYMENT__\"})",
           "legendFormat": "available",
           "range": true,
           "refId": "A"
@@ -362,7 +362,7 @@
       "gridPos": {
         "h": 11,
         "w": 12,
-        "x": 0,
+        "x": 12,
         "y": 11
       },
       "id": 2,

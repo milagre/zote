@@ -132,6 +132,45 @@ func TestRenderDashboardPods(t *testing.T) {
 	}
 }
 
+// An autoscaled workload's replica bounds are drawn on its Pods panel as a
+// band: only the region from the floor to the ceiling is colored.
+func TestRenderDashboardPodBounds(t *testing.T) {
+	e, err := env.New("zote", "local", "dev", "local", "/root", "APP")
+	if err != nil {
+		t.Fatalf("env.New: %v", err)
+	}
+
+	for _, process := range []string{"zapi", "zamqp-consumer"} {
+		spec := Spec{Env: e, Namespace: "apps", Name: "my-worker", Process: process}
+
+		defaults := panelDefaultsCharting(t, spec, podsMetric)
+		if got := defaults.Custom.ThresholdsStyle.Mode; got != "off" {
+			t.Fatalf("%s: without bounds: thresholds style = %q, want off", process, got)
+		}
+
+		for _, minPods := range []int{2, 0} {
+			spec.MinPods = minPods
+			spec.MaxPods = 6
+
+			defaults = panelDefaultsCharting(t, spec, podsMetric)
+			if got := defaults.Custom.ThresholdsStyle.Mode; got != "area" {
+				t.Fatalf("%s: min %d: thresholds style = %q, want area", process, minPods, got)
+			}
+			if defaults.Custom.AxisSoftMax == nil || *defaults.Custom.AxisSoftMax != 6 {
+				t.Fatalf("%s: min %d: axisSoftMax = %v, want 6", process, minPods, defaults.Custom.AxisSoftMax)
+			}
+
+			steps := defaults.Thresholds.Steps
+			if len(steps) != 3 ||
+				steps[0].Value != nil || steps[0].Color != "transparent" ||
+				steps[1].Value == nil || *steps[1].Value != float64(minPods) || steps[1].Color == "transparent" ||
+				steps[2].Value == nil || *steps[2].Value != 6 || steps[2].Color != "transparent" {
+				t.Fatalf("%s: min %d: steps do not band [%d, 6]: %+v", process, minPods, minPods, steps)
+			}
+		}
+	}
+}
+
 func TestDashboardTitle(t *testing.T) {
 	got := dashboardTitle("apps", "my-worker")
 	want := "Apps: My Worker"
@@ -166,6 +205,7 @@ type panelDefaults struct {
 	} `json:"custom"`
 	Thresholds struct {
 		Steps []struct {
+			Color string   `json:"color"`
 			Value *float64 `json:"value"`
 		} `json:"steps"`
 	} `json:"thresholds"`
@@ -192,15 +232,23 @@ func assertScaleBounds(t *testing.T, spec Spec, metric string, target, capacity 
 		t.Fatalf("with bounds: axisSoftMax = %v, want %v", defaults.Custom.AxisSoftMax, capacity)
 	}
 
+	values := thresholdValues(defaults)
+	if len(values) != 2 || values[0] != target || values[1] != capacity {
+		t.Fatalf("with bounds: threshold values = %v, want [%v %v]", values, target, capacity)
+	}
+}
+
+// thresholdValues returns the values of the thresholds drawn above the base
+// step.
+func thresholdValues(defaults panelDefaults) []float64 {
 	var values []float64
 	for _, step := range defaults.Thresholds.Steps {
 		if step.Value != nil {
 			values = append(values, *step.Value)
 		}
 	}
-	if len(values) != 2 || values[0] != target || values[1] != capacity {
-		t.Fatalf("with bounds: threshold values = %v, want [%v %v]", values, target, capacity)
-	}
+
+	return values
 }
 
 // panelDefaultsCharting renders spec and returns the field defaults of the

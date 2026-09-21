@@ -137,7 +137,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -202,7 +202,7 @@
             "uid": "__DATASOURCE__"
           },
           "editorMode": "code",
-          "expr": "max(kube_deployment_status_replicas_available{namespace=\"__NAMESPACE__\", deployment=\"__DEPLOYMENT__\"})",
+          "expr": "max(__PODS_METRIC__{namespace=\"__NAMESPACE__\", deployment=\"__DEPLOYMENT__\"})",
           "legendFormat": "available",
           "range": true,
           "refId": "A"
@@ -276,8 +276,8 @@
       "gridPos": {
         "h": 11,
         "w": 12,
-        "x": 0,
-        "y": 22
+        "x": 12,
+        "y": 0
       },
       "id": 2,
       "options": {

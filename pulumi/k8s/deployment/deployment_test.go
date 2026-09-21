@@ -205,6 +205,29 @@ func TestProcessDashboardSpecScaleBounds(t *testing.T) {
 	}
 }
 
+// An autoscaled workload's replica bounds come from its profile, the same
+// bounds the ScaledObject is given.
+func TestProcessDashboardSpecPodBounds(t *testing.T) {
+	num := profile.IntRange{Min: 1, Max: 5}
+	args := &Args{
+		Name:        "my-api",
+		ProcessType: ProcessZAPI,
+		Profile:     profile.Profile{Num: &num},
+		Autoscale:   &Autoscale{Queue: &QueueTrigger{Queue: "q"}},
+	}
+
+	got := processDashboardSpec(args)
+	if got.MinPods != 1 || got.MaxPods != 5 {
+		t.Fatalf("min, max pods = %v, %v, want 1, 5", got.MinPods, got.MaxPods)
+	}
+
+	args.Autoscale = nil
+	got = processDashboardSpec(args)
+	if got.MinPods != 0 || got.MaxPods != 0 {
+		t.Fatalf("without autoscale: min, max pods = %v, %v, want 0, 0", got.MinPods, got.MaxPods)
+	}
+}
+
 // TestPrivateHostname encodes the Kubernetes in-cluster DNS naming
 // convention our workloads rely on. Drift here silently breaks every
 // caller that references a workload by its private hostname.
