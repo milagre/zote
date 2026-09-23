@@ -25,7 +25,32 @@
 // returning warnings while still serving data from the source. Only source
 // failures are fatal errors.
 //
-// See zcacheredis for the Redis-based Cache implementation.
+// # Locking
+//
+// Locker hands a key to one holder at a time. A lock is a lease: it lapses
+// after its ttl unless its holder renews it, so a holder that dies cannot keep
+// it. Lock keys share a keyspace with cached entries, so give them keys of
+// their own:
+//
+//	held, err := locker.Lock(ctx, runID, "import:tenant:42", time.Hour)
+//	if err != nil {
+//		return fmt.Errorf("locking import: %w", err)
+//	}
+//	if !held {
+//		return nil // another run has it
+//	}
+//	defer locker.Unlock(ctx, runID, "import:tenant:42")
+//
+// holder identifies one holder, and must be distinct per holder: two callers
+// sharing a holder share the lock rather than excluding each other.
+//
+// A lease bounds how long a lock survives its holder, not how long its holder
+// takes. A stalled process, a clock that jumps, or a failover to a replica
+// that has not caught up can all leave two callers believing they hold the
+// same key. Guard anything outside the lock - a file, a row, a remote call -
+// with a check of its own rather than the lock alone.
+//
+// See zcacheredis for the Redis-based Cache and Locker implementations.
 package zcache
 
 import (
@@ -40,6 +65,17 @@ type Cache interface {
 	Set(ctx context.Context, namespace string, key string, expiration time.Duration, value []byte) error
 	Get(ctx context.Context, namespace string, key string) (<-chan []byte, error)
 	Clear(ctx context.Context, namespace string, key string) error
+}
+
+type Locker interface {
+	// Lock takes the lock on key for holder for ttl, reporting false while a
+	// different holder has it. A holder that already has the lock keeps it,
+	// for a fresh ttl, which is how a holder renews a lock it means to keep.
+	Lock(ctx context.Context, holder string, key string, ttl time.Duration) (bool, error)
+
+	// Unlock frees key if holder has it, reporting whether it did. False says
+	// holder's lease was already gone.
+	Unlock(ctx context.Context, holder string, key string) (bool, error)
 }
 
 type (
