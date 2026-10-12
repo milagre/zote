@@ -77,47 +77,53 @@ func TestCount_WithTags(t *testing.T) {
 	assert.GreaterOrEqual(t, len(metric.Metric), 3)
 }
 
-func TestCount_WithMissingLabels(t *testing.T) {
+func TestCount_TagKeysAreFixedByFirstObservation(t *testing.T) {
 	adapter := NewAdapter()
 
-	// First call with one set of labels
-	adapter.Count("test", 1, zstats.Tags{"label1": "value1"})
+	adapter.Count("retries", 1, zstats.Tags{"env": "dev"})
+	adapter.Count("retries", 1, zstats.Tags{"env": "dev", "delay": "1s"})
+	adapter.Count("retries", 1, zstats.Tags{"env": "dev"})
+	adapter.Count("retries", 1, zstats.Tags{})
 
-	// Second call with different labels (should use "unknown" for missing label1)
-	adapter.Count("test", 2, zstats.Tags{"label2": "value2"})
-
-	// Gather metrics
 	mfs, err := adapter.registry.Gather()
 	require.NoError(t, err)
 
-	// Find our metric
-	var metric *dto.MetricFamily
+	byEnv := map[string]float64{}
 	for _, mf := range mfs {
-		if strings.Contains(mf.GetName(), "test") && mf.GetType() == dto.MetricType_COUNTER {
-			metric = mf
-			break
+		if mf.GetName() != "retries" {
+			continue
+		}
+		for _, m := range mf.Metric {
+			require.Len(t, m.GetLabel(), 1)
+			require.Equal(t, "env", m.GetLabel()[0].GetName())
+			byEnv[m.GetLabel()[0].GetValue()] = m.Counter.GetValue()
 		}
 	}
 
-	require.NotNil(t, metric, "metric should be found")
+	assert.Equal(t, map[string]float64{"dev": 3, "unknown": 1}, byEnv)
+}
 
-	// Should have metrics with both label combinations
-	// One with label1=value1, label2=unknown
-	// One with label1=unknown, label2=value2
-	foundLabel1 := false
-	foundLabel2 := false
-	for _, m := range metric.Metric {
-		labels := m.GetLabel()
-		for _, label := range labels {
-			if label.GetName() == "label1" && label.GetValue() == "value1" {
-				foundLabel1 = true
-			}
-			if label.GetName() == "label2" && label.GetValue() == "value2" {
-				foundLabel2 = true
-			}
+func TestConcurrentObservationsWithDifferingTagKeys(t *testing.T) {
+	adapter := NewAdapter()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		tags := zstats.Tags{"env": "dev"}
+		if i%2 == 1 {
+			tags[fmt.Sprintf("extra%d", i)] = "x"
 		}
+		wg.Go(func() {
+			for j := 0; j < 100; j++ {
+				adapter.Count("mixed.count", 1, tags)
+				adapter.Gauge("mixed.gauge", 1, tags)
+				adapter.Timer("mixed.timer", func() {}, tags)
+			}
+		})
 	}
-	assert.True(t, foundLabel1 || foundLabel2, "should have metrics with both label combinations")
+	wg.Wait()
+
+	_, err := adapter.registry.Gather()
+	require.NoError(t, err)
 }
 
 func TestGauge_Basic(t *testing.T) {
@@ -304,42 +310,6 @@ func TestGetLabelsForCanonicalSet(t *testing.T) {
 	assert.Equal(t, "value3", labels["label3"])
 }
 
-func TestDoVecOp_RepanicsWithDetail(t *testing.T) {
-	defer func() {
-		r := recover()
-		require.NotNil(t, r)
-		s := fmt.Sprint(r)
-		assert.Contains(t, s, "zprometheus Count")
-		assert.Contains(t, s, `metric zstats="my.metric"`)
-		assert.Contains(t, s, "original panic")
-	}()
-
-	doVecOp("Count", "my.metric", "my_metric",
-		[]string{"env"},
-		map[string]string{"env": "dev"},
-		func() {
-			panic("original panic")
-		},
-	)
-}
-
-func TestVecOpPanicDetail(t *testing.T) {
-	msg := vecOpPanicDetail(
-		"Count",
-		"zapi.responses",
-		"zapi_responses",
-		[]string{"env", "method", "namespace", "status"},
-		map[string]string{"env": "dev", "method": "POST", "namespace": "apps", "path": "/x", "route": "r", "service": "api", "status": "201"},
-		fmt.Errorf("inconsistent label cardinality: expected 4 label values but got 7"),
-	)
-	assert.Contains(t, msg, `metric zstats="zapi.responses"`)
-	assert.Contains(t, msg, `prometheus="zapi_responses"`)
-	assert.Contains(t, msg, "locks in label names")
-	assert.Contains(t, msg, "canonical_label_names (4)")
-	assert.Contains(t, msg, "prometheus.With label keys (7)")
-	assert.Contains(t, msg, "inconsistent label cardinality")
-}
-
 func TestConcurrentAccess(t *testing.T) {
 	adapter := NewAdapter()
 
@@ -414,59 +384,6 @@ func TestMetricsHandler(t *testing.T) {
 	body := rr.Body.String()
 	assert.Contains(t, body, "test_counter")
 	assert.Contains(t, body, "test_gauge")
-}
-
-func TestCanonicalLabels_Union(t *testing.T) {
-	adapter := NewAdapter()
-
-	// First call with labels A and B
-	adapter.Count("union.test", 1, zstats.Tags{"labelA": "valueA", "labelB": "valueB"})
-
-	// Wait a bit for the async label update to complete
-	time.Sleep(10 * time.Millisecond)
-
-	// Second call with labels B and C (should create union: A, B, C)
-	adapter.Count("union.test", 1, zstats.Tags{"labelB": "valueB", "labelC": "valueC"})
-
-	// Wait a bit for the async label update to complete
-	time.Sleep(10 * time.Millisecond)
-
-	// Gather metrics
-	mfs, err := adapter.registry.Gather()
-	require.NoError(t, err)
-
-	// Find our metric
-	var metric *dto.MetricFamily
-	for _, mf := range mfs {
-		if strings.Contains(mf.GetName(), "union_test") {
-			metric = mf
-			break
-		}
-	}
-
-	require.NotNil(t, metric, "metric should be found")
-
-	// Verify that metrics have labelB (present in both calls)
-	// The union of labels might include A, B, C, but due to async updates,
-	// we might not see all of them immediately. The important thing is
-	// that the metric works correctly with different label combinations.
-	hasLabelB := false
-
-	for _, m := range metric.Metric {
-		labels := m.GetLabel()
-		for _, label := range labels {
-			if label.GetName() == "labelB" {
-				hasLabelB = true
-				break
-			}
-		}
-		if hasLabelB {
-			break
-		}
-	}
-
-	// At minimum, labelB should be present (it's in both calls)
-	assert.True(t, hasLabelB, "should have labelB")
 }
 
 func TestEmptyTags(t *testing.T) {

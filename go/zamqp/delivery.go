@@ -231,7 +231,7 @@ func (m *delivery) Retry(ctx context.Context) error {
 		return fmt.Errorf("retrying message: %w", err)
 	}
 
-	zstats.FromContext(ctx).Count("delivery.retry", 1)
+	zstats.FromContext(ctx).WithTag("delay", time.Duration(0).String()).Count("delivery.retry", 1)
 	zlog.FromContext(ctx).Info("Message retried")
 
 	return nil
@@ -245,7 +245,7 @@ func (m *delivery) RetryWithData(ctx context.Context, content []byte, contentTyp
 		return fmt.Errorf("retrying message: %w", err)
 	}
 
-	zstats.FromContext(ctx).Count("delivery.retry", 1)
+	zstats.FromContext(ctx).WithTag("delay", time.Duration(0).String()).Count("delivery.retry", 1)
 	zlog.FromContext(ctx).Info("Message retried")
 
 	return nil
