@@ -39,6 +39,7 @@ package zorm
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/milagre/zote/go/zelement/zclause"
 	"github.com/milagre/zote/go/zelement/zsort"
@@ -101,6 +102,18 @@ type Include struct {
 
 func (i *Include) IsEmpty() bool {
 	return len(i.Fields) == 0 && len(i.Relations) == 0
+}
+
+// Merge returns an include that loads everything either include loads. Fields
+// are unioned, relations named by both are merged recursively, and a relation's
+// Where becomes the Or of both, or no filter when either has none. Sort cannot
+// be unioned: the receiver's applies when both set one. Neither include is
+// modified.
+func (i Include) Merge(other Include) Include {
+	return Include{
+		Fields:    mergeFields(i.Fields, other.Fields),
+		Relations: mergeRelations(i.Relations, other.Relations),
+	}
 }
 
 type Relations map[string]Relation
@@ -243,3 +256,71 @@ func DeleteWhere[T any](ctx context.Context, list []T, clause zclause.Clause, op
 }
 
 */
+
+func mergeFields(a, b Fields) Fields {
+	if len(a) == 0 || len(b) == 0 {
+		return nil
+	}
+
+	var out Fields
+	switch {
+	case a.IsNegated() && b.IsNegated():
+		for _, field := range a {
+			if slices.Contains(b, field) {
+				out = append(out, field)
+			}
+		}
+	case b.IsNegated():
+		out = slices.Clone(b)
+		out.Add(a...)
+	default:
+		out = slices.Clone(a)
+		out.Add(b...)
+	}
+
+	if len(out) == 0 {
+		return nil
+	}
+
+	return out
+}
+
+func mergeRelations(a, b Relations) Relations {
+	if len(a) == 0 && len(b) == 0 {
+		return nil
+	}
+
+	out := make(Relations, len(a)+len(b))
+	for name, rel := range a {
+		out[name] = rel
+	}
+	for name, rel := range b {
+		existing, ok := out[name]
+		if !ok {
+			out[name] = rel
+			continue
+		}
+
+		out[name] = mergeRelation(existing, rel)
+	}
+
+	return out
+}
+
+func mergeRelation(a, b Relation) Relation {
+	var where zclause.Clause
+	if a.Where != nil && b.Where != nil {
+		where = zclause.Or{Clauses: []zclause.Clause{a.Where, b.Where}}
+	}
+
+	sort := a.Sort
+	if len(sort) == 0 {
+		sort = b.Sort
+	}
+
+	return Relation{
+		Include: a.Include.Merge(b.Include),
+		Where:   where,
+		Sort:    sort,
+	}
+}
