@@ -33,6 +33,10 @@ type Delivery interface {
 	RetryDelayedWithData(ctx context.Context, delay time.Duration, content []byte, contentType string) error
 	Fatal(context.Context) error
 
+	// Continue publishes msg under this delivery's job ID and acks the delivery, as one
+	// response, for a message that carries on this delivery's work rather than starting new work.
+	Continue(ctx context.Context, msg Message) error
+
 	Parse(v interface{}) error
 }
 
@@ -301,6 +305,45 @@ func (m *delivery) Fatal(ctx context.Context) error {
 	zlog.FromContext(ctx).Infof("Message fataled")
 
 	return nil
+}
+
+func (m *delivery) Continue(ctx context.Context, msg Message) error {
+	cont, err := m.continuation(msg)
+	if err != nil {
+		return fmt.Errorf("preparing continuation: %w", err)
+	}
+
+	err = m.respond(func() error {
+		publisher := NewPublisherFromConnection(m.channel.conn)
+		_, err := publisher.Publish(ctx, cont)
+		if err != nil {
+			return fmt.Errorf("publishing continuation: %w", err)
+		}
+
+		err = m.delivery.Ack(false)
+		if err != nil {
+			return fmt.Errorf("acking message after publishing continuation: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("continuing message: %w", err)
+	}
+
+	zstats.FromContext(ctx).Count("delivery.continue", 1)
+	zlog.FromContext(ctx).Info("Message continued")
+
+	return nil
+}
+
+func (m *delivery) continuation(msg Message) (Message, error) {
+	jobID, ok := headerString(m.Headers(), headerJobID)
+	if !ok {
+		return nil, fmt.Errorf("delivery carries no job id")
+	}
+
+	return continuedMessage{Message: msg, jobID: jobID}, nil
 }
 
 func (m *delivery) requeue(ctx context.Context, msg requeueMessage) error {

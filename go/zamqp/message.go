@@ -37,8 +37,8 @@ type MessageOptions struct {
 	Delay time.Duration
 
 	// JobID is the only way to set the job ID explicitly when publishing. The internal job
-	// header key in MessageOptions.Headers is ignored. When JobID is empty, the job ID comes
-	// from context (see IDs), then generated.
+	// header key in MessageOptions.Headers is ignored. When JobID is empty, a new job ID is
+	// generated: a publish starts a new job unless it continues one (see Delivery.Continue).
 	JobID string
 }
 
@@ -91,6 +91,19 @@ func (m RawMessage) Exchange() Exchange {
 
 func (m RawMessage) Headers() Headers {
 	return m.headers
+}
+
+// continuedMessage publishes a message under the job of the delivery it continues.
+type continuedMessage struct {
+	Message
+	jobID string
+}
+
+func (m continuedMessage) Options() MessageOptions {
+	opts := m.Message.Options()
+	opts.JobID = m.jobID
+
+	return opts
 }
 
 func messageToPublishing(msg Message) (amqp091.Publishing, error) {

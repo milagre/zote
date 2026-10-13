@@ -1,6 +1,7 @@
 package zamqp
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -154,4 +155,29 @@ func deliveryOf(publishing amqp091.Publishing) *delivery {
 			Headers:         publishing.Headers,
 		},
 	}
+}
+
+func TestContinuationPublishesUnderTheDeliverysJob(t *testing.T) {
+	t.Parallel()
+
+	del := deliveryOf(amqp091.Publishing{Headers: amqp091.Table{headerJobID: "job-1", headerMessageID: "msg-1"}})
+	next := NewRawMessage([]byte("x"), "text/plain", AnonymousExchange, MessageOptions{Compress: true, JobID: "job-other"})
+
+	cont, err := del.continuation(next)
+	require.NoError(t, err)
+
+	h := mergePublishHeaders(context.Background(), cont)
+	require.Equal(t, "job-1", h[headerJobID])
+	require.NotEqual(t, "msg-1", h[headerMessageID])
+	require.True(t, cont.Options().Compress)
+}
+
+func TestContinuationRefusesADeliveryWithoutAJob(t *testing.T) {
+	t.Parallel()
+
+	del := deliveryOf(amqp091.Publishing{})
+	next := NewRawMessage([]byte("x"), "text/plain", AnonymousExchange, MessageOptions{})
+
+	_, err := del.continuation(next)
+	require.Error(t, err)
 }
