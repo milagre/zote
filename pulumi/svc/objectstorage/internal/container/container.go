@@ -1,4 +1,4 @@
-// Package container provisions in-cluster MinIO and returns S3-compatible access details.
+// Package container provisions in-cluster MinIO (as Silo) and returns S3-compatible access details.
 package container
 
 import (
@@ -28,6 +28,12 @@ type Args struct {
 const (
 	defaultSize              = "20Gi"
 	defaultMinIOChartVersion = "5.4.0"
+
+	// The chart's default quay.io/minio images are not publicly pullable. Silo is a
+	// maintained MinIO fork whose image also ships mc, and whose entrypoint accepts
+	// the chart's `minio server` invocation.
+	imageRepository = "pgsty/silo"
+	imageTag        = "RELEASE.2026-09-16T00-00-00Z"
 )
 
 func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result, error) {
@@ -128,6 +134,14 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 		"mode":             "standalone",
 		"replicas":         1,
 		"existingSecret":   authSecretName,
+		"image": map[string]any{
+			"repository": imageRepository,
+			"tag":        imageTag,
+		},
+		"mcImage": map[string]any{
+			"repository": imageRepository,
+			"tag":        imageTag,
+		},
 		"podLabels": map[string]string{
 			"service": "objectstorage",
 			"name":    a.Name,
