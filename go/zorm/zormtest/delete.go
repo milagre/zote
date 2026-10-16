@@ -70,7 +70,7 @@ func RunDeleteTests(t *testing.T, setup SetupFunc) {
 			require.NoError(t, err)
 
 			// Verify they're gone using Find
-			var results []*User
+			results := make([]*User, 0, 2)
 			err = zorm.Find(ctx, r, &results, zorm.FindOptions{
 				Where: zelem.In(
 					[]zelement.Element{zelem.Field("ID")},

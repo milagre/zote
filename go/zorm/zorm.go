@@ -8,8 +8,8 @@
 // Operations use generic helper functions that work with any Repository or
 // Transaction:
 //
-//	// Find multiple records
-//	var users []*User
+//	// Find up to 100 records; the list's capacity is the limit
+//	users := make([]*User, 0, 100)
 //	zorm.Find(ctx, repo, &users, zorm.FindOptions{
 //		Where: zclause.Eq("active", true),
 //		Sort:  []zsort.Sort{{Field: "Created", Desc: true}},
@@ -48,6 +48,7 @@ import (
 var (
 	ErrNotFound = fmt.Errorf("not found")
 	ErrConflict = fmt.Errorf("conflict")
+	ErrZeroCapacity = fmt.Errorf("find list has zero capacity")
 )
 
 type Queryer interface {
@@ -233,6 +234,10 @@ func Get[T any](ctx context.Context, repo Queryer, list []*T, opts GetOptions) e
 
 // Find queries for models matching the given criteria and populates the target slice with results.
 // Use FindOptions to specify fields, relations, filtering (Where), sorting, and pagination.
+//
+// The capacity of list is the most results a find returns: make it with room for every row the
+// query should find. A list with no capacity, such as one declared with var or written []*T{},
+// is rejected with ErrZeroCapacity. Use FindAll to read every matching row in pages.
 func Find[T any](ctx context.Context, repo Queryer, list *[]*T, opts FindOptions) error {
 	return repo.Find(ctx, list, opts)
 }

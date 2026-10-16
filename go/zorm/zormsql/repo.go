@@ -162,6 +162,11 @@ func (r *queryer) find(ctx context.Context, ptrToListOfPtrs any, opts zorm.FindO
 		return fmt.Errorf("invalid argument to find: %w", err)
 	}
 
+	// The list's capacity is the query's limit.
+	if targetList.Cap() == 0 {
+		return fmt.Errorf("finding %s: %w", modelPtrType, zorm.ErrZeroCapacity)
+	}
+
 	typeID := zreflect.TypeID(modelPtrType)
 	mapping, ok := r.cfg.mappings[typeID]
 	if !ok {

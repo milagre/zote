@@ -18,6 +18,17 @@ type SetupFunc func(*testing.T, func(ctx context.Context, r zorm.Repository))
 func RunFindTests(t *testing.T, setup SetupFunc) {
 	t.Helper()
 
+	// Find uses the list capacity for its LIMIT. Zero is always a mistake.
+	t.Run("FindRejectsZeroCapacity", func(t *testing.T) {
+		setup(t, func(ctx context.Context, r zorm.Repository) {
+			ctx = makeContext(ctx)
+
+			var list []*Account
+			err := zorm.Find(ctx, r, &list, zorm.FindOptions{})
+			require.ErrorIs(t, err, zorm.ErrZeroCapacity)
+		})
+	})
+
 	t.Run("FindAccounts", func(t *testing.T) {
 		setup(t, func(ctx context.Context, r zorm.Repository) {
 			ctx = makeContext(ctx)
