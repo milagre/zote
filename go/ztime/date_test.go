@@ -11,9 +11,26 @@ import (
 )
 
 func TestNewDate(t *testing.T) {
-	now := time.Now()
-	date := ztime.NewDate(now)
-	assert.Equal(t, now, date.Time)
+	t.Run("drops the time of day", func(t *testing.T) {
+		date := ztime.NewDate(time.Date(2024, 3, 20, 15, 4, 5, 6, time.UTC))
+
+		assert.True(t, date.Equal(ztime.NewDateFromValues(2024, time.March, 20).Time), "date %v", date.Time)
+	})
+
+	t.Run("keeps the calendar day of the time's own location", func(t *testing.T) {
+		east := time.FixedZone("east", 10*60*60)
+		date := ztime.NewDate(time.Date(2024, 3, 21, 2, 0, 0, 0, east))
+
+		assert.Equal(t, "2024-03-21", date.String())
+		assert.True(t, date.Equal(ztime.NewDateFromValues(2024, time.March, 21).Time), "date %v", date.Time)
+	})
+
+	t.Run("equals the same day scanned from storage", func(t *testing.T) {
+		var scanned ztime.Date
+		assert.NoError(t, scanned.Scan("2024-03-20"))
+
+		assert.Equal(t, scanned, ztime.NewDate(time.Date(2024, 3, 20, 23, 59, 0, 0, time.UTC)))
+	})
 }
 
 func TestDate_String(t *testing.T) {
@@ -157,6 +174,13 @@ func TestDate_Scan(t *testing.T) {
 	}
 }
 
+func TestDate_ScanTimeDropsTheTimeOfDay(t *testing.T) {
+	var d ztime.Date
+	assert.NoError(t, d.Scan(time.Date(2024, 3, 20, 15, 4, 5, 0, time.UTC)))
+
+	assert.Equal(t, ztime.NewDateFromValues(2024, time.March, 20), d)
+}
+
 func TestDate_UnmarshalJSON_InvalidJSON(t *testing.T) {
 	var d ztime.Date
 	err := d.UnmarshalJSON([]byte(`{"invalid": "json"}`))
@@ -182,11 +206,10 @@ func TestDate_At(t *testing.T) {
 }
 
 func TestDate_Value(t *testing.T) {
-	now := time.Now()
-	date := ztime.NewDate(now)
+	date := ztime.NewDateFromValues(2024, time.March, 20)
 	val, err := date.Value()
 	assert.NoError(t, err)
-	assert.Equal(t, now, val)
+	assert.Equal(t, time.Date(2024, 3, 20, 0, 0, 0, 0, time.UTC), val)
 }
 
 func TestDate_UnmarshalJSON_ByteSlice(t *testing.T) {

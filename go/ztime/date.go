@@ -19,14 +19,16 @@ type Date struct {
 	time.Time
 }
 
+// NewDate is the calendar day t falls on in its own location. Every Date is that day's
+// midnight in UTC, so two Dates for the same day are equal however they were made.
 func NewDate(t time.Time) Date {
-	return Date{
-		Time: t,
-	}
+	return NewDateFromValues(t.Year(), t.Month(), t.Day())
 }
 
 func NewDateFromValues(year int, month time.Month, day int) Date {
-	return NewDate(time.Date(year, month, day, 0, 0, 0, 0, time.UTC))
+	return Date{
+		Time: time.Date(year, month, day, 0, 0, 0, 0, time.UTC),
+	}
 }
 
 func (d Date) String() string {
@@ -83,7 +85,7 @@ func (d *Date) Scan(data any) error {
 		return nil
 
 	case time.Time:
-		*d = Date{input}
+		*d = NewDate(input)
 		return nil
 
 	case nil:
