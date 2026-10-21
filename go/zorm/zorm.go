@@ -46,8 +46,8 @@ import (
 )
 
 var (
-	ErrNotFound = fmt.Errorf("not found")
-	ErrConflict = fmt.Errorf("conflict")
+	ErrNotFound     = fmt.Errorf("not found")
+	ErrConflict     = fmt.Errorf("conflict")
 	ErrZeroCapacity = fmt.Errorf("find list has zero capacity")
 )
 
