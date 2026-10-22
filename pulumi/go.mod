@@ -3,6 +3,7 @@ module github.com/milagre/zote/pulumi
 go 1.25.11
 
 require (
+	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/milagre/zote/go v0.0.0-00010101000000-000000000000
 	github.com/pulumi/pulumi-digitalocean/sdk/v4 v4.73.0
 	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.32.0
@@ -24,6 +25,7 @@ require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
+	github.com/breml/rootcerts v0.3.7 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/bubbles v1.0.0 // indirect

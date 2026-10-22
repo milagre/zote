@@ -110,29 +110,24 @@ func InstallChart(
 
 	resourceName := tokens.Qualify(namespace, name)
 
-	var version pulumi.StringPtrInput
-	switch {
-	case args.Version != nil:
-		version = pulumi.String(*args.Version).ToStringPtrOutput()
-	case spec.DefaultVersion != "":
-		version = pulumi.String(spec.DefaultVersion).ToStringPtrOutput()
+	version := spec.DefaultVersion
+	if args.Version != nil {
+		version = *args.Version
 	}
 
-	releaseArgs := &helmv3.ReleaseArgs{
-		Chart:     pulumi.String(spec.Chart),
+	chart, err := LocalChart(ctx, spec.Repository, spec.Chart, version)
+	if err != nil {
+		return fmt.Errorf("%s: %w", spec.TypeToken, err)
+	}
+
+	rel, err := helmv3.NewRelease(ctx, resourceName, &helmv3.ReleaseArgs{
+		Chart:     chart,
 		Name:      pulumi.String(name).ToStringPtrOutput(),
 		Namespace: pulumi.String(args.Namespace).ToStringPtrOutput(),
-		Version:   version,
+		Version:   pulumi.String(version).ToStringPtrOutput(),
 		Values:    args.Values,
 		SkipAwait: pulumi.Bool(true),
-	}
-	if spec.Repository != "" {
-		releaseArgs.RepositoryOpts = &helmv3.RepositoryOptsArgs{
-			Repo: pulumi.String(spec.Repository).ToStringPtrOutput(),
-		}
-	}
-
-	rel, err := helmv3.NewRelease(ctx, resourceName, releaseArgs, pulumi.Parent(comp))
+	}, pulumi.Parent(comp))
 	if err != nil {
 		return fmt.Errorf("creating %s release %q: %w", spec.TypeToken, spec.Chart, err)
 	}

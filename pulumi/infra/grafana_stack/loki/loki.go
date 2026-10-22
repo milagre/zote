@@ -10,6 +10,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/internal/helm"
 	"github.com/milagre/zote/pulumi/svc/objectstorage"
 	"github.com/milagre/zote/pulumi/util/endpoint"
 	"github.com/milagre/zote/pulumi/util/profile"
@@ -73,9 +74,14 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		return nil, fmt.Errorf("%s: values: %w", typeToken, err)
 	}
 
-	version := pulumi.String(defaultVersion).ToStringPtrOutput()
+	version := defaultVersion
 	if args.Config.Version != "" {
-		version = pulumi.String(args.Config.Version).ToStringPtrOutput()
+		version = args.Config.Version
+	}
+
+	chartPath, err := helm.LocalChart(ctx, repository, chart, version)
+	if err != nil {
+		return nil, fmt.Errorf("%s: helm release: %w", typeToken, err)
 	}
 
 	relOpts := []pulumi.ResourceOption{pulumi.Parent(comp)}
@@ -84,13 +90,10 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	rel, err := helmv3.NewRelease(ctx, resourceName, &helmv3.ReleaseArgs{
-		Chart:     pulumi.String(chart),
+		Chart:     chartPath,
 		Name:      pulumi.String(name).ToStringPtrOutput(),
 		Namespace: pulumi.String(args.Namespace).ToStringPtrOutput(),
-		Version:   version,
-		RepositoryOpts: &helmv3.RepositoryOptsArgs{
-			Repo: pulumi.String(repository).ToStringPtrOutput(),
-		},
+		Version:   pulumi.String(version).ToStringPtrOutput(),
 		Values:    values,
 		SkipAwait: pulumi.Bool(true),
 	}, relOpts...)

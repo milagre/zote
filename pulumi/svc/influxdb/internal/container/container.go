@@ -17,6 +17,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/internal/helm"
 	"github.com/milagre/zote/pulumi/util/profile"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
@@ -190,15 +191,17 @@ func New(ctx *pulumi.Context, parentName string, args *Args, influxParent pulumi
 		},
 	}
 
+	chartPath, err := helm.LocalChart(ctx, chartRepository, chartName, chartVersion)
+	if err != nil {
+		return nil, fmt.Errorf("%s: installing chart: %w", typeToken, err)
+	}
+
 	if _, err := helmv3.NewRelease(ctx, parentName, &helmv3.ReleaseArgs{
-		Chart:     pulumi.String(chartName),
+		Chart:     chartPath,
 		Name:      pulumi.String(releaseName).ToStringPtrOutput(),
 		Namespace: pulumi.String(args.Namespace).ToStringPtrOutput(),
 		Version:   pulumi.String(chartVersion).ToStringPtrOutput(),
 		Values:    values,
-		RepositoryOpts: &helmv3.RepositoryOptsArgs{
-			Repo: pulumi.String(chartRepository).ToStringPtrOutput(),
-		},
 		SkipAwait: pulumi.Bool(true),
 	}, pulumi.Parent(influxParent)); err != nil {
 		return nil, fmt.Errorf("%s: installing chart: %w", typeToken, err)

@@ -90,9 +90,14 @@ func Deploy(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*Result, erro
 		},
 	})
 
-	ver := pulumi.String(defaultVersion).ToStringPtrOutput()
+	ver := defaultVersion
 	if a.ChartVersion != "" {
-		ver = pulumi.String(a.ChartVersion).ToStringPtrOutput()
+		ver = a.ChartVersion
+	}
+
+	chartPath, err := helm.LocalChart(ctx, repository, chart, ver)
+	if err != nil {
+		return nil, fmt.Errorf("helm release: %w", err)
 	}
 
 	relOpts := []pulumi.ResourceOption{pulumi.Parent(parent)}
@@ -101,13 +106,10 @@ func Deploy(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*Result, erro
 	}
 
 	rel, err := helmv3.NewRelease(ctx, resourceName, &helmv3.ReleaseArgs{
-		Chart:     pulumi.String(chart),
+		Chart:     chartPath,
 		Name:      pulumi.String(a.Name).ToStringPtrOutput(),
 		Namespace: pulumi.String(a.Namespace).ToStringPtrOutput(),
-		Version:   ver,
-		RepositoryOpts: &helmv3.RepositoryOptsArgs{
-			Repo: pulumi.String(repository).ToStringPtrOutput(),
-		},
+		Version:   pulumi.String(ver).ToStringPtrOutput(),
 		Values:    values,
 		SkipAwait: pulumi.Bool(true),
 	}, relOpts...)

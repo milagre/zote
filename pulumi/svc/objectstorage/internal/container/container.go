@@ -167,22 +167,21 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 	}
 	values := helm.Values(vals)
 
-	var ver pulumi.StringPtrInput
-	switch v := helm.OptionalChartVersion(cfg.Version); {
-	case v != nil:
-		ver = pulumi.String(*v).ToStringPtrOutput()
-	default:
-		ver = pulumi.String(defaultMinIOChartVersion).ToStringPtrOutput()
+	ver := defaultMinIOChartVersion
+	if v := helm.OptionalChartVersion(cfg.Version); v != nil {
+		ver = *v
+	}
+
+	chartPath, err := helm.LocalChart(ctx, "https://charts.min.io/", "minio", ver)
+	if err != nil {
+		return nil, fmt.Errorf("minio helm release: %w", err)
 	}
 
 	rel, err := helmv3.NewRelease(ctx, release, &helmv3.ReleaseArgs{
-		Chart:     pulumi.String("minio"),
+		Chart:     chartPath,
 		Name:      pulumi.String(release).ToStringPtrOutput(),
 		Namespace: pulumi.String(a.Namespace).ToStringPtrOutput(),
-		Version:   ver,
-		RepositoryOpts: &helmv3.RepositoryOptsArgs{
-			Repo: pulumi.String("https://charts.min.io/").ToStringPtrOutput(),
-		},
+		Version:   pulumi.String(ver).ToStringPtrOutput(),
 		Values:    values,
 		SkipAwait: pulumi.Bool(true),
 	}, pulumi.Parent(parent), pulumi.DependsOn([]pulumi.Resource{sec}))
