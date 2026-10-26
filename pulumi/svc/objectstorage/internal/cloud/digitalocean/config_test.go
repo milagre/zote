@@ -11,7 +11,7 @@ func TestConfig_Validate_ok(t *testing.T) {
 
 	c := &digitalocean.Config{
 		Region:  "nyc3",
-		Buckets: []digitalocean.Bucket{{Name: "a"}, {Name: "b"}},
+		Buckets: []digitalocean.Bucket{{Name: "a"}, {Name: "b", ExpireDays: 30}},
 	}
 	if err := c.Validate(); err != nil {
 		t.Fatalf("Validate: %v", err)
@@ -22,9 +22,10 @@ func TestConfig_Validate_errors(t *testing.T) {
 	t.Parallel()
 
 	cases := map[string]*digitalocean.Config{
-		"nil":        nil,
-		"no buckets": {Region: "nyc3", Buckets: nil},
-		"blank name": {Region: "nyc3", Buckets: []digitalocean.Bucket{{Name: ""}}},
+		"nil":             nil,
+		"no buckets":      {Region: "nyc3", Buckets: nil},
+		"blank name":      {Region: "nyc3", Buckets: []digitalocean.Bucket{{Name: ""}}},
+		"negative expiry": {Region: "nyc3", Buckets: []digitalocean.Bucket{{Name: "a", ExpireDays: -1}}},
 	}
 
 	for name, c := range cases {

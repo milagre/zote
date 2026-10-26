@@ -11,6 +11,7 @@ import (
 
 	"github.com/milagre/zote/pulumi/cloud"
 	"github.com/milagre/zote/pulumi/env"
+	"github.com/milagre/zote/pulumi/svc/internal/backup"
 	"github.com/milagre/zote/pulumi/svc/mysql/internal/container"
 	"github.com/milagre/zote/pulumi/svc/mysql/internal/digitalocean"
 	"github.com/milagre/zote/pulumi/util/stringdata"
@@ -18,6 +19,18 @@ import (
 )
 
 var typeToken = tokens.Token("svc", "Mysql")
+
+// backupScript takes a consistent snapshot without locking InnoDB tables.
+// GTIDs are left out so the dump restores into any server, including a
+// managed one that refuses SET @@GLOBAL.GTID_PURGED.
+const backupScript = `set -euo pipefail
+mysqldump --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" \
+  --single-transaction --routines --triggers --no-tablespaces --set-gtid-purged=OFF \
+  --result-file=/dump/dump "$MYSQL_DATABASE"
+`
+
+// Backup schedules dumps of the database into object storage.
+type Backup = backup.Spec
 
 // Args bundles the YAML-decoded Config with the runtime identity
 // (Env, Namespace, Name, Database, Username) and the multi-provider
@@ -32,6 +45,9 @@ type Args struct {
 
 	Config Config
 	Cloud  cloud.Cloud
+
+	// Backup, when set, dumps the database on its schedule.
+	Backup *Backup
 }
 
 type K8s struct {
@@ -108,6 +124,29 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	comp.K8s.ConfigMap = cm.Metadata.Name().Elem()
 	comp.K8s.Secret = sec.Metadata.Name().Elem()
 
+	if args.Backup != nil {
+		if err := backup.New(ctx, resourceName, comp, backup.Args{
+			Namespace: args.Namespace,
+			Name:      clientName,
+			Spec:      *args.Backup,
+			Dumper: backup.Dumper{
+				Image:  fmt.Sprintf("mysql:%s", args.Config.Version),
+				Shell:  "/bin/bash",
+				Script: backupScript,
+				Env: map[string]pulumi.StringOutput{
+					"MYSQL_HOST":     be.Hostname(),
+					"MYSQL_PORT":     be.Port(),
+					"MYSQL_USER":     be.Username(),
+					"MYSQL_PWD":      be.Password(),
+					"MYSQL_DATABASE": pulumi.String(args.Database).ToStringOutput(),
+				},
+				Ext: ".sql",
+			},
+		}); err != nil {
+			return nil, fmt.Errorf("%s: %w", typeToken, err)
+		}
+	}
+
 	if err := ctx.RegisterResourceOutputs(comp, pulumi.Map{
 		"k8s": pulumi.Map{
 			"configMap": comp.K8s.ConfigMap,
@@ -182,6 +221,11 @@ func (a *Args) validate() error {
 	}
 	if err := a.Config.Validate(); err != nil {
 		return fmt.Errorf("config: %w", err)
+	}
+	if a.Backup != nil {
+		if err := a.Backup.Validate(); err != nil {
+			return fmt.Errorf("backup: %w", err)
+		}
 	}
 
 	if a.Config.Cloud != nil && a.Config.Cloud.DigitalOcean != nil &&

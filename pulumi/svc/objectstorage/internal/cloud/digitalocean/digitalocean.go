@@ -47,11 +47,6 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 
 	objCloud := a.Cloud.DigitalOcean.ForObjectStorage()
 
-	bucketNames := make([]string, len(cfg.Buckets))
-	for i, b := range cfg.Buckets {
-		bucketNames[i] = b.Name
-	}
-
 	var region pulumi.StringInput
 	if cfg.Region != "" {
 		region = pulumi.String(cfg.Region)
@@ -63,21 +58,31 @@ func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result,
 	}
 
 	resourceName := fmt.Sprintf("%s-%s-%s-%s", a.Env.AppName, a.Env.ID(), a.Namespace, a.Name)
-	finalBuckets := make(map[string]string, len(bucketNames))
-	buckets := make([]*do.SpacesBucket, 0, len(bucketNames))
-	grants := make(do.SpacesKeyGrantArray, 0, len(bucketNames))
-	projectUrns := make(pulumi.StringArray, 0, len(bucketNames))
+	finalBuckets := make(map[string]string, len(cfg.Buckets))
+	buckets := make([]*do.SpacesBucket, 0, len(cfg.Buckets))
+	grants := make(do.SpacesKeyGrantArray, 0, len(cfg.Buckets))
+	projectUrns := make(pulumi.StringArray, 0, len(cfg.Buckets))
 
-	for _, b := range bucketNames {
-		bucketName := fmt.Sprintf("%s-%s", resourceName, b)
-		finalBuckets[b] = bucketName
+	for _, b := range cfg.Buckets {
+		bucketName := fmt.Sprintf("%s-%s", resourceName, b.Name)
+		finalBuckets[b.Name] = bucketName
+
+		var lifecycle do.SpacesBucketLifecycleRuleArray
+		if b.ExpireDays > 0 {
+			lifecycle = do.SpacesBucketLifecycleRuleArray{&do.SpacesBucketLifecycleRuleArgs{
+				Enabled:    pulumi.Bool(true),
+				Expiration: &do.SpacesBucketLifecycleRuleExpirationArgs{Days: pulumi.Int(b.ExpireDays)},
+			}}
+		}
+
 		bucket, err := do.NewSpacesBucket(ctx, bucketName, &do.SpacesBucketArgs{
-			Name:   pulumi.String(bucketName),
-			Region: region.ToStringOutput().ToStringPtrOutput(),
-			Acl:    pulumi.String("private").ToStringPtrOutput(),
+			Name:           pulumi.String(bucketName),
+			Region:         region.ToStringOutput().ToStringPtrOutput(),
+			Acl:            pulumi.String("private").ToStringPtrOutput(),
+			LifecycleRules: lifecycle,
 		}, pulumi.Parent(parent), pulumi.Protect(true))
 		if err != nil {
-			return nil, fmt.Errorf("spaces bucket %q: %w", b, err)
+			return nil, fmt.Errorf("spaces bucket %q: %w", b.Name, err)
 		}
 
 		buckets = append(buckets, bucket)

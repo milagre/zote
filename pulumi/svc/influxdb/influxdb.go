@@ -12,12 +12,22 @@ import (
 
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/svc/influxdb/internal/container"
+	"github.com/milagre/zote/pulumi/svc/internal/backup"
 	"github.com/milagre/zote/pulumi/util/profile"
 	"github.com/milagre/zote/pulumi/util/stringdata"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
 
 var typeToken = tokens.Token("svc", "Influxdb")
+
+const backupScript = `set -euo pipefail
+influx backup /dump/raw
+tar -cf /dump/dump -C /dump raw
+rm -rf /dump/raw
+`
+
+// Backup schedules dumps of every bucket into object storage.
+type Backup = backup.Spec
 
 // Args configures Influxdb. [Env.Prefix] scopes generated Secret keys.
 type Args struct {
@@ -26,6 +36,9 @@ type Args struct {
 	Name      string
 
 	Config Config
+
+	// Backup, when set, dumps the instance on its schedule.
+	Backup *Backup
 }
 
 // K8s names the ConfigMap and Secret created in the target namespace.
@@ -124,6 +137,26 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	comp.Bucket = be.Bucket()
 	comp.Token = pulumi.ToSecret(be.Token()).(pulumi.StringOutput)
 
+	if args.Backup != nil {
+		if err := backup.New(ctx, resourceName, comp, backup.Args{
+			Namespace: args.Namespace,
+			Name:      clientName,
+			Spec:      *args.Backup,
+			Dumper: backup.Dumper{
+				Image:  fmt.Sprintf("influxdb:%s-alpine", args.Config.Version),
+				Shell:  "/bin/sh",
+				Script: backupScript,
+				Env: map[string]pulumi.StringOutput{
+					"INFLUX_HOST":  comp.API.URL,
+					"INFLUX_TOKEN": comp.Token,
+				},
+				Ext: ".tar",
+			},
+		}); err != nil {
+			return nil, fmt.Errorf("%s: %w", typeToken, err)
+		}
+	}
+
 	if err := ctx.RegisterResourceOutputs(comp, pulumi.Map{
 		"k8s": pulumi.Map{
 			"configMap": comp.K8s.ConfigMap,
@@ -148,6 +181,11 @@ func (a *Args) validate() error {
 	}
 	if err := a.Config.Validate(); err != nil {
 		return fmt.Errorf("config: %w", err)
+	}
+	if a.Backup != nil {
+		if err := a.Backup.Validate(); err != nil {
+			return fmt.Errorf("backup: %w", err)
+		}
 	}
 
 	return nil
