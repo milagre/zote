@@ -26,7 +26,7 @@ var typeToken = tokens.Token("svc", "Mysql")
 const backupScript = `set -euo pipefail
 mysqldump --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" \
   --single-transaction --routines --triggers --no-tablespaces --set-gtid-purged=OFF \
-  --result-file=/dump/dump "$MYSQL_DATABASE"
+  "$MYSQL_DATABASE" | gzip > /dump/dump
 `
 
 // Backup schedules dumps of the database into object storage.
@@ -140,7 +140,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 					"MYSQL_PWD":      be.Password(),
 					"MYSQL_DATABASE": pulumi.String(args.Database).ToStringOutput(),
 				},
-				Ext: ".sql",
+				Ext: ".sql.gz",
 			},
 		}); err != nil {
 			return nil, fmt.Errorf("%s: %w", typeToken, err)

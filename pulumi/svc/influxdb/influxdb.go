@@ -22,7 +22,7 @@ var typeToken = tokens.Token("svc", "Influxdb")
 
 const backupScript = `set -euo pipefail
 influx backup /dump/raw
-tar -cf /dump/dump -C /dump raw
+tar -czf /dump/dump -C /dump raw
 rm -rf /dump/raw
 `
 
@@ -150,7 +150,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 					"INFLUX_HOST":  comp.API.URL,
 					"INFLUX_TOKEN": comp.Token,
 				},
-				Ext: ".tar",
+				Ext: ".tar.gz",
 			},
 		}); err != nil {
 			return nil, fmt.Errorf("%s: %w", typeToken, err)

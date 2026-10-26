@@ -1,10 +1,10 @@
 // Package backup schedules dumps of a data store into object storage.
 //
-// Each run is one Pod: an init container produces a single file at
-// /dump/dump using the store's own client image, then the uploader gzips it,
-// writes it under <name>/<timestamp><ext>.gz with a private ACL, and fails the
-// run unless an anonymous request for the object and for the bucket listing
-// is refused. A store that is publicly readable therefore surfaces as a
+// Each run is one Pod: an init container produces a single compressed file
+// at /dump/dump using the store's own client image, then the uploader writes
+// it under <name>/<timestamp><ext> with a private ACL, and fails the run
+// unless an unauthenticated GET of the object and of the bucket listing both
+// return 403. A store that is publicly readable therefore surfaces as a
 // failed Job rather than going unnoticed, and the exposed object is deleted.
 package backup
 
@@ -25,39 +25,33 @@ import (
 
 // uploaderImage predates the AWS CLI's default request checksums, which
 // S3-compatible stores do not all accept; the checksum env vars below cover
-// a bump past it.
+// a bump past it. The privacy checks rely on the image's curl.
 const uploaderImage = "amazon/aws-cli:2.22.35"
 
 const dumpDir = "/dump"
 
 const uploadScript = `set -euo pipefail
-key="$BACKUP_PREFIX/$(date -u +%Y%m%dT%H%M%SZ)$BACKUP_EXT.gz"
-gzip /dump/dump
-aws s3 cp /dump/dump.gz "s3://$BACKUP_BUCKET/$key" --endpoint-url "$BACKUP_S3_URL" --acl private --only-show-errors
+key="$BACKUP_PREFIX/$(date -u +%Y%m%dT%H%M%SZ)$BACKUP_EXT"
+aws s3 cp /dump/dump "s3://$BACKUP_BUCKET/$key" --endpoint-url "$BACKUP_S3_URL" --acl private --only-show-errors
 
-refused() {
-  case "$1" in
-    *403*|*Forbidden*|*AccessDenied*) return 0 ;;
-    *) return 1 ;;
-  esac
+anonymous() {
+  curl -s -o /dev/null -w '%{http_code}' "$BACKUP_S3_URL/$BACKUP_BUCKET/$1"
 }
 
-if out=$(aws s3api head-object --bucket "$BACKUP_BUCKET" --key "$key" --endpoint-url "$BACKUP_S3_URL" --no-sign-request 2>&1); then
+code=$(anonymous "$key")
+if [ "$code" = 200 ]; then
   aws s3 rm "s3://$BACKUP_BUCKET/$key" --endpoint-url "$BACKUP_S3_URL" --only-show-errors
   echo "$key was publicly readable and has been deleted" >&2
   exit 1
 fi
-if ! refused "$out"; then
-  echo "could not confirm $key is private: $out" >&2
+if [ "$code" != 403 ]; then
+  echo "could not confirm $key is private: anonymous GET returned HTTP $code" >&2
   exit 1
 fi
 
-if out=$(aws s3api list-objects-v2 --bucket "$BACKUP_BUCKET" --max-items 1 --endpoint-url "$BACKUP_S3_URL" --no-sign-request 2>&1); then
-  echo "bucket $BACKUP_BUCKET is publicly listable" >&2
-  exit 1
-fi
-if ! refused "$out"; then
-  echo "could not confirm bucket $BACKUP_BUCKET is private: $out" >&2
+code=$(anonymous "")
+if [ "$code" != 403 ]; then
+  echo "could not confirm bucket $BACKUP_BUCKET is private: anonymous listing returned HTTP $code" >&2
   exit 1
 fi
 
@@ -74,8 +68,9 @@ type Spec struct {
 }
 
 // Dumper is the store-specific half of a run. Script runs under Shell in
-// Image with Env set, and must leave exactly one file at /dump/dump. Ext is
-// that file's extension, without the .gz the uploader adds.
+// Image with Env set, and must leave exactly one file at /dump/dump,
+// compressed by the dumper since the uploader image has no compressor. Ext is
+// that file's extension.
 type Dumper struct {
 	Image  string
 	Shell  string
