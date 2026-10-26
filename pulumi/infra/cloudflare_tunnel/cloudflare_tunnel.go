@@ -56,13 +56,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
 		Version:   helm.OptionalChartVersion(args.Config.Version),
-		Values: pulumi.Map{
-			"cloudflare": pulumi.Map{
-				"apiToken":   pulumi.String(args.APIToken),
-				"accountId":  pulumi.String(args.AccountID),
-				"tunnelName": pulumi.String(args.TunnelName),
-			},
-		},
+		Values:    chartValues(args),
 	}, &comp.ChartComponent, opts...); err != nil {
 		return nil, err
 	}
@@ -72,4 +66,23 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	args.Cluster.SetTunnelIngressClass(IngressClassName)
 
 	return comp, nil
+}
+
+func chartValues(args *Args) pulumi.Map {
+	return pulumi.Map{
+		"cloudflare": pulumi.Map{
+			"apiToken":   pulumi.String(args.APIToken),
+			"accountId":  pulumi.String(args.AccountID),
+			"tunnelName": pulumi.String(args.TunnelName),
+		},
+		// The chart's default connector image (strrl's host-metrics fork) trusts the
+		// compromised eMudhra intermediates. The controller passes cloudflared only
+		// stock flags, so upstream runs in its place without the fork's host metrics.
+		"cloudflared": pulumi.Map{
+			"image": pulumi.Map{
+				"repository": pulumi.String("cloudflare/cloudflared"),
+				"tag":        pulumi.String("2026.10.4"),
+			},
+		},
+	}
 }
