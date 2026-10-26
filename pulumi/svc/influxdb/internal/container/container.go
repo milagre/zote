@@ -208,7 +208,7 @@ func New(ctx *pulumi.Context, parentName string, args *Args, influxParent pulumi
 	}
 
 	comp.scheme = pulumi.String("http").ToStringOutput()
-	comp.host = pulumi.String(releaseName).ToStringOutput()
+	comp.host = pulumi.String(fmt.Sprintf("%s.%s.svc.cluster.local", releaseName, args.Namespace)).ToStringOutput()
 	comp.port = pulumi.String("80").ToStringOutput()
 	comp.org = pulumi.String(args.Organization).ToStringOutput()
 	comp.bucket = pulumi.String(args.Organization).ToStringOutput()

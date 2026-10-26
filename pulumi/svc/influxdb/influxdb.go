@@ -34,11 +34,22 @@ type K8s struct {
 	Secret    pulumi.StringOutput
 }
 
-// Influxdb is the component resource; connection details are in K8s only.
+type Endpoint struct {
+	URL  pulumi.StringOutput
+	Host pulumi.StringOutput
+	Port pulumi.StringOutput
+}
+
+// Influxdb: K8s resource names; API endpoint and the admin org, bucket and
+// token. Token is marked secret.
 type Influxdb struct {
 	pulumi.ResourceState
 
-	K8s K8s
+	K8s    K8s
+	API    Endpoint
+	Org    pulumi.StringOutput
+	Bucket pulumi.StringOutput
+	Token  pulumi.StringOutput
 }
 
 // New registers the Influxdb component and its chosen backend.
@@ -104,6 +115,14 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 
 	comp.K8s.ConfigMap = cm.Metadata.Name().Elem()
 	comp.K8s.Secret = sec.Metadata.Name().Elem()
+	comp.API = Endpoint{
+		URL:  pulumi.Sprintf("%s://%s:%s", be.Scheme(), be.Host(), be.Port()),
+		Host: be.Host(),
+		Port: be.Port(),
+	}
+	comp.Org = be.Org()
+	comp.Bucket = be.Bucket()
+	comp.Token = pulumi.ToSecret(be.Token()).(pulumi.StringOutput)
 
 	if err := ctx.RegisterResourceOutputs(comp, pulumi.Map{
 		"k8s": pulumi.Map{
