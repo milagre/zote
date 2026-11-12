@@ -31,6 +31,11 @@ type Delivery interface {
 	RetryWithData(ctx context.Context, content []byte, contentType string) error
 	RetryDelayed(context.Context, time.Duration) error
 	RetryDelayedWithData(ctx context.Context, delay time.Duration, content []byte, contentType string) error
+
+	// Postpone requeues the delivery to arrive again after delay without counting an attempt: for
+	// one that could not start yet, such as one waiting on a lock, rather than one that failed.
+	Postpone(context.Context, time.Duration) error
+
 	Fatal(context.Context) error
 
 	// Continue publishes msg under this delivery's job ID and acks the delivery, as one
@@ -222,6 +227,18 @@ func (m *delivery) requeueData(kind string, content []byte, contentType string, 
 	}
 }
 
+// postponement waits out delay as a retry does, without counting an attempt.
+func (m *delivery) postponement(delay time.Duration) (requeueMessage, error) {
+	msg, err := m.requeueOwn("retry", delay)
+	if err != nil {
+		return requeueMessage{}, fmt.Errorf("requeueing own body: %w", err)
+	}
+
+	msg.keepsAttempt = true
+
+	return msg, nil
+}
+
 func (m *delivery) Retry(ctx context.Context) error {
 	msg, err := m.requeueOwn("retry", 0)
 	if err != nil {
@@ -284,6 +301,25 @@ func (m *delivery) RetryDelayedWithData(ctx context.Context, delay time.Duration
 
 	zstats.FromContext(ctx).WithTag("delay", delay.String()).Count("delivery.retry", 1)
 	zlog.FromContext(ctx).Infof("Message queued for retry in %s", delay)
+
+	return nil
+}
+
+func (m *delivery) Postpone(ctx context.Context, delay time.Duration) error {
+	msg, err := m.postponement(delay)
+	if err != nil {
+		return fmt.Errorf("preparing message for postponement: %w", err)
+	}
+
+	err = m.respond(func() error {
+		return m.requeue(ctx, msg)
+	})
+	if err != nil {
+		return fmt.Errorf("postponing message: %w", err)
+	}
+
+	zstats.FromContext(ctx).WithTag("delay", delay.String()).Count("delivery.postpone", 1)
+	zlog.FromContext(ctx).Infof("Message postponed for %s", delay)
 
 	return nil
 }

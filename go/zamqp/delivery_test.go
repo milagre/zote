@@ -157,6 +157,33 @@ func deliveryOf(publishing amqp091.Publishing) *delivery {
 	}
 }
 
+func TestPostponementKeepsTheAttemptARetryWouldCount(t *testing.T) {
+	t.Parallel()
+
+	del := deliveryOf(amqp091.Publishing{Headers: amqp091.Table{headerAttempt: 3}})
+
+	postponed, err := del.postponement(30 * time.Second)
+	require.NoError(t, err)
+	retried, err := del.requeueOwn("retry", 30*time.Second)
+	require.NoError(t, err)
+
+	require.Equal(t, 3, attempt(postponed.Options().Headers))
+	require.Equal(t, 4, attempt(retried.Options().Headers))
+}
+
+func TestPostponementReturnsToItsQueueAfterTheDelay(t *testing.T) {
+	t.Parallel()
+
+	del := deliveryOf(amqp091.Publishing{})
+
+	postponed, err := del.postponement(30 * time.Second)
+	require.NoError(t, err)
+
+	queue := postponed.queueDefinition()
+	require.Equal(t, 30000, queue.Options[amqp091.QueueMessageTTLArg])
+	require.Equal(t, "myqueue", queue.Options["x-dead-letter-routing-key"])
+}
+
 func TestContinuationPublishesUnderTheDeliverysJob(t *testing.T) {
 	t.Parallel()
 

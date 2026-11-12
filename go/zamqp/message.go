@@ -166,6 +166,9 @@ type requeueMessage struct {
 	delay             time.Duration
 	queue             *Queue
 	kind              string
+
+	// keepsAttempt leaves a retry's attempt as it was, for a delivery requeued without failing.
+	keepsAttempt bool
 }
 
 var _ Message = requeueMessage{}
@@ -194,9 +197,12 @@ func (m requeueMessage) finalHeaders() Headers {
 		headers[k] = v
 	}
 
-	if m.kind == "retry" {
+	switch {
+	case m.kind == "retry" && m.keepsAttempt:
+		headers[headerAttempt] = attempt(m.headers)
+	case m.kind == "retry":
 		headers[headerAttempt] = attempt(m.headers) + 1
-	} else {
+	default:
 		headers[headerAttempt] = 1
 	}
 
