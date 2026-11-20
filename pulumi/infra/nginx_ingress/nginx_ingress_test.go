@@ -9,13 +9,14 @@ import (
 	"github.com/milagre/zote/pulumi/util/profile"
 )
 
-func controllerValues(t *testing.T, typ string, allowSnippets bool) pulumi.Map {
+func controllerValues(t *testing.T, typ string, args Args) pulumi.Map {
 	t.Helper()
 
 	e, err := env.New("zote", typ, "prod", "us-e1", "example.com", "z")
 	if err != nil {
 		t.Fatalf("env.New: %v", err)
 	}
+	args.Env = e
 
 	p, err := profile.New(profile.Raw{
 		CPU: profile.RawRange{Min: "100m", Max: "100m"},
@@ -25,7 +26,7 @@ func controllerValues(t *testing.T, typ string, allowSnippets bool) pulumi.Map {
 		t.Fatalf("profile.New: %v", err)
 	}
 
-	controller, ok := values(e, p, DefaultIngressClass, allowSnippets)["controller"].(pulumi.Map)
+	controller, ok := values(&args, p, DefaultIngressClass)["controller"].(pulumi.Map)
 	if !ok {
 		t.Fatal("controller: not a pulumi.Map")
 	}
@@ -40,7 +41,7 @@ func TestValues_snippetAnnotationsClosedByDefault(t *testing.T) {
 		t.Run(typ, func(t *testing.T) {
 			t.Parallel()
 
-			controller := controllerValues(t, typ, false)
+			controller := controllerValues(t, typ, Args{})
 
 			if got, ok := controller["allowSnippetAnnotations"]; ok {
 				t.Errorf("allowSnippetAnnotations = %v, want unset", got)
@@ -59,7 +60,7 @@ func TestValues_snippetAnnotationsOpenBothGates(t *testing.T) {
 		t.Run(typ, func(t *testing.T) {
 			t.Parallel()
 
-			controller := controllerValues(t, typ, true)
+			controller := controllerValues(t, typ, Args{AllowSnippetAnnotations: true})
 
 			if got := controller["allowSnippetAnnotations"]; got != pulumi.Bool(true) {
 				t.Errorf("allowSnippetAnnotations = %v, want true", got)
@@ -73,6 +74,43 @@ func TestValues_snippetAnnotationsOpenBothGates(t *testing.T) {
 				t.Errorf("annotations-risk-level = %v, want Critical", got)
 			}
 		})
+	}
+}
+
+func TestValues_disableHTTP2(t *testing.T) {
+	t.Parallel()
+
+	for _, typ := range []string{"remote", "local"} {
+		t.Run(typ, func(t *testing.T) {
+			t.Parallel()
+
+			controller := controllerValues(t, typ, Args{DisableHTTP2: true})
+
+			cfg, ok := controller["config"].(pulumi.Map)
+			if !ok {
+				t.Fatal("config: not a pulumi.Map")
+			}
+			if got := cfg["use-http2"]; got != pulumi.String("false") {
+				t.Errorf("use-http2 = %v, want \"false\"", got)
+			}
+		})
+	}
+}
+
+func TestValues_disableHTTP2KeepsSnippetGates(t *testing.T) {
+	t.Parallel()
+
+	controller := controllerValues(t, "remote", Args{AllowSnippetAnnotations: true, DisableHTTP2: true})
+
+	cfg, ok := controller["config"].(pulumi.Map)
+	if !ok {
+		t.Fatal("config: not a pulumi.Map")
+	}
+	if got := cfg["use-http2"]; got != pulumi.String("false") {
+		t.Errorf("use-http2 = %v, want \"false\"", got)
+	}
+	if got := cfg["annotations-risk-level"]; got != pulumi.String("Critical") {
+		t.Errorf("annotations-risk-level = %v, want Critical", got)
 	}
 }
 

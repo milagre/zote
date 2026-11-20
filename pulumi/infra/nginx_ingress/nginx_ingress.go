@@ -34,6 +34,11 @@ type Args struct {
 	// configuration. Set it only when the caller's own Ingresses require it.
 	AllowSnippetAnnotations bool
 
+	// DisableHTTP2 turns HTTP/2 off on the controller's TLS listeners, so
+	// clients fall back to HTTP/1.1. An Ingress serving gRPC needs HTTP/2 and
+	// stops working with it off.
+	DisableHTTP2 bool
+
 	Config Config
 
 	// Cluster registers deployed capabilities when non-nil.
@@ -64,7 +69,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
 		Version:   helm.OptionalChartVersion(args.Config.Version),
-		Values:    values(args.Env, prof, ingressClass, args.AllowSnippetAnnotations),
+		Values:    values(args, prof, ingressClass),
 	}, &comp.ChartComponent, opts...); err != nil {
 		return nil, err
 	}
@@ -77,7 +82,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
-func values(e env.Env, p profile.Profile, ingressClass string, allowSnippets bool) pulumi.Map {
+func values(args *Args, p profile.Profile, ingressClass string) pulumi.Map {
 	autoscaling := map[string]any{
 		"enabled":                           true,
 		"minReplicas":                       3,
@@ -125,7 +130,7 @@ func values(e env.Env, p profile.Profile, ingressClass string, allowSnippets boo
 		autoscaling["maxReplicas"] = p.Num.Max
 	}
 
-	if e.IsLocal() {
+	if args.Env.IsLocal() {
 		controller["service"] = map[string]any{"type": "NodePort"}
 	}
 
@@ -134,17 +139,23 @@ func values(e env.Env, p profile.Profile, ingressClass string, allowSnippets boo
 		"enabled": true,
 	}
 
+	config := map[string]any{}
+
 	// Snippet annotations need both gates open: the chart's
 	// allow-snippet-annotations, and a risk level admitting Critical
 	// (configuration-snippet's class). With either closed the controller
 	// discards the whole Ingress carrying one — no server block, so the host
 	// falls through to the default TLS certificate rather than erroring
 	// anywhere visible.
-	if allowSnippets {
+	if args.AllowSnippetAnnotations {
 		controller["allowSnippetAnnotations"] = true
-		controller["config"] = map[string]any{
-			"annotations-risk-level": "Critical",
-		}
+		config["annotations-risk-level"] = "Critical"
+	}
+	if args.DisableHTTP2 {
+		config["use-http2"] = "false"
+	}
+	if len(config) > 0 {
+		controller["config"] = config
 	}
 
 	return helm.Values(map[string]any{"controller": controller})
