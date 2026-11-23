@@ -1,6 +1,8 @@
 package nginx_gateway_test
 
 import (
+	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -17,7 +19,9 @@ const (
 	routeType   = "kubernetes:gateway.networking.k8s.io/v1:HTTPRoute"
 )
 
-func run(t *testing.T, typ string) (pulumitest.Resource, []pulumitest.Resource) {
+// run installs the controller, registers hosts the way routes do, then
+// creates the Gateway.
+func run(t *testing.T, typ string, issuer bool, hosts ...string) ([]pulumitest.Resource, error) {
 	t.Helper()
 
 	e, err := env.New("zote", typ, "prod", "us-e1", "example.com", "z")
@@ -26,8 +30,13 @@ func run(t *testing.T, typ string) (pulumitest.Resource, []pulumitest.Resource) 
 	}
 
 	c := &infra.Cluster{}
+	if issuer {
+		c.SetClusterIssuer("letsencrypt-http01")
+	}
+
+	var createErr error
 	rs := pulumitest.Run(t, func(ctx *pulumi.Context) error {
-		_, err := nginx_gateway.New(ctx, "nginx-gateway", &nginx_gateway.Args{
+		gw, err := nginx_gateway.New(ctx, "nginx-gateway", &nginx_gateway.Args{
 			Namespace: "infra",
 			Env:       e,
 			Config: nginx_gateway.Config{
@@ -39,50 +48,82 @@ func run(t *testing.T, typ string) (pulumitest.Resource, []pulumitest.Resource) 
 			},
 			Cluster: c,
 		})
+		if err != nil {
+			return err
+		}
 
-		return err
+		c.Gateway.AddHostnames(hosts...)
+		createErr = gw.CreateGateway(ctx)
+
+		return nil
 	})
 
-	if c.Gateway == nil || c.Gateway.Name != nginx_gateway.DefaultGatewayName || c.Gateway.Namespace != "infra" {
-		t.Fatalf("cluster Gateway = %+v, want the default name in infra", c.Gateway)
-	}
+	return rs, createErr
+}
+
+type listener struct {
+	name, hostname, protocol, from, secret string
+}
+
+func listeners(t *testing.T, rs []pulumitest.Resource) (map[string]any, []listener) {
+	t.Helper()
 
 	gateways := pulumitest.OfType(rs, gatewayType)
 	if len(gateways) != 1 {
 		t.Fatalf("gateways = %d, want 1", len(gateways))
 	}
 
-	return gateways[0], pulumitest.OfType(rs, routeType)
-}
-
-// The only listener is plain HTTP, open to every namespace: locally routes
-// attach to it, and elsewhere ACME solvers do, from each certificate's own
-// namespace.
-func assertOnlyHTTPListener(t *testing.T, gw pulumitest.Resource) {
-	t.Helper()
-
-	listeners, _ := pulumitest.Lookup(gw.Inputs, "spec", "listeners").([]any)
-	if len(listeners) != 1 {
-		t.Fatalf("listeners = %v, want one", listeners)
+	var out []listener
+	list, _ := pulumitest.Lookup(gateways[0].Inputs, "spec", "listeners").([]any)
+	for _, l := range list {
+		var secret string
+		if refs, _ := pulumitest.Lookup(l, "tls", "certificateRefs").([]any); len(refs) == 1 {
+			secret, _ = pulumitest.Lookup(refs[0], "name").(string)
+		}
+		name, _ := pulumitest.Lookup(l, "name").(string)
+		hostname, _ := pulumitest.Lookup(l, "hostname").(string)
+		protocol, _ := pulumitest.Lookup(l, "protocol").(string)
+		from, _ := pulumitest.Lookup(l, "allowedRoutes", "namespaces", "from").(string)
+		out = append(out, listener{name, hostname, protocol, from, secret})
 	}
 
-	l := listeners[0]
-	if pulumitest.Lookup(l, "name") != infra.GatewayHTTPListener || pulumitest.Lookup(l, "protocol") != "HTTP" ||
-		pulumitest.Lookup(l, "allowedRoutes", "namespaces", "from") != "All" {
-		t.Errorf("listener = %v, want plain HTTP open to all namespaces", l)
-	}
+	ann, _ := pulumitest.Lookup(gateways[0].Inputs, "metadata", "annotations").(map[string]any)
+
+	return ann, out
 }
 
-func TestNew_remoteGatewayTakesListenerSetsAndRedirects(t *testing.T) {
+func TestCreateGateway_tlsListenerPerHostname(t *testing.T) {
 	t.Parallel()
 
-	gw, routes := run(t, "remote")
-	assertOnlyHTTPListener(t, gw)
-
-	if got := pulumitest.Lookup(gw.Inputs, "spec", "allowedListeners", "namespaces", "from"); got != "All" {
-		t.Errorf("allowedListeners from = %v, want All", got)
+	rs, err := run(t, "remote", true, "a.example.com", "b.example.com")
+	if err != nil {
+		t.Fatalf("CreateGateway: %v", err)
 	}
 
+	ann, ls := listeners(t, rs)
+	if ann["cert-manager.io/cluster-issuer"] != "letsencrypt-http01" {
+		t.Errorf("annotations = %v, want the cluster issuer", ann)
+	}
+	if len(ls) != 3 {
+		t.Fatalf("listeners = %+v, want http plus one per hostname", ls)
+	}
+	if ls[0].name != infra.GatewayHTTPListener || ls[0].protocol != "HTTP" || ls[0].from != "Same" {
+		t.Errorf("first listener = %+v, want plain HTTP for this namespace's routes", ls[0])
+	}
+
+	secrets := map[string]bool{}
+	for i, host := range []string{"a.example.com", "b.example.com"} {
+		l := ls[i+1]
+		if l.name != infra.GatewayListenerName(host) || l.hostname != host || l.protocol != "HTTPS" || l.from != "All" {
+			t.Errorf("listener %d = %+v, want HTTPS for %s open to all namespaces", i+1, l, host)
+		}
+		if l.secret == "" || secrets[l.secret] {
+			t.Errorf("listener %s certificate secret %q is missing or shared", l.name, l.secret)
+		}
+		secrets[l.secret] = true
+	}
+
+	routes := pulumitest.OfType(rs, routeType)
 	if len(routes) != 1 {
 		t.Fatalf("routes = %d, want the HTTPS redirect", len(routes))
 	}
@@ -93,16 +134,48 @@ func TestNew_remoteGatewayTakesListenerSetsAndRedirects(t *testing.T) {
 	}
 }
 
-func TestNew_localGatewayServesPlainHTTP(t *testing.T) {
+func TestCreateGateway_plainHTTP(t *testing.T) {
 	t.Parallel()
 
-	gw, routes := run(t, "local")
-	assertOnlyHTTPListener(t, gw)
+	for name, tc := range map[string]struct {
+		typ    string
+		issuer bool
+	}{
+		"local":                 {"local", false},
+		"remote without issuer": {"remote", false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	if got := pulumitest.Lookup(gw.Inputs, "spec", "allowedListeners"); got != nil {
-		t.Errorf("allowedListeners = %v, want none", got)
+			rs, err := run(t, tc.typ, tc.issuer, "a.example.com")
+			if err != nil {
+				t.Fatalf("CreateGateway: %v", err)
+			}
+
+			ann, ls := listeners(t, rs)
+			if _, ok := ann["cert-manager.io/cluster-issuer"]; ok {
+				t.Errorf("annotations = %v, want no issuer", ann)
+			}
+			want := []listener{{name: infra.GatewayHTTPListener, protocol: "HTTP", from: "All"}}
+			if !slices.Equal(ls, want) {
+				t.Errorf("listeners = %+v, want %+v", ls, want)
+			}
+			if routes := pulumitest.OfType(rs, routeType); len(routes) != 0 {
+				t.Errorf("routes = %d, want no redirect", len(routes))
+			}
+		})
 	}
-	if len(routes) != 0 {
-		t.Errorf("routes = %d, want no redirect", len(routes))
+}
+
+func TestCreateGateway_rejectsMoreListenersThanAGatewayHolds(t *testing.T) {
+	t.Parallel()
+
+	hosts := make([]string, 64)
+	for i := range hosts {
+		hosts[i] = fmt.Sprintf("h%d.example.com", i)
+	}
+
+	if _, err := run(t, "remote", true, hosts...); err == nil {
+		t.Fatal("expected an error for 65 listeners")
 	}
 }

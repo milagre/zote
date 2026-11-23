@@ -25,9 +25,6 @@ func TestValues_gatewaySupportFollowsTheCluster(t *testing.T) {
 	if gw, _ := on["gatewayAPI"].(pulumi.Map); gw["enabled"] != pulumi.Bool(true) {
 		t.Errorf("config.gatewayAPI = %v, want enabled", on["gatewayAPI"])
 	}
-	if gates, _ := on["featureGates"].(pulumi.Map); gates["ListenerSets"] != pulumi.Bool(true) {
-		t.Errorf("config.featureGates = %v, want ListenerSets on", on["featureGates"])
-	}
 
 	for name, c := range map[string]*infra.Cluster{"no gateway": {}, "nil cluster": nil} {
 		if _, ok := values(&Args{Cluster: c})["config"]; ok {

@@ -59,3 +59,23 @@ func TestCluster_SetGateway_nilReceiver(t *testing.T) {
 	var c *Cluster
 	c.SetGateway("public", "infra")
 }
+
+func TestGateway_AddHostnames_keepsFirstOfEach(t *testing.T) {
+	t.Parallel()
+
+	c := &Cluster{}
+	c.SetGateway("gateway", "infra")
+	c.Gateway.AddHostnames("a.example.com", "b.example.com")
+	c.Gateway.AddHostnames("b.example.com", "c.example.com", "a.example.com")
+
+	got := c.Gateway.Hostnames()
+	want := []string{"a.example.com", "b.example.com", "c.example.com"}
+	if len(got) != len(want) {
+		t.Fatalf("Hostnames = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("Hostnames = %v, want %v", got, want)
+		}
+	}
+}

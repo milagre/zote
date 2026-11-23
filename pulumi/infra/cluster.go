@@ -1,6 +1,8 @@
 package infra
 
 import (
+	"slices"
+
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumiverse/pulumi-grafana/sdk/go/grafana"
 )
@@ -45,20 +47,38 @@ type Cluster struct {
 }
 
 // Gateway identifies the cluster's shared entry point for routed traffic.
-// Routes from any namespace can attach to it. It has only a plain HTTP
-// listener; where TLS is terminated, each workload attaches its HTTPS
-// listeners in a ListenerSet of its own.
+// Routes from any namespace can attach to it. Where TLS is terminated, each
+// hostname gets an HTTPS listener of its own, so the listeners come from the
+// hostnames routes register, and the Gateway is created once every route has
+// registered.
 type Gateway struct {
 	Name      string
 	Namespace string
 
 	// Ready holds the resources a route must wait on before it is created.
 	Ready []pulumi.Resource
+
+	hostnames []string
 }
 
 // GatewayListenerName is the name of host's HTTPS listener.
 func GatewayListenerName(host string) string {
 	return host
+}
+
+// AddHostnames records hosts as needing a listener. A host already recorded
+// keeps its place.
+func (g *Gateway) AddHostnames(hosts ...string) {
+	for _, h := range hosts {
+		if !slices.Contains(g.hostnames, h) {
+			g.hostnames = append(g.hostnames, h)
+		}
+	}
+}
+
+// Hostnames returns the recorded hostnames in the order they were first added.
+func (g *Gateway) Hostnames() []string {
+	return slices.Clone(g.hostnames)
 }
 
 func stringPtr(s string) *string {

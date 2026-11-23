@@ -1,6 +1,6 @@
 // Package cert_manager installs cert-manager plus a letsencrypt-http01 ClusterIssuer.
-// With a Gateway on the cluster it also issues certificates for the listeners
-// attached to it, so it installs after the Gateway API CRDs.
+// With a Gateway on the cluster it also issues certificates for the Gateway's
+// listeners, so it installs after the Gateway API CRDs.
 package cert_manager
 
 import (
@@ -103,16 +103,14 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 }
 
 // values enables cert-manager's Gateway support only with a Gateway on the
-// cluster: it fails to start without the Gateway API CRDs. Certificates for
-// ListenerSets sit behind an alpha feature gate.
+// cluster: it fails to start without the Gateway API CRDs.
 func values(args *Args) pulumi.Map {
 	v := map[string]any{
 		"installCRDs": true,
 	}
 	if args.Cluster != nil && args.Cluster.Gateway != nil {
 		v["config"] = map[string]any{
-			"gatewayAPI":   map[string]any{"enabled": true},
-			"featureGates": map[string]any{"ListenerSets": true},
+			"gatewayAPI": map[string]any{"enabled": true},
 		}
 	}
 

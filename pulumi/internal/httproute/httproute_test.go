@@ -12,10 +12,7 @@ import (
 	"github.com/milagre/zote/pulumi/internal/pulumitest"
 )
 
-const (
-	routeType       = "kubernetes:gateway.networking.k8s.io/v1:HTTPRoute"
-	listenerSetType = "kubernetes:gateway.networking.k8s.io/v1:ListenerSet"
-)
+const routeType = "kubernetes:gateway.networking.k8s.io/v1:HTTPRoute"
 
 func newEnv(t *testing.T, typ string) env.Env {
 	t.Helper()
@@ -87,55 +84,27 @@ func setsResponseHeader(route pulumitest.Resource, name string) bool {
 	return false
 }
 
-func TestRegister_tlsServesEachHostnameOnItsOwnListener(t *testing.T) {
+func TestRegister_tlsAttachesToEachHostnamesListener(t *testing.T) {
 	t.Parallel()
 
+	c := gatewayCluster(true)
 	hosts := []string{"my-api.apps.example.com", "api.example.com"}
-	rs := register(t, newEnv(t, "remote"), gatewayCluster(true), hosts...)
-
-	sets := pulumitest.OfType(rs, listenerSetType)
-	if len(sets) != 1 {
-		t.Fatalf("listener sets = %d, want 1", len(sets))
-	}
-	set := sets[0]
-	if pulumitest.Lookup(set.Inputs, "spec", "parentRef", "name") != "gateway" ||
-		pulumitest.Lookup(set.Inputs, "spec", "parentRef", "namespace") != "infra" {
-		t.Errorf("parentRef = %v, want the cluster's Gateway", pulumitest.Lookup(set.Inputs, "spec", "parentRef"))
-	}
-	if pulumitest.Lookup(set.Inputs, "metadata", "annotations", "cert-manager.io/cluster-issuer") != "letsencrypt-http01" {
-		t.Errorf("annotations = %v, want the cluster issuer", pulumitest.Lookup(set.Inputs, "metadata", "annotations"))
-	}
-
-	setName, _ := pulumitest.Lookup(set.Inputs, "metadata", "name").(string)
-	listeners, _ := pulumitest.Lookup(set.Inputs, "spec", "listeners").([]any)
-	if len(listeners) != len(hosts) {
-		t.Fatalf("listeners = %v, want one per hostname", listeners)
-	}
-	secrets := map[any]bool{}
-	for i, host := range hosts {
-		l := listeners[i]
-		if pulumitest.Lookup(l, "name") != infra.GatewayListenerName(host) || pulumitest.Lookup(l, "hostname") != host ||
-			pulumitest.Lookup(l, "protocol") != "HTTPS" {
-			t.Errorf("listener %d = %v, want HTTPS for %s", i, l, host)
-		}
-		refs, _ := pulumitest.Lookup(l, "tls", "certificateRefs").([]any)
-		if len(refs) != 1 || secrets[pulumitest.Lookup(refs[0], "name")] {
-			t.Errorf("listener %s certificateRefs = %v, want a secret of its own", host, refs)
-		} else {
-			secrets[pulumitest.Lookup(refs[0], "name")] = true
-		}
-	}
+	rs := register(t, newEnv(t, "remote"), c, hosts...)
 
 	routes := pulumitest.OfType(rs, routeType)
 	if len(routes) != 1 {
 		t.Fatalf("routes = %d, want 1", len(routes))
 	}
+
 	want := [][3]string{
-		{"ListenerSet", setName, infra.GatewayListenerName(hosts[0])},
-		{"ListenerSet", setName, infra.GatewayListenerName(hosts[1])},
+		{"Gateway", "gateway", infra.GatewayListenerName(hosts[0])},
+		{"Gateway", "gateway", infra.GatewayListenerName(hosts[1])},
 	}
 	if got := parents(routes[0]); !slices.Equal(got, want) {
 		t.Errorf("parentRefs = %v, want %v", got, want)
+	}
+	if got := c.Gateway.Hostnames(); !slices.Equal(got, hosts) {
+		t.Errorf("Gateway hostnames = %v, want %v", got, hosts)
 	}
 	if !setsResponseHeader(routes[0], "Strict-Transport-Security") {
 		t.Error("TLS route sets no Strict-Transport-Security header")
@@ -146,9 +115,6 @@ func TestRegister_localAttachesToHTTPListener(t *testing.T) {
 	t.Parallel()
 
 	rs := register(t, newEnv(t, "local"), gatewayCluster(false), "my-api.apps.example.com")
-	if sets := pulumitest.OfType(rs, listenerSetType); len(sets) != 0 {
-		t.Errorf("listener sets = %d, want none", len(sets))
-	}
 
 	routes := pulumitest.OfType(rs, routeType)
 	if len(routes) != 1 {

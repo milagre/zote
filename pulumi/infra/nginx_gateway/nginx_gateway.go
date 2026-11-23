@@ -1,8 +1,9 @@
 // Package nginx_gateway installs NGINX Gateway Fabric, the Gateway API CRDs it
 // implements, and the shared Gateway routes attach to. Local environments
 // expose the data plane on a NodePort and serve plain HTTP; elsewhere it sits
-// behind a LoadBalancer, and workloads bring their HTTPS listeners in
-// ListenerSets. Sizing via [profile.Profile] only.
+// behind a LoadBalancer and terminates TLS for each hostname with a
+// certificate from the cluster's ClusterIssuer. Sizing via [profile.Profile]
+// only.
 //
 // Helm installs the chart's own CRDs on first install only: a chart upgrade
 // that changes them needs them applied by hand.
@@ -37,6 +38,9 @@ const (
 	// dataPlaneMetricsPort is where each data plane pod's agent serves
 	// Prometheus metrics.
 	dataPlaneMetricsPort = "9113"
+
+	// maxListeners is the Gateway API's limit for one Gateway.
+	maxListeners = 64
 )
 
 var spec = helm.ChartSpec{
@@ -54,7 +58,8 @@ type Args struct {
 
 	Config Config
 
-	// Cluster receives the Gateway.
+	// Cluster receives the Gateway, and supplies the ClusterIssuer when the
+	// Gateway is created.
 	Cluster *infra.Cluster
 }
 
@@ -63,6 +68,9 @@ type NginxGateway struct {
 
 	// CRDs installs the Gateway API CRDs; nil with Config.ExternalCRDs.
 	CRDs pulumi.Resource
+
+	env     env.Env
+	cluster *infra.Cluster
 }
 
 func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOption) (*NginxGateway, error) {
@@ -85,7 +93,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		gatewayName = DefaultGatewayName
 	}
 
-	comp := &NginxGateway{}
+	comp := &NginxGateway{env: args.Env, cluster: args.Cluster}
 	if err := helm.RegisterChartComponent(ctx, args.Namespace, name, spec, &comp.ChartComponent, opts...); err != nil {
 		return nil, err
 	}
@@ -112,53 +120,81 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 
 	args.Cluster.SetGateway(gatewayName, args.Namespace, ready...)
 
-	if err := registerGateway(ctx, args, comp, args.Cluster.Gateway); err != nil {
-		return nil, err
-	}
-
 	return comp, nil
 }
 
-// registerGateway creates the shared Gateway. Its one listener is plain HTTP,
-// open to every namespace, since ACME HTTP-01 solvers put their routes in each
-// certificate's own namespace. Outside local environments it only redirects to
-// HTTPS, and HTTPS listeners arrive in ListenerSets from any namespace.
-func registerGateway(ctx *pulumi.Context, args *Args, comp *NginxGateway, gw *infra.Gateway) error {
-	tls := !args.Env.IsLocal()
+// CreateGateway creates the shared Gateway with a listener for every hostname
+// routes have registered, so it must run after the last route is created.
+// Where TLS is terminated, plain HTTP only redirects to HTTPS, and it accepts
+// routes from the Gateway's own namespace, where ACME HTTP-01 solvers put
+// theirs.
+func (g *NginxGateway) CreateGateway(ctx *pulumi.Context) error {
+	gw := g.cluster.Gateway
+	tls := !g.env.IsLocal() && g.cluster.ClusterIssuerName != nil
 
-	spec := pulumi.Map{
-		"gatewayClassName": pulumi.String(DefaultGatewayClass),
-		"listeners": pulumi.Array{
-			pulumi.Map{
-				"name":     pulumi.String(infra.GatewayHTTPListener),
-				"port":     pulumi.Int(80),
-				"protocol": pulumi.String("HTTP"),
-				"allowedRoutes": pulumi.Map{
-					"namespaces": pulumi.Map{"from": pulumi.String("All")},
-				},
-			},
+	httpFrom := "All"
+	if tls {
+		httpFrom = "Same"
+	}
+
+	listeners := pulumi.Array{
+		pulumi.Map{
+			"name":          pulumi.String(infra.GatewayHTTPListener),
+			"port":          pulumi.Int(80),
+			"protocol":      pulumi.String("HTTP"),
+			"allowedRoutes": allowedRoutes(httpFrom),
 		},
 	}
-	if tls {
-		spec["allowedListeners"] = pulumi.Map{
-			"namespaces": pulumi.Map{"from": pulumi.String("All")},
-		}
+
+	ann := pulumi.StringMap{
+		annotations.WaitForKey: pulumi.String(annotations.WaitForValueImmediate),
 	}
 
-	deps := append([]pulumi.Resource{comp.Release}, gw.Ready...)
+	if tls {
+		hosts := gw.Hostnames()
+		if len(hosts)+1 > maxListeners {
+			return fmt.Errorf("nginx_gateway: %d hostnames need %d listeners, more than the %d a Gateway holds", len(hosts), len(hosts)+1, maxListeners)
+		}
+
+		for _, h := range hosts {
+			listeners = append(listeners, pulumi.Map{
+				"name":     pulumi.String(infra.GatewayListenerName(h)),
+				"hostname": pulumi.String(h),
+				"port":     pulumi.Int(443),
+				"protocol": pulumi.String("HTTPS"),
+				"tls": pulumi.Map{
+					"mode": pulumi.String("Terminate"),
+					"certificateRefs": pulumi.Array{
+						pulumi.Map{
+							"kind": pulumi.String("Secret"),
+							"name": pulumi.String(h + "-tls"),
+						},
+					},
+				},
+				"allowedRoutes": allowedRoutes("All"),
+			})
+		}
+
+		ann["cert-manager.io/cluster-issuer"] = pulumi.String(*g.cluster.ClusterIssuerName)
+	}
+
+	deps := append([]pulumi.Resource{g.Release}, gw.Ready...)
 
 	gateway, err := apiextensions.NewCustomResource(ctx, tokens.Qualify(gw.Namespace, gw.Name), &apiextensions.CustomResourceArgs{
 		ApiVersion: pulumi.String("gateway.networking.k8s.io/v1"),
 		Kind:       pulumi.String("Gateway"),
 		Metadata: &metav1.ObjectMetaArgs{
-			Name:      pulumi.String(gw.Name),
-			Namespace: pulumi.String(gw.Namespace),
-			Annotations: pulumi.StringMap{
-				annotations.WaitForKey: pulumi.String(annotations.WaitForValueImmediate),
+			Name:        pulumi.String(gw.Name),
+			Namespace:   pulumi.String(gw.Namespace),
+			Annotations: ann,
+		},
+		OtherFields: map[string]any{
+			"spec": pulumi.Map{
+				"gatewayClassName": pulumi.String(DefaultGatewayClass),
+				"listeners":        listeners,
 			},
 		},
-		OtherFields: map[string]any{"spec": spec},
-	}, pulumi.Parent(comp), pulumi.DependsOn(deps))
+	}, pulumi.Parent(g), pulumi.DependsOn(deps))
 	if err != nil {
 		return fmt.Errorf("nginx_gateway: gateway: %w", err)
 	}
@@ -167,12 +203,18 @@ func registerGateway(ctx *pulumi.Context, args *Args, comp *NginxGateway, gw *in
 		return nil
 	}
 
-	err = registerHTTPSRedirect(ctx, gw, comp, gateway)
+	err = registerHTTPSRedirect(ctx, gw, g, gateway)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func allowedRoutes(from string) pulumi.Map {
+	return pulumi.Map{
+		"namespaces": pulumi.Map{"from": pulumi.String(from)},
+	}
 }
 
 // registerHTTPSRedirect sends every plain HTTP request to HTTPS. An ACME
