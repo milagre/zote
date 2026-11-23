@@ -1,4 +1,4 @@
-// Package http is an HTTP Deployment, Service, and nginx ingress (private + optional public); hostnames from Args.Internal.
+// Package http is an HTTP Deployment and Service, published through nginx ingresses (private, public, and locally the tunnel) and the shared Gateway; hostnames from Args.Internal.
 package http
 
 import (
@@ -11,6 +11,7 @@ import (
 
 	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/infra"
+	"github.com/milagre/zote/pulumi/internal/httproute"
 	"github.com/milagre/zote/pulumi/k8s/deployment/internal/body"
 	"github.com/milagre/zote/pulumi/k8s/deployment/internal/scaledobject"
 	"github.com/milagre/zote/pulumi/k8s/internal/podspec"
@@ -138,6 +139,18 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			if err := registerPublicIngress(ctx, resourceName, args, svc, comp, class); err != nil {
 				return nil, err
 			}
+		}
+
+		if _, err := httproute.Register(ctx, resourceName, httproute.Args{
+			Env:       args.Env,
+			Namespace: args.Namespace,
+			Name:      args.Name,
+			Hostnames: publicHosts(args),
+			Service:   svc.Metadata.Name().Elem(),
+			Port:      80,
+			Cluster:   args.Cluster,
+		}, pulumi.Parent(comp)); err != nil {
+			return nil, fmt.Errorf("%s: %w", typeToken, err)
 		}
 	}
 
@@ -314,7 +327,7 @@ func registerPublicIngress(
 	parent pulumi.Resource,
 	ingressClass pulumi.StringPtrInput,
 ) error {
-	hosts := append(append([]string{}, args.Internal.PublicHostnames...), args.Internal.VeneerHostnames...)
+	hosts := publicHosts(args)
 
 	rules := make(networkingv1.IngressRuleArray, 0, len(hosts))
 	for _, h := range hosts {
@@ -404,6 +417,12 @@ func registerTunnelIngress(
 	}
 
 	return nil
+}
+
+// publicHosts is every hostname the workload serves publicly: its own, then
+// its veneers.
+func publicHosts(args *Args) []string {
+	return append(append([]string{}, args.Internal.PublicHostnames...), args.Internal.VeneerHostnames...)
 }
 
 // hostRule is the common Ingress rule shape: a single host, a prefix

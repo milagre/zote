@@ -1,4 +1,6 @@
 // Package cert_manager installs cert-manager plus a letsencrypt-http01 ClusterIssuer.
+// With a Gateway on the cluster it also issues certificates for the listeners
+// attached to it, so it installs after the Gateway API CRDs.
 package cert_manager
 
 import (
@@ -19,7 +21,7 @@ var spec = helm.ChartSpec{
 	TypeToken:      tokens.Token("infra", "CertManager"),
 	Chart:          "cert-manager",
 	Repository:     "https://charts.jetstack.io",
-	DefaultVersion: "1.21.1",
+	DefaultVersion: "1.21.3",
 }
 
 type Args struct {
@@ -53,13 +55,17 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		return nil, fmt.Errorf("cert_manager: config: %w", err)
 	}
 
+	var deps []pulumi.Resource
+	if args.Cluster != nil && args.Cluster.Gateway != nil {
+		deps = args.Cluster.Gateway.Ready
+	}
+
 	comp := &CertManager{}
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
 		Version:   helm.OptionalChartVersion(args.Config.Version),
-		Values: helm.Values(map[string]any{
-			"installCRDs": true,
-		}),
+		Values:    values(args),
+		DependsOn: deps,
 	}, &comp.ChartComponent, opts...); err != nil {
 		return nil, err
 	}
@@ -78,7 +84,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 					"privateKeySecretRef": pulumi.Map{
 						"name": pulumi.String(ClusterIssuerName),
 					},
-					"solvers": http01IngressSolvers(args.IngressClasses),
+					"solvers": http01Solvers(args),
 				},
 			},
 		},
@@ -96,13 +102,51 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
-func http01IngressSolvers(classes []string) pulumi.Array {
-	out := make(pulumi.Array, 0, len(classes))
-	for _, c := range classes {
+// values enables cert-manager's Gateway support only with a Gateway on the
+// cluster: it fails to start without the Gateway API CRDs. Certificates for
+// ListenerSets sit behind an alpha feature gate.
+func values(args *Args) pulumi.Map {
+	v := map[string]any{
+		"installCRDs": true,
+	}
+	if args.Cluster != nil && args.Cluster.Gateway != nil {
+		v["config"] = map[string]any{
+			"gatewayAPI":   map[string]any{"enabled": true},
+			"featureGates": map[string]any{"ListenerSets": true},
+		}
+	}
+
+	return helm.Values(v)
+}
+
+// http01Solvers lists the ingress classes, then the cluster's Gateway:
+// cert-manager answers through the first, so the Gateway's is used only once
+// there are no ingress classes.
+func http01Solvers(args *Args) pulumi.Array {
+	out := make(pulumi.Array, 0, len(args.IngressClasses)+1)
+	for _, c := range args.IngressClasses {
 		out = append(out, pulumi.Map{
 			"http01": pulumi.Map{
 				"ingress": pulumi.Map{
 					"class": pulumi.String(c),
+				},
+			},
+		})
+	}
+
+	if args.Cluster != nil && args.Cluster.Gateway != nil {
+		gw := args.Cluster.Gateway
+		out = append(out, pulumi.Map{
+			"http01": pulumi.Map{
+				"gatewayHTTPRoute": pulumi.Map{
+					"parentRefs": pulumi.Array{
+						pulumi.Map{
+							"name":        pulumi.String(gw.Name),
+							"namespace":   pulumi.String(gw.Namespace),
+							"kind":        pulumi.String("Gateway"),
+							"sectionName": pulumi.String(infra.GatewayHTTPListener),
+						},
+					},
 				},
 			},
 		})

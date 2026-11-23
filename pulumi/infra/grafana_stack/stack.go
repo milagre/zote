@@ -176,14 +176,17 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 }
 
 // newGrafanaProvider configures the Pulumiverse Grafana provider against [Grafana.API].
-// It depends on the Helm release and the Grafana Ingresses so that resources using
-// this provider (dashboards) are sequenced after the API is routable.
+// It depends on the Helm release and whatever routes to Grafana so that resources
+// using this provider (dashboards) are sequenced after the API is routable.
 func newGrafanaProvider(ctx *pulumi.Context, name string, g *grafana.Grafana, parent pulumi.Resource) (*grafanapulumi.Provider, error) {
 	auth := pulumi.All(g.Admin.Username, g.Admin.Password).ApplyT(func(vals []any) (string, error) {
 		return fmt.Sprintf("%s:%s", vals[0].(string), vals[1].(string)), nil
 	}).(pulumi.StringOutput)
 
 	deps := append([]pulumi.Resource{g.Helm.Release}, g.Ingresses...)
+	if g.Route != nil {
+		deps = append(deps, g.Route)
+	}
 
 	return grafanapulumi.NewProvider(ctx, name+"-provider", &grafanapulumi.ProviderArgs{
 		Url:  pulumi.String(g.API.String()),

@@ -45,7 +45,7 @@ func newRepo(t *testing.T, chartURL, digest string) *repo {
 				u = "https://" + req.Host + u
 			}
 			fmt.Fprintf(w, "apiVersion: v1\nentries:\n  my-chart:\n  - version: 1.2.3\n    digest: %s\n    urls:\n    - %s\n  - version: 1.0.0\n    urls:\n    - old.tgz\n", digest, u)
-		case "/charts/my-chart-1.2.3.tgz", "/releases/my-chart-1.2.3.tgz":
+		case "/charts/my-chart-1.2.3.tgz", "/releases/my-chart-1.2.3.tgz", "/files/v1/manifest.yaml":
 			fmt.Fprint(w, archive)
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -224,5 +224,88 @@ func TestChartCache_Fetch_rangeRechecksIndex(t *testing.T) {
 	}
 	if n := r.requests.Load() - before; n != 1 {
 		t.Errorf("requests = %d, want 1 (index only)", n)
+	}
+}
+
+func TestChartCache_FetchFile_downloadsUnderRoot(t *testing.T) {
+	t.Parallel()
+
+	r := newRepo(t, "", "")
+	root := t.TempDir()
+
+	path, err := newCache(r).FetchFile(context.Background(), root, r.srv.URL+"/files/v1/manifest.yaml", archiveDigest())
+	if err != nil {
+		t.Fatalf("FetchFile: %v", err)
+	}
+	if !strings.HasPrefix(path, filepath.Join(root, helm.CacheDir)+string(filepath.Separator)) {
+		t.Errorf("path %q not under cache dir", path)
+	}
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("reading cached file: %v", err)
+	}
+	if string(got) != archive {
+		t.Errorf("cached file = %q", got)
+	}
+}
+
+func TestChartCache_FetchFile_hitMakesNoRequests(t *testing.T) {
+	t.Parallel()
+
+	r := newRepo(t, "", "")
+	root := t.TempDir()
+	fileURL := r.srv.URL + "/files/v1/manifest.yaml"
+
+	first, err := newCache(r).FetchFile(context.Background(), root, fileURL, archiveDigest())
+	if err != nil {
+		t.Fatalf("first FetchFile: %v", err)
+	}
+	before := r.requests.Load()
+
+	second, err := newCache(r).FetchFile(context.Background(), root, fileURL, archiveDigest())
+	if err != nil {
+		t.Fatalf("second FetchFile: %v", err)
+	}
+	if second != first {
+		t.Errorf("second path %q != first %q", second, first)
+	}
+	if n := r.requests.Load() - before; n != 0 {
+		t.Errorf("cache hit made %d requests", n)
+	}
+}
+
+func TestChartCache_FetchFile_rejectsDigestMismatch(t *testing.T) {
+	t.Parallel()
+
+	r := newRepo(t, "", "")
+	root := t.TempDir()
+
+	if _, err := newCache(r).FetchFile(context.Background(), root, r.srv.URL+"/files/v1/manifest.yaml", strings.Repeat("0", 64)); err == nil {
+		t.Fatal("expected error")
+	}
+
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			t.Errorf("left file behind: %s", path)
+		}
+
+		return err
+	})
+	if err != nil {
+		t.Fatalf("walking root: %v", err)
+	}
+}
+
+func TestChartCache_FetchFile_requiresDigest(t *testing.T) {
+	t.Parallel()
+
+	r := newRepo(t, "", "")
+
+	if _, err := newCache(r).FetchFile(context.Background(), t.TempDir(), r.srv.URL+"/files/v1/manifest.yaml", ""); err == nil {
+		t.Fatal("expected error")
+	}
+	if n := r.requests.Load(); n != 0 {
+		t.Errorf("requests = %d, want 0", n)
 	}
 }

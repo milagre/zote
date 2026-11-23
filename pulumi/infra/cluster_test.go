@@ -52,3 +52,10 @@ func TestCluster_setters(t *testing.T) {
 		t.Fatal("HasKeda not set")
 	}
 }
+
+func TestCluster_SetGateway_nilReceiver(t *testing.T) {
+	t.Parallel()
+
+	var c *Cluster
+	c.SetGateway("public", "infra")
+}

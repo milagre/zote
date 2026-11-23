@@ -1,8 +1,12 @@
 package infra
 
 import (
+	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumiverse/pulumi-grafana/sdk/go/grafana"
 )
+
+// GatewayHTTPListener names the shared Gateway's plain HTTP listener.
+const GatewayHTTPListener = "http"
 
 // Cluster holds deployed cluster-scoped capabilities for autodiscovery by other
 // components (ingress classes, KEDA, Grafana provider, …). It must not import
@@ -35,6 +39,26 @@ type Cluster struct {
 
 	// ClusterIssuerName is the cert-manager ClusterIssuer for TLS Ingresses.
 	ClusterIssuerName *string
+
+	// Gateway is the cluster's shared entry point for routed traffic.
+	Gateway *Gateway
+}
+
+// Gateway identifies the cluster's shared entry point for routed traffic.
+// Routes from any namespace can attach to it. It has only a plain HTTP
+// listener; where TLS is terminated, each workload attaches its HTTPS
+// listeners in a ListenerSet of its own.
+type Gateway struct {
+	Name      string
+	Namespace string
+
+	// Ready holds the resources a route must wait on before it is created.
+	Ready []pulumi.Resource
+}
+
+// GatewayListenerName is the name of host's HTTPS listener.
+func GatewayListenerName(host string) string {
+	return host
 }
 
 func stringPtr(s string) *string {
@@ -85,6 +109,20 @@ func (c *Cluster) SetClusterIssuer(name string) {
 	}
 
 	c.ClusterIssuerName = stringPtr(name)
+}
+
+// SetGateway records the shared Gateway; routes created before ready finishes
+// fail, so they wait on it.
+func (c *Cluster) SetGateway(name, namespace string, ready ...pulumi.Resource) {
+	if c == nil {
+		return
+	}
+
+	c.Gateway = &Gateway{
+		Name:      name,
+		Namespace: namespace,
+		Ready:     ready,
+	}
 }
 
 // SetGrafana records the Pulumi Grafana provider for the deployed dashboard.

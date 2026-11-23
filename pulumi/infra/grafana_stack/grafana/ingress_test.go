@@ -7,24 +7,6 @@ import (
 	"github.com/milagre/zote/pulumi/infra"
 )
 
-func TestIngressHosts(t *testing.T) {
-	t.Parallel()
-
-	got := ingressHosts("grafana", "infra", []string{"example.test", "example.com"})
-	want := []string{
-		"grafana.infra.example.test",
-		"grafana.infra.example.com",
-	}
-	if len(got) != len(want) {
-		t.Fatalf("len = %d, want %d", len(got), len(want))
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("got[%d] = %q, want %q", i, got[i], want[i])
-		}
-	}
-}
-
 func TestPublicURL(t *testing.T) {
 	t.Parallel()
 

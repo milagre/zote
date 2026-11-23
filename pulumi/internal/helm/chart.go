@@ -22,6 +22,9 @@ type ChartArgs struct {
 	Namespace string
 	Version   *string // nil → ChartSpec.DefaultVersion
 	Values    pulumi.Map
+
+	// DependsOn are resources the Release waits on.
+	DependsOn []pulumi.Resource
 }
 
 // OptionalChartVersion yields nil when version is whitespace-only so RegisterChart picks [ChartSpec.DefaultVersion].
@@ -127,7 +130,7 @@ func InstallChart(
 		Version:   pulumi.String(version).ToStringPtrOutput(),
 		Values:    args.Values,
 		SkipAwait: pulumi.Bool(true),
-	}, pulumi.Parent(comp))
+	}, pulumi.Parent(comp), pulumi.DependsOn(args.DependsOn))
 	if err != nil {
 		return fmt.Errorf("creating %s release %q: %w", spec.TypeToken, spec.Chart, err)
 	}

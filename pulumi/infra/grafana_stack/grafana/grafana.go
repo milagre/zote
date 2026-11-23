@@ -69,6 +69,11 @@ type Grafana struct {
 	// that reach Grafana through [API] (e.g. the Pulumi Grafana provider) should
 	// DependsOn these so work is sequenced after the API becomes routable.
 	Ingresses []pulumi.Resource
+
+	// Route is the Gateway route serving Grafana's public hostnames, nil when
+	// there is none. Callers reaching Grafana through [API] should DependsOn it
+	// too.
+	Route pulumi.Resource
 }
 
 type Credentials struct {
@@ -219,9 +224,15 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		return nil, fmt.Errorf("grafana: ingress: %w", err)
 	}
 
+	route, err := registerRoute(ctx, name, args, comp, comp)
+	if err != nil {
+		return nil, fmt.Errorf("grafana: %w", err)
+	}
+
 	comp.UI = endpoint
 	comp.API = endpoint
 	comp.Ingresses = ingresses
+	comp.Route = route
 
 	return comp, nil
 }

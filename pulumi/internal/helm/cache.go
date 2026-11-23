@@ -43,20 +43,30 @@ func LocalChart(ctx *pulumi.Context, repository, chart, version string) (pulumi.
 		return nil, fmt.Errorf("caching chart %q: %w", chart, err)
 	}
 
-	// Relative because the path lands in Release state, where an absolute one
-	// differs between machines and diffs on every deploy. Pulumi starts the
-	// provider in the program's working directory, so it resolves the same way.
-	wd, err := os.Getwd()
+	rel, err := workdirRelative(abs)
 	if err != nil {
 		return nil, fmt.Errorf("caching chart %q: %w", chart, err)
 	}
 
-	rel, err := filepath.Rel(wd, abs)
+	return pulumi.String(rel), nil
+}
+
+// LocalFile returns the path of the file at fileURL, downloading it into
+// [CacheDir] under the project root first. digest is the file's sha256 in
+// hex, which a download must match. fileURL must name content that never
+// changes, since a cached file is never refetched.
+func LocalFile(ctx *pulumi.Context, fileURL, digest string) (string, error) {
+	abs, err := defaultCache.FetchFile(ctx.Context(), ctx.RootDirectory(), fileURL, digest)
 	if err != nil {
-		return nil, fmt.Errorf("caching chart %q: %w", chart, err)
+		return "", fmt.Errorf("caching %s: %w", fileURL, err)
 	}
 
-	return pulumi.String(dotRelative(rel)), nil
+	rel, err := workdirRelative(abs)
+	if err != nil {
+		return "", fmt.Errorf("caching %s: %w", fileURL, err)
+	}
+
+	return rel, nil
 }
 
 // ChartCache keeps chart archives on disk so a helm/v3 Release renders from a
@@ -155,6 +165,45 @@ func (c *ChartCache) Fetch(ctx context.Context, root, repository, chart, version
 	err = writeAtomic(dest, body)
 	if err != nil {
 		return "", fmt.Errorf("caching %s %s: %w", chart, version, err)
+	}
+
+	return dest, nil
+}
+
+// FetchFile returns the path of the file at fileURL under root/[CacheDir],
+// downloading it if absent. digest is the file's sha256 in hex.
+func (c *ChartCache) FetchFile(ctx context.Context, root, fileURL, digest string) (string, error) {
+	if digest == "" {
+		return "", fmt.Errorf("digest is required")
+	}
+
+	u, err := url.Parse(fileURL)
+	if err != nil {
+		return "", fmt.Errorf("parsing url %q: %w", fileURL, err)
+	}
+
+	dest := filepath.Join(root, CacheDir, u.Host, filepath.FromSlash(path.Clean("/"+u.Path)))
+	hit, err := exists(dest)
+	if err != nil {
+		return "", err
+	}
+	if hit {
+		return dest, nil
+	}
+
+	body, err := c.get(ctx, fileURL)
+	if err != nil {
+		return "", fmt.Errorf("downloading %s: %w", fileURL, err)
+	}
+
+	sum := sha256.Sum256(body)
+	if got := hex.EncodeToString(sum[:]); !strings.EqualFold(got, digest) {
+		return "", fmt.Errorf("%s: digest %s does not match %s", fileURL, got, digest)
+	}
+
+	err = writeAtomic(dest, body)
+	if err != nil {
+		return "", fmt.Errorf("caching %s: %w", fileURL, err)
 	}
 
 	return dest, nil
@@ -342,6 +391,24 @@ func writeAtomic(dest string, body []byte) error {
 	}
 
 	return nil
+}
+
+// workdirRelative is relative because the path lands in resource state, where
+// an absolute one differs between machines and diffs on every deploy. Pulumi
+// starts the provider in the program's working directory, so it resolves the
+// same way.
+func workdirRelative(abs string) (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("getting working directory: %w", err)
+	}
+
+	rel, err := filepath.Rel(wd, abs)
+	if err != nil {
+		return "", fmt.Errorf("relativizing %s: %w", abs, err)
+	}
+
+	return dotRelative(rel), nil
 }
 
 // dotRelative prefixes "./" so the provider reads p as a path; a bare

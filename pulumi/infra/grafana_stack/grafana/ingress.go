@@ -24,7 +24,7 @@ func registerIngresses(ctx *pulumi.Context, name string, args *Args, g *Grafana,
 		return inCluster, nil, nil
 	}
 
-	hosts := ingressHosts(name, args.Namespace, args.PublicDomains)
+	hosts := publicHosts(name, args.Namespace, args.PublicDomains)
 	var ingresses []pulumi.Resource
 
 	if class := pulumi.StringPtrFromPtr(publicIngressClassName(args.Cluster)); class != nil {
@@ -103,7 +103,7 @@ func registerPublicIngress(
 			Annotations: ann,
 		},
 		Spec: spec,
-	}, pulumi.Parent(parent), pulumi.DependsOn(ingressDeps(args, g)))
+	}, pulumi.Parent(parent), pulumi.DependsOn(publicDeps(args, g)))
 	if err != nil {
 		return nil, fmt.Errorf("public ingress: %w", err)
 	}
@@ -135,30 +135,12 @@ func registerTunnelIngress(
 			IngressClassName: ingressClass,
 			Rules:            hostRules(name, hosts),
 		},
-	}, pulumi.Parent(parent), pulumi.DependsOn(ingressDeps(args, g)))
+	}, pulumi.Parent(parent), pulumi.DependsOn(publicDeps(args, g)))
 	if err != nil {
 		return nil, fmt.Errorf("tunnel ingress: %w", err)
 	}
 
 	return ing, nil
-}
-
-func ingressDeps(args *Args, g *Grafana) []pulumi.Resource {
-	deps := append([]pulumi.Resource{}, args.IngressDeps...)
-	deps = append(deps, g.Helm.Release)
-
-	return deps
-}
-
-// ingressHosts returns the fully qualified public hostnames (<name>.<namespace>.<domain>)
-// Grafana is served at, one per public domain. The first is the primary.
-func ingressHosts(name, namespace string, publicDomains []string) []string {
-	out := make([]string, 0, len(publicDomains))
-	for _, d := range publicDomains {
-		out = append(out, fmt.Sprintf("%s.%s.%s", name, namespace, d))
-	}
-
-	return out
 }
 
 // publicURL is the external HTTPS endpoint for host; ingress and tunnel both terminate TLS.
