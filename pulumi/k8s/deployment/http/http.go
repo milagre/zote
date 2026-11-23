@@ -1,4 +1,4 @@
-// Package http is an HTTP Deployment and Service, published through nginx ingresses (private, public, and locally the tunnel) and the shared Gateway; hostnames from Args.Internal.
+// Package http is an HTTP Deployment and Service, published through the shared Gateway and, locally, the Cloudflare tunnel; hostnames from Args.Internal.
 package http
 
 import (
@@ -35,7 +35,6 @@ type Options struct {
 
 type Internal struct {
 	PublicHostnames []string
-	PrivateHostname string
 	VeneerHostnames []string
 }
 
@@ -61,7 +60,8 @@ type Args struct {
 	// scale to zero: body enforces Profile.Num.Min >= 1.
 	Autoscale *scaledobject.Spec
 
-	// Cluster supplies registered ingress classes and the TLS issuer for autodiscovery.
+	// Cluster supplies the Gateway, the tunnel ingress class and the TLS issuer
+	// for autodiscovery.
 	Cluster *infra.Cluster
 }
 
@@ -127,20 +127,8 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		return nil, err
 	}
 
-	if class := privateIngressClass(args.Cluster); class != nil {
-		if err := registerPrivateIngress(ctx, resourceName, args, svc, comp, class); err != nil {
-			return nil, err
-		}
-	}
-
 	hasPublicHosts := len(args.Internal.PublicHostnames) > 0 || len(args.Internal.VeneerHostnames) > 0
 	if hasPublicHosts {
-		if class := pulumi.StringPtrFromPtr(publicIngressClassName(args.Cluster)); class != nil {
-			if err := registerPublicIngress(ctx, resourceName, args, svc, comp, class); err != nil {
-				return nil, err
-			}
-		}
-
 		if _, err := httproute.Register(ctx, resourceName, httproute.Args{
 			Env:       args.Env,
 			Namespace: args.Namespace,
@@ -169,46 +157,12 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	return comp, nil
 }
 
-func publicIngressClassName(cluster *infra.Cluster) *string {
-	if cluster == nil {
-		return nil
-	}
-
-	return cluster.PublicIngressClassName
-}
-
 func tunnelIngressClassName(cluster *infra.Cluster) *string {
 	if cluster == nil {
 		return nil
 	}
 
 	return cluster.TunnelIngressClassName
-}
-
-func clusterIssuerName(cluster *infra.Cluster) *string {
-	if cluster == nil {
-		return nil
-	}
-
-	return cluster.ClusterIssuerName
-}
-
-func privateIngressClassName(cluster *infra.Cluster) *string {
-	if cluster == nil {
-		return nil
-	}
-
-	if cluster.PrivateIngressClassName != nil {
-		return cluster.PrivateIngressClassName
-	}
-
-	return cluster.PublicIngressClassName
-}
-
-// privateIngressClass prefers PrivateIngressClassName; until a private controller
-// exists, nginx private hostnames use the public class when that is registered.
-func privateIngressClass(cluster *infra.Cluster) pulumi.StringPtrInput {
-	return pulumi.StringPtrFromPtr(privateIngressClassName(cluster))
 }
 
 func (a *Args) validate() error {
@@ -229,9 +183,6 @@ func (a *Args) validate() error {
 	}
 	if a.Setup.Health == "" {
 		return fmt.Errorf("Setup.Health is required")
-	}
-	if a.Internal.PrivateHostname == "" {
-		return fmt.Errorf("Internal.PrivateHostname is required")
 	}
 	if err := a.Env.Validate(); err != nil {
 		return err
@@ -274,109 +225,6 @@ func registerService(ctx *pulumi.Context, name string, args *Args, parent pulumi
 	}
 
 	return svc, nil
-}
-
-// registerPrivateIngress publishes the workload at its private hostname
-// through the in-cluster nginx ingress controller. The `nginx.class`
-// annotation is kept alongside the typed IngressClassName so older nginx
-// controllers that only read the annotation still route traffic.
-func registerPrivateIngress(
-	ctx *pulumi.Context,
-	name string,
-	args *Args,
-	svc *corev1.Service,
-	parent pulumi.Resource,
-	ingressClass pulumi.StringPtrInput,
-) error {
-	className := privateIngressClassName(args.Cluster)
-
-	_, err := networkingv1.NewIngress(ctx, name+"-nginx-private", &networkingv1.IngressArgs{
-		Metadata: &metav1.ObjectMetaArgs{
-			Name:      pulumi.String(args.Name + "-nginx-private"),
-			Namespace: pulumi.String(args.Namespace),
-			Annotations: pulumi.StringMap{
-				annotations.WaitForKey:        pulumi.String(annotations.WaitForValueImmediate),
-				"kubernetes.io/ingress.class": pulumi.String(*className),
-			},
-		},
-		Spec: &networkingv1.IngressSpecArgs{
-			IngressClassName: ingressClass,
-			Rules: networkingv1.IngressRuleArray{
-				hostRule(args.Internal.PrivateHostname, svc),
-			},
-		},
-	}, pulumi.Parent(parent))
-	if err != nil {
-		return fmt.Errorf("private ingress: %w", err)
-	}
-
-	return nil
-}
-
-// registerPublicIngress serves the workload's public hostnames (plus
-// any internal-aliased veneer hostnames) through the public nginx
-// ingress. When the environment is not local, a TLS block is added so
-// cert-manager issues per-ingress certificates covering exactly those
-// hosts; locally, TLS is left off so plain HTTP suffices for developer
-// traffic.
-func registerPublicIngress(
-	ctx *pulumi.Context,
-	name string,
-	args *Args,
-	svc *corev1.Service,
-	parent pulumi.Resource,
-	ingressClass pulumi.StringPtrInput,
-) error {
-	hosts := publicHosts(args)
-
-	rules := make(networkingv1.IngressRuleArray, 0, len(hosts))
-	for _, h := range hosts {
-		rules = append(rules, hostRule(h, svc))
-	}
-
-	className := publicIngressClassName(args.Cluster)
-	ann := pulumi.StringMap{
-		annotations.WaitForKey:        pulumi.String(annotations.WaitForValueImmediate),
-		"kubernetes.io/ingress.class": pulumi.String(*className),
-	}
-
-	spec := &networkingv1.IngressSpecArgs{
-		IngressClassName: ingressClass,
-		Rules:            rules,
-	}
-	if !args.Env.IsLocal() {
-		issuer := clusterIssuerName(args.Cluster)
-		if issuer == nil {
-			return nil
-		}
-
-		ann["cert-manager.io/cluster-issuer"] = pulumi.String(*issuer)
-
-		tlsHosts := make(pulumi.StringArray, 0, len(hosts))
-		for _, h := range hosts {
-			tlsHosts = append(tlsHosts, pulumi.String(h))
-		}
-		spec.Tls = networkingv1.IngressTLSArray{
-			&networkingv1.IngressTLSArgs{
-				Hosts:      tlsHosts,
-				SecretName: pulumi.String(args.Name + "-tls"),
-			},
-		}
-	}
-
-	_, err := networkingv1.NewIngress(ctx, name+"-nginx-public", &networkingv1.IngressArgs{
-		Metadata: &metav1.ObjectMetaArgs{
-			Name:        pulumi.String(args.Name + "-nginx-public"),
-			Namespace:   pulumi.String(args.Namespace),
-			Annotations: ann,
-		},
-		Spec: spec,
-	}, pulumi.Parent(parent))
-	if err != nil {
-		return fmt.Errorf("public ingress: %w", err)
-	}
-
-	return nil
 }
 
 // registerTunnelIngress exposes the workload through the

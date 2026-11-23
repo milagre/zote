@@ -11,7 +11,7 @@ import (
 const GatewayHTTPListener = "http"
 
 // Cluster holds deployed cluster-scoped capabilities for autodiscovery by other
-// components (ingress classes, KEDA, Grafana provider, …). It must not import
+// components (the Gateway, KEDA, Grafana provider, …). It must not import
 // sibling infra/* packages (import cycles).
 type Cluster struct {
 	HasKeda bool
@@ -19,27 +19,16 @@ type Cluster struct {
 	// Grafana is the Pulumi Grafana provider aimed at the in-cluster dashboard API.
 	Grafana *grafana.Provider
 
-	// PublicIngressClassName is the ingress class for public traffic.
-	PublicIngressClassName *string
-
-	// PublicIngressServiceName is the controller Service name in the ingress namespace.
-	PublicIngressServiceName *string
-
-	// PublicIngressServiceHostname is the in-cluster hostname of PublicIngressServiceName.
-	PublicIngressServiceHostname *string
-
 	// MetricsQueryURL is the Prometheus-compatible query endpoint of the deployed metrics
 	// store, used by KEDA prometheus-trigger autoscalers.
 	// Nil until the stats stack registers it.
 	MetricsQueryURL *string
 
-	// PrivateIngressClassName is reserved for a future private ingress controller.
-	PrivateIngressClassName *string
-
 	// TunnelIngressClassName is the cloudflare-tunnel IngressClass when installed.
 	TunnelIngressClassName *string
 
-	// ClusterIssuerName is the cert-manager ClusterIssuer for TLS Ingresses.
+	// ClusterIssuerName is the cert-manager ClusterIssuer for the Gateway's
+	// certificates.
 	ClusterIssuerName *string
 
 	// Gateway is the cluster's shared entry point for routed traffic.
@@ -83,34 +72,6 @@ func (g *Gateway) Hostnames() []string {
 
 func stringPtr(s string) *string {
 	return &s
-}
-
-// SetPublicIngressClass records the public ingress class name.
-func (c *Cluster) SetPublicIngressClass(name string) {
-	if c == nil {
-		return
-	}
-
-	c.PublicIngressClassName = stringPtr(name)
-}
-
-// SetPublicIngressService records the public ingress controller Service name and hostname.
-func (c *Cluster) SetPublicIngressService(serviceName, namespace string) {
-	if c == nil {
-		return
-	}
-
-	c.PublicIngressServiceName = stringPtr(serviceName)
-	c.PublicIngressServiceHostname = stringPtr(serviceName + "." + namespace + ".svc.cluster.local")
-}
-
-// SetPrivateIngressClass records the private ingress class name.
-func (c *Cluster) SetPrivateIngressClass(name string) {
-	if c == nil {
-		return
-	}
-
-	c.PrivateIngressClassName = stringPtr(name)
 }
 
 // SetTunnelIngressClass records the tunnel ingress class name.

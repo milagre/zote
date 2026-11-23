@@ -37,16 +37,17 @@ type Args struct {
 
 	Config Config
 
-	// PublicDomains lists public DNS suffixes served by Grafana ingress. When
-	// non-empty, [Grafana.API] and [Grafana.UI] target the public hostname
-	// (<name>.<namespace>.<domain>) so callers outside the cluster can reach the API.
+	// PublicDomains lists the public DNS suffixes Grafana is served at. Once
+	// something carries outside callers to them, [Grafana.API] and
+	// [Grafana.UI] target the first public hostname (<name>.<namespace>.<domain>).
 	PublicDomains []string
 
-	// IngressDeps are resources Ingress creation must wait on (cert-manager, ingress
-	// controllers, …). Pass to DependsOn.
-	IngressDeps []pulumi.Resource
+	// PublicDeps are resources that serving Grafana publicly must wait on (the
+	// TLS issuer, the tunnel controller, …).
+	PublicDeps []pulumi.Resource
 
-	// Cluster supplies registered ingress classes and the TLS issuer for autodiscovery.
+	// Cluster supplies the Gateway, the tunnel ingress class and the TLS issuer
+	// for autodiscovery.
 	Cluster *infra.Cluster
 
 	// Datasources is optional chart `datasources:` values (e.g. built from Loki/Mimir URLs). Not loaded from Config YAML.
@@ -65,15 +66,10 @@ type Grafana struct {
 	API   url.URL
 	Admin Credentials
 
-	// Ingresses are the public/tunnel Ingress resources fronting Grafana. Callers
-	// that reach Grafana through [API] (e.g. the Pulumi Grafana provider) should
-	// DependsOn these so work is sequenced after the API becomes routable.
-	Ingresses []pulumi.Resource
-
-	// Route is the Gateway route serving Grafana's public hostnames, nil when
-	// there is none. Callers reaching Grafana through [API] should DependsOn it
-	// too.
-	Route pulumi.Resource
+	// Public is what carries callers outside the cluster to [API], nil when
+	// nothing does. Callers reaching Grafana through [API], such as the Pulumi
+	// Grafana provider, should DependsOn it.
+	Public pulumi.Resource
 }
 
 type Credentials struct {
@@ -217,22 +213,22 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		Password: adminPassword.Result,
 	}
 
-	// The reachable endpoint depends on what Ingress was actually provisioned,
-	// so derive UI/API from registerIngresses rather than recomputing the host.
-	endpoint, ingresses, err := registerIngresses(ctx, name, args, comp, comp, httpBase)
-	if err != nil {
-		return nil, fmt.Errorf("grafana: ingress: %w", err)
-	}
-
 	route, err := registerRoute(ctx, name, args, comp, comp)
 	if err != nil {
 		return nil, fmt.Errorf("grafana: %w", err)
 	}
 
-	comp.UI = endpoint
-	comp.API = endpoint
-	comp.Ingresses = ingresses
-	comp.Route = route
+	tunnel, err := registerTunnelIngress(ctx, name, args, comp, comp)
+	if err != nil {
+		return nil, fmt.Errorf("grafana: %w", err)
+	}
+
+	comp.Public = publicEntry(args.Env, route, tunnel)
+	comp.API = httpBase
+	if comp.Public != nil {
+		comp.API = publicURL(publicHosts(name, args.Namespace, args.PublicDomains)[0])
+	}
+	comp.UI = comp.API
 
 	return comp, nil
 }

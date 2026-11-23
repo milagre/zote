@@ -38,12 +38,12 @@ type Args struct {
 	Config        Config
 	ObjectStorage objectstorage.ObjectStorage
 
-	// PublicDomains configures Grafana ingress and the public API URL.
+	// PublicDomains are the public DNS suffixes Grafana is served at.
 	PublicDomains []string
 
-	// IngressDeps are resources Grafana ingress must wait on (cert-manager, ingress
-	// controllers, …). Pass to DependsOn.
-	IngressDeps []pulumi.Resource
+	// PublicDeps are resources that serving Grafana publicly must wait on (the
+	// TLS issuer, the tunnel controller, …).
+	PublicDeps []pulumi.Resource
 
 	// Cluster registers deployed capabilities when non-nil.
 	Cluster *infra.Cluster
@@ -131,7 +131,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 		Namespace:     args.Namespace,
 		Config:        *args.Config.Dashboard,
 		PublicDomains: args.PublicDomains,
-		IngressDeps:   args.IngressDeps,
+		PublicDeps:    args.PublicDeps,
 		Cluster:       args.Cluster,
 		Datasources:   defaultGrafanaDatasources(lk.Gateway.String(), mm.Prometheus.String()),
 	}, pulumi.Parent(comp))
@@ -176,16 +176,16 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 }
 
 // newGrafanaProvider configures the Pulumiverse Grafana provider against [Grafana.API].
-// It depends on the Helm release and whatever routes to Grafana so that resources
+// It depends on the Helm release and whatever carries callers to Grafana so that resources
 // using this provider (dashboards) are sequenced after the API is routable.
 func newGrafanaProvider(ctx *pulumi.Context, name string, g *grafana.Grafana, parent pulumi.Resource) (*grafanapulumi.Provider, error) {
 	auth := pulumi.All(g.Admin.Username, g.Admin.Password).ApplyT(func(vals []any) (string, error) {
 		return fmt.Sprintf("%s:%s", vals[0].(string), vals[1].(string)), nil
 	}).(pulumi.StringOutput)
 
-	deps := append([]pulumi.Resource{g.Helm.Release}, g.Ingresses...)
-	if g.Route != nil {
-		deps = append(deps, g.Route)
+	deps := []pulumi.Resource{g.Helm.Release}
+	if g.Public != nil {
+		deps = append(deps, g.Public)
 	}
 
 	return grafanapulumi.NewProvider(ctx, name+"-provider", &grafanapulumi.ProviderArgs{

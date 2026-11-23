@@ -2,9 +2,11 @@ package grafana
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 
+	"github.com/milagre/zote/pulumi/env"
 	"github.com/milagre/zote/pulumi/internal/httproute"
 	"github.com/milagre/zote/pulumi/util/tokens"
 )
@@ -35,9 +37,20 @@ func registerRoute(ctx *pulumi.Context, name string, args *Args, g *Grafana, par
 	return route, nil
 }
 
+// publicEntry is what carries callers outside the cluster to Grafana's public
+// hostnames: the Gateway route, or locally the tunnel Ingress, since a local
+// Gateway is not reachable at those hostnames.
+func publicEntry(e env.Env, route, tunnel pulumi.Resource) pulumi.Resource {
+	if e.IsLocal() {
+		return tunnel
+	}
+
+	return route
+}
+
 // publicDeps are what anything serving Grafana publicly waits on.
 func publicDeps(args *Args, g *Grafana) []pulumi.Resource {
-	deps := append([]pulumi.Resource{}, args.IngressDeps...)
+	deps := append([]pulumi.Resource{}, args.PublicDeps...)
 	deps = append(deps, g.Helm.Release)
 
 	return deps
@@ -52,4 +65,14 @@ func publicHosts(name, namespace string, publicDomains []string) []string {
 	}
 
 	return out
+}
+
+// publicURL is the HTTPS endpoint for host; the Gateway and the tunnel both
+// terminate TLS.
+func publicURL(host string) url.URL {
+	return url.URL{
+		Scheme: "https",
+		Host:   host,
+		Path:   "/",
+	}
 }

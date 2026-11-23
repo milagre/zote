@@ -37,7 +37,6 @@ func run(t *testing.T, typ string, c *infra.Cluster) []pulumitest.Resource {
 			Setup:     http.Options{Port: 8080, Health: "/health"},
 			Internal: http.Internal{
 				PublicHostnames: []string{"my-api.apps.example.com"},
-				PrivateHostname: "my-api.apps.svc.cluster.local",
 				VeneerHostnames: []string{"api.example.com"},
 			},
 			Cluster: c,
@@ -49,10 +48,9 @@ func run(t *testing.T, typ string, c *infra.Cluster) []pulumitest.Resource {
 
 func cluster() *infra.Cluster {
 	c := &infra.Cluster{}
-	c.SetPublicIngressClass("nginx")
 	c.SetTunnelIngressClass("cloudflare-tunnel")
 	c.SetClusterIssuer("letsencrypt-http01")
-	c.SetGateway("public", "infra")
+	c.SetGateway("gateway", "infra")
 
 	return c
 }

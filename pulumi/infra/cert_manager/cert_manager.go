@@ -1,6 +1,8 @@
-// Package cert_manager installs cert-manager plus a letsencrypt-http01 ClusterIssuer.
-// With a Gateway on the cluster it also issues certificates for the Gateway's
-// listeners, so it installs after the Gateway API CRDs.
+// Package cert_manager installs cert-manager plus a letsencrypt-http01
+// ClusterIssuer, which issues the certificates for the cluster Gateway's
+// listeners and answers HTTP-01 challenges through the Gateway. The Gateway
+// must be recorded on the Cluster first, since cert-manager starts only once
+// the Gateway API CRDs are installed.
 package cert_manager
 
 import (
@@ -25,13 +27,12 @@ var spec = helm.ChartSpec{
 }
 
 type Args struct {
-	Namespace      string
-	AcmeEmail      string
-	IngressClasses []string
+	Namespace string
+	AcmeEmail string
 
 	Config Config
 
-	// Cluster registers deployed capabilities when non-nil.
+	// Cluster supplies the Gateway, and records the ClusterIssuer.
 	Cluster *infra.Cluster
 }
 
@@ -54,18 +55,18 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	if err := args.Config.Validate(); err != nil {
 		return nil, fmt.Errorf("cert_manager: config: %w", err)
 	}
-
-	var deps []pulumi.Resource
-	if args.Cluster != nil && args.Cluster.Gateway != nil {
-		deps = args.Cluster.Gateway.Ready
+	if args.Cluster == nil || args.Cluster.Gateway == nil {
+		return nil, fmt.Errorf("cert_manager: Cluster must have a Gateway")
 	}
+
+	gw := args.Cluster.Gateway
 
 	comp := &CertManager{}
 	if err := helm.RegisterChart(ctx, name, spec, &helm.ChartArgs{
 		Namespace: args.Namespace,
 		Version:   helm.OptionalChartVersion(args.Config.Version),
-		Values:    values(args),
-		DependsOn: deps,
+		Values:    values(),
+		DependsOn: gw.Ready,
 	}, &comp.ChartComponent, opts...); err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 					"privateKeySecretRef": pulumi.Map{
 						"name": pulumi.String(ClusterIssuerName),
 					},
-					"solvers": http01Solvers(args),
+					"solvers": http01Solvers(gw),
 				},
 			},
 		},
@@ -94,47 +95,25 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 	}
 
 	comp.ClusterIssuer = issuer
-
-	if args.Cluster != nil {
-		args.Cluster.SetClusterIssuer(ClusterIssuerName)
-	}
+	args.Cluster.SetClusterIssuer(ClusterIssuerName)
 
 	return comp, nil
 }
 
-// values enables cert-manager's Gateway support only with a Gateway on the
-// cluster: it fails to start without the Gateway API CRDs.
-func values(args *Args) pulumi.Map {
-	v := map[string]any{
+// values turns on cert-manager's Gateway support, which issues a certificate
+// for each HTTPS listener of an annotated Gateway.
+func values() pulumi.Map {
+	return helm.Values(map[string]any{
 		"installCRDs": true,
-	}
-	if args.Cluster != nil && args.Cluster.Gateway != nil {
-		v["config"] = map[string]any{
+		"config": map[string]any{
 			"gatewayAPI": map[string]any{"enabled": true},
-		}
-	}
-
-	return helm.Values(v)
+		},
+	})
 }
 
-// http01Solvers lists the ingress classes, then the cluster's Gateway:
-// cert-manager answers through the first, so the Gateway's is used only once
-// there are no ingress classes.
-func http01Solvers(args *Args) pulumi.Array {
-	out := make(pulumi.Array, 0, len(args.IngressClasses)+1)
-	for _, c := range args.IngressClasses {
-		out = append(out, pulumi.Map{
-			"http01": pulumi.Map{
-				"ingress": pulumi.Map{
-					"class": pulumi.String(c),
-				},
-			},
-		})
-	}
-
-	if args.Cluster != nil && args.Cluster.Gateway != nil {
-		gw := args.Cluster.Gateway
-		out = append(out, pulumi.Map{
+func http01Solvers(gw *infra.Gateway) pulumi.Array {
+	return pulumi.Array{
+		pulumi.Map{
 			"http01": pulumi.Map{
 				"gatewayHTTPRoute": pulumi.Map{
 					"parentRefs": pulumi.Array{
@@ -147,8 +126,6 @@ func http01Solvers(args *Args) pulumi.Array {
 					},
 				},
 			},
-		})
+		},
 	}
-
-	return out
 }

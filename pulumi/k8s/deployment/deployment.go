@@ -137,7 +137,6 @@ func New(ctx *pulumi.Context, name string, args *Args, opts ...pulumi.ResourceOp
 			Metrics:   args.Metrics,
 			Internal: http.Internal{
 				PublicHostnames: synthesizedPublicHostnames(args.Name, args.Namespace, args.PublicDomains),
-				PrivateHostname: comp.PrivateHostname,
 				VeneerHostnames: args.Veneers,
 			},
 			Autoscale: args.Autoscale,
