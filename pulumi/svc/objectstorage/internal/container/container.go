@@ -33,7 +33,7 @@ const (
 	// maintained MinIO fork whose image also ships mc, and whose entrypoint accepts
 	// the chart's `minio server` invocation.
 	imageRepository = "pgsty/silo"
-	imageTag        = "RELEASE.2026-09-16T00-00-00Z"
+	imageTag        = "RELEASE.2026-11-12T00-00-00Z"
 )
 
 func Setup(ctx *pulumi.Context, parent pulumi.Resource, a *Args) (*types.Result, error) {
