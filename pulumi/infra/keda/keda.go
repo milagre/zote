@@ -15,7 +15,7 @@ var spec = helm.ChartSpec{
 	TypeToken:      tokens.Token("infra", "Keda"),
 	Chart:          "keda",
 	Repository:     "https://kedacore.github.io/charts",
-	DefaultVersion: "2.20.2",
+	DefaultVersion: "2.21.1",
 }
 
 type Args struct {
